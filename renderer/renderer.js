@@ -107,7 +107,7 @@ function countSectionDiffs() {
   for (const key of ['peakPercentile', 'peakExtraDrop', 'spreadBelow', 'spreadAbove']) {
     if (cfg.bell[key] !== d.bell[key]) advanced++;
   }
-  for (const key of ['xfactorMinOverall', 'superstarCount', 'starPercentTarget']) {
+  for (const key of ['xfactorPercentTarget', 'superstarPercentTarget', 'starPercentTarget']) {
     if (cfg.devTraits[key] !== d.devTraits[key]) advanced++;
   }
 
@@ -173,8 +173,11 @@ function computeWarnings() {
   if (dt.starPercentTarget >= 60) {
     msgs.push('A Star Target % this high will make most of the class elite-tier — far above a typical draft class.');
   }
-  if (dt.xfactorMinOverall <= 85) {
-    msgs.push('A low X-Factor Min Overall will hand out X-Factor far more often than a real draft class would.');
+  if (dt.xfactorPercentTarget >= 1) {
+    msgs.push('An X-Factor Target % this high will make Madden\'s rarest trait common instead of a once-in-a-class event.');
+  }
+  if (dt.superstarPercentTarget >= 15) {
+    msgs.push('A Superstar Target % this high will hand out the trait far more often than a real draft class would.');
   }
 
   if (b.peakExtraDrop >= 28) {
@@ -355,10 +358,10 @@ function buildAdvancedPage() {
 
   const d = $('advDev');
   d.innerHTML = '';
-  d.appendChild(knob('X-Factor Min Overall', D['devTraits.xfactorMinOverall'],
-    numberInput(cfg.devTraits.xfactorMinOverall, { step: 1, min: 50, max: 99 }, (v) => { cfg.devTraits.xfactorMinOverall = v; })));
-  d.appendChild(knob('Superstar Count', D['devTraits.superstarCount'],
-    numberInput(cfg.devTraits.superstarCount, { step: 1, min: 0, max: 50 }, (v) => { cfg.devTraits.superstarCount = v; })));
+  d.appendChild(knob('X-Factor Target %', D['devTraits.xfactorPercentTarget'],
+    numberInput(cfg.devTraits.xfactorPercentTarget, { step: 0.01, min: 0, max: 10 }, (v) => { cfg.devTraits.xfactorPercentTarget = v; })));
+  d.appendChild(knob('Superstar Target %', D['devTraits.superstarPercentTarget'],
+    numberInput(cfg.devTraits.superstarPercentTarget, { step: 0.1, min: 0, max: 100 }, (v) => { cfg.devTraits.superstarPercentTarget = v; })));
   d.appendChild(knob('Star Target %', D['devTraits.starPercentTarget'],
     numberInput(cfg.devTraits.starPercentTarget, { step: 1, min: 0, max: 100 }, (v) => { cfg.devTraits.starPercentTarget = v; })));
 }
