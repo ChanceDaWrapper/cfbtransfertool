@@ -1,0 +1,44 @@
+{
+  "name": "cfb-transfer-application",
+  "version": "1.0.0",
+  "description": "GUI app for transferring draft classes (and eventually stats/scouting) from EA SPORTS College Football 27 into Madden NFL 26 franchise saves.",
+  "main": "main.js",
+  "scripts": {
+    "start": "electron .",
+    "build": "electron-builder --win nsis"
+  },
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "@toondepauw/node-zstd": "^1.2.0",
+    "madden-franchise": "^3.8.0"
+  },
+  "devDependencies": {
+    "electron": "^32.0.0",
+    "electron-builder": "^25.0.0"
+  },
+  "build": {
+    "appId": "com.chance.cfbtransferapp",
+    "productName": "CFB Transfer",
+    "files": [
+      "main.js",
+      "preload.js",
+      "lib/**/*",
+      "renderer/**/*",
+      "data/**/*",
+      "schema/**/*",
+      "node_modules/**/*"
+    ],
+    "win": {
+      "target": "nsis",
+      "icon": "build/icon.ico"
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true,
+      "shortcutName": "CFB Transfer"
+    }
+  }
+}
