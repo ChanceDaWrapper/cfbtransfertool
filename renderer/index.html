@@ -61,6 +61,13 @@
         <p>Pull departing players from your CFB 27 dynasty, generate a calibrated Madden draft class, and write it into your franchise save.</p>
       </header>
 
+      <div class="card config-summary-card">
+        <div class="config-summary-head">
+          <h2>Current Configuration</h2>
+        </div>
+        <div id="configSummaryBody"></div>
+      </div>
+
       <div class="grid-2">
         <div class="card">
           <h2>1 · Player Pool</h2>
@@ -92,6 +99,7 @@
             Weight or Physical Attribute change affects the output on the Draft
             Class page — otherwise, generate once and write it into your franchise.
           </div>
+          <div id="settingsWarnings" class="warnings-stack"></div>
           <div class="btn-row">
             <button id="generateBtn" class="primary" disabled>Generate Draft Class</button>
             <button id="viewResultsBtn" disabled>View Results →</button>
@@ -147,32 +155,16 @@
       <header class="page-head">
         <h1>Position Weights</h1>
         <p>
-          Every college player's ratings get scaled down before entering Madden,
-          so freshmen don't show up as 99-overall superstars. This page lets you
-          nudge how strong or weak that scaling is, position by position.
+          College ratings get scaled down before entering Madden so freshmen
+          don't show up as 99-overall superstars. Adjust how strong or weak
+          that scaling is, position by position. Hover any field for details.
         </p>
         <div class="head-actions">
           <button id="resetWeights" class="ghost">Reset to Defaults</button>
         </div>
       </header>
-      <div class="card explainer">
-        <p><strong>Extra Drop</strong> — think of this as a "toughness dial" for the
-        position. It's a number of extra rating points subtracted from
-        <em>every single rating</em> a player at this position has (Speed,
-        Awareness, Route Running, everything), on top of the normal calibration.
-        A higher number means players at this position come into Madden weaker
-        across the board. A lower number (or negative) means they keep more of
-        their college rating. Example: setting Wide Receiver's Extra Drop to 5
-        means every generated WR ends up about 5 points lower on every rating
-        than they otherwise would.</p>
-        <p><strong>Class Cap</strong> — the maximum number of players at this
-        position allowed into the generated draft class at all, no matter how
-        many are eligible in your CFB save. Leave blank for no limit. This
-        exists mainly because CFB tends to produce far more Kickers, Punters,
-        and Long Snappers leaving than a real NFL draft class would ever have
-        room for.</p>
-      </div>
       <div class="card">
+        <p class="hint compact"><strong>Extra Drop</strong> = toughness dial for the position (higher = weaker, lower/negative = stronger). <strong>Class Cap</strong> = max players at that position in the class (blank = no limit).</p>
         <table class="config-table" id="weightsTable">
           <thead>
             <tr><th>Position</th><th></th><th>Extra Drop <span class="th-hint">(default shown right)</span></th><th>Class Cap</th></tr>
@@ -187,66 +179,26 @@
       <header class="page-head">
         <h1>Physical Attributes</h1>
         <p>
-          "Physical" ratings — Speed, Strength, Acceleration, Agility, Jumping,
-          and similar — are handled differently than skill ratings elsewhere in
-          this app. A player's raw athletic testing translates fairly directly
-          from college to the pros, so instead of complex remapping, these just
-          get a straightforward point reduction. This page controls how big
-          that reduction is.
+          Speed, Strength, Acceleration, Agility, and similar ratings translate
+          fairly directly from college to the pros, so they get a simple point
+          reduction rather than a full remap. This page controls how big.
         </p>
         <div class="head-actions">
           <button id="resetPhysical" class="ghost">Reset to Defaults</button>
         </div>
       </header>
 
-      <div class="card explainer">
+      <div class="card">
         <h2>Global</h2>
-        <p><strong>Drop Leniency</strong> — the master strength dial for
-        <em>every</em> rating reduction in this app, both the flat drops on this
-        page and the extra squeeze applied to skill ratings on the Advanced
-        page. At 1.0, reductions are at full calibrated strength. At the
-        default 0.25, players only lose about a quarter of that — ratings stay
-        much closer to their original college values. Turn this up if generated
-        classes feel too strong/unrealistic; turn it down if they feel too weak.</p>
-        <p><strong>Default Drop</strong> — a fallback only. Physical ratings are
-        normally reduced using real calibration data built from actual Madden
-        rosters, position by position. If a specific position/rating
-        combination has no calibration data on file, this flat number is used
-        instead. You generally won't need to touch this.</p>
-        <p><strong>Physical Jitter</strong> — adds a small amount of random
-        variation (plus or minus this many points) to physical ratings after
-        the drop is applied, so two CFB players with identical ratings don't
-        come out as identical Madden players. Bigger number = more
-        player-to-player variety.</p>
-        <p><strong>Skill Jitter</strong> — the same idea as Physical Jitter, but
-        applied to skill ratings instead (Awareness, route running, coverage,
-        blocking, etc. — anything not in the table below).</p>
         <div class="knob-grid" id="physicalGlobals"></div>
       </div>
 
       <div class="card">
         <h2>Per-Rating Adjustments</h2>
-        <p class="hint">
-          Fine-tune individual physical ratings beyond the global settings above.
-        </p>
-        <ul class="explainer-list">
-          <li><strong>Extra Drop</strong> — extra points subtracted from just
-          this one rating, for every player, on top of everything else. Leave
-          at the default unless you have a specific reason to change it.</li>
-          <li><strong>Jitter Override</strong> — by default, a rating uses the
-          global Physical Jitter value above. Enter a number here to give just
-          this rating its own random-variance width instead (e.g. Agility
-          defaults to a wider jitter than other ratings, so it varies more from
-          player to player). Leave blank to just use the global value.</li>
-          <li><strong>Max Drop</strong> — a hard ceiling on the total amount
-          this rating can be reduced, no matter how much the other settings add
-          up to. Agility, for example, is capped at 7 by default, so no player's
-          Agility can ever be cut by more than 7 points even if jitter and extra
-          drop stack higher. Leave blank for no ceiling.</li>
-        </ul>
+        <p class="hint compact">Fine-tune one rating at a time. Hover a column header for what it does.</p>
         <table class="config-table" id="ratingsTable">
           <thead>
-            <tr><th>Rating</th><th>Extra Drop</th><th>Jitter Override</th><th>Max Drop</th></tr>
+            <tr><th>Rating</th><th title="Extra points subtracted from just this rating.">Extra Drop</th><th title="How much this rating varies player to player. Blank = use the global Physical Jitter.">Jitter Override</th><th title="Hard ceiling on the total cut to this rating. Blank = no ceiling.">Max Drop</th></tr>
           </thead>
           <tbody></tbody>
         </table>
@@ -257,7 +209,7 @@
     <section class="page" id="page-advanced">
       <header class="page-head">
         <h1>Advanced</h1>
-        <p>Deeper settings for how large the class is, how skill ratings get shaped, and how development traits are handed out. These have more subtle effects than Position Weights or Physical Attributes — read the descriptions before changing them.</p>
+        <p>Class size, how skill ratings get shaped, and how development traits are handed out. Subtler effects than Position Weights or Physical Attributes — each knob explains itself below.</p>
         <div class="head-actions">
           <button id="resetAdvanced" class="ghost">Reset to Defaults</button>
         </div>
@@ -265,83 +217,18 @@
 
       <div class="card">
         <h2>Class Construction</h2>
-        <p class="hint">
-          <strong>Class Size</strong> caps how many players get pulled into the
-          generated class, chosen from the best available prospects in your CFB
-          save (ranked by their CFB projected draft round, then overall). If
-          your dynasty has fewer players leaving than this number, you'll just
-          get fewer — it's a ceiling, not a target. <strong>Seed</strong> leave
-          blank for a different random class every time (recommended). Type any
-          word or number to make results reproducible — the exact same seed,
-          settings, and CFB save will always produce an identical class, which
-          is useful when comparing two configurations without random variance
-          also changing things. <strong>K/P Awareness Cap</strong> — Awareness
-          represents football IQ built up over a career, which real rookie
-          kickers/punters haven't had time to develop regardless of how CFB
-          rates them; this caps how high their Awareness can be set.
-        </p>
         <div class="knob-grid" id="advGeneral"></div>
       </div>
 
       <div class="card">
         <h2>Bell-Curve Squeeze <span class="badge-info">skill ratings</span></h2>
-        <p class="hint">
-          Skill ratings (Awareness, route running, coverage, blocking, etc.)
-          aren't just shifted down by a flat amount. First, each player is
-          matched to the same percentile rank in a database of real Madden
-          draft classes — "this player is better than 80% of college players
-          at his position" makes him as good as the real player sitting at that
-          same 80th percentile in actual Madden data. Then, an extra "squeeze"
-          is layered on top, strongest at one chosen percentile of the class and
-          fading out toward both the elite prospects and the replacement-level
-          ones. These four settings control that squeeze.
-        </p>
-        <ul class="explainer-list">
-          <li><strong>Peak Percentile</strong> — which percentile of players
-          gets squeezed hardest, from 0 (worst at the position) to 1 (best).
-          The default 0.75 means solid-but-not-elite prospects (around the 75th
-          percentile) take the biggest extra hit, while true elites and
-          low-end depth are mostly left alone.</li>
-          <li><strong>Peak Extra Drop</strong> — how many extra points get
-          subtracted right at that peak percentile, on top of whatever the
-          percentile-matching step already calculated.</li>
-          <li><strong>Spread Below Peak</strong> — how far the squeeze reaches
-          into players ranked <em>below</em> the peak. Bigger = a wider range
-          of below-peak players get some extra reduction; smaller = the squeeze
-          stays narrowly focused right at the peak and fades out fast.</li>
-          <li><strong>Spread Above Peak</strong> — the same idea, but for
-          players ranked <em>above</em> the peak (closer to elite). Kept narrow
-          by default on purpose, so truly elite prospects barely get touched —
-          the goal is protecting top talent while trimming the "good but not
-          great" tier just below it.</li>
-        </ul>
+        <p class="hint compact">Skill ratings (Awareness, coverage, blocking, route running, etc.) get an extra cut concentrated at one tier of the class, fading out toward elites and deep bench players.</p>
         <div class="knob-grid" id="advBell"></div>
       </div>
 
       <div class="card">
         <h2>Development Traits</h2>
-        <p class="hint">
-          Controls how Madden's development traits (Normal, Star, Superstar,
-          X-Factor — from most to least common) get handed out across the
-          generated class. Traits affect how fast a player improves and, for
-          Superstar/X-Factor, unlock special in-game abilities.
-        </p>
-        <ul class="explainer-list">
-          <li><strong>X-Factor Min Overall</strong> — the CFB overall rating a
-          player must reach to automatically receive the rare X-Factor trait,
-          Madden's highest tier. Keep this high (97+) — it should only catch
-          genuine outlier prospects.</li>
-          <li><strong>Superstar Count</strong> — exactly this many players (the
-          best remaining by CFB overall, after X-Factor is handled) will
-          receive the Superstar trait, Madden's second-highest tier.</li>
-          <li><strong>Star Target %</strong> — the target share of the
-          <em>entire</em> generated class that should end up with the Star
-          trait (one tier below Superstar). Every player CFB already tagged
-          "College Elite" is included automatically first; then the best
-          remaining "College Star" players are added one at a time until this
-          percentage is reached. Everyone else gets the baseline Normal
-          trait.</li>
-        </ul>
+        <p class="hint compact">Controls how Normal, Star, Superstar, and X-Factor dev traits get handed out across the class.</p>
         <div class="knob-grid" id="advDev"></div>
       </div>
     </section>
@@ -373,6 +260,11 @@
             <option value="">All dev traits</option>
             <option>XFactor</option><option>Superstar</option><option>Star</option><option>Normal</option>
           </select>
+          <label class="extra-col-label" for="extraColumnSelect">Additional Column
+            <select id="extraColumnSelect" aria-label="Choose an additional column" title="Adds one more rating column to the table. Part of the adjusted stats, so it hides with Hide Adjusted Stats too.">
+              <option value="">None</option>
+            </select>
+          </label>
           <span id="rowCount" class="row-count"></span>
         </div>
         <div class="table-scroll">

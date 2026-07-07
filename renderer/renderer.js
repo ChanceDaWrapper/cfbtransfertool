@@ -8,11 +8,14 @@ let players = [];       // last generated class
 let sortKey = 'Rank', sortDir = 1;
 
 // Columns hidden by the "Hide Adjusted Stats" toggle -- lets a user look at
-// a class without seeing the direct payoff of whatever they just tuned.
+// a class without seeing the direct payoff of whatever they just tuned. The
+// user's chosen Additional Column is always part of this set too, since it's
+// just as much an "adjusted stat" as the fixed ones.
 const HIDDEN_WHEN_TOGGLED = new Set([
   'DevTrait', 'Madden_SpeedRating', 'Madden_StrengthRating', 'Madden_AgilityRating', 'Madden_AwarenessRating',
 ]);
 let hideStats = localStorage.getItem('hideAdjustedStats') === 'true';
+let extraColumnKey = localStorage.getItem('extraColumnKey') || '';
 
 const $ = (id) => document.getElementById(id);
 const el = (tag, cls, text) => {
@@ -55,6 +58,7 @@ function gotoPage(name) { document.querySelector(`.nav-item[data-page="${name}"]
 /* ---------------- config autosave ---------------- */
 let saveTimer = null;
 function scheduleSave() {
+  onConfigChanged();
   clearTimeout(saveTimer);
   saveTimer = setTimeout(async () => {
     await window.api.configSet(cfg);
@@ -68,6 +72,136 @@ function markResultsStale() {
   resultsStale = true;
   $('resultsSummary').textContent =
     `${players.length} players — settings changed since generation. Hit Regenerate to apply.`;
+}
+
+/* ---------------- current-configuration summary ---------------- */
+// Counts how many leaf values differ from the shipped defaults, grouped by
+// the same three sections the settings pages (and their Reset buttons) use.
+// Purely a diff -- nothing here is hardcoded to specific setting names
+// beyond the section boundaries the app already treats as one unit.
+function countSectionDiffs() {
+  const d = META.defaults;
+  let weights = 0, physical = 0, advanced = 0;
+
+  for (const pos of META.positions) {
+    if (cfg.positionExtraDrop[pos] !== d.positionExtraDrop[pos]) weights++;
+  }
+  const capKeys = new Set([...Object.keys(cfg.positionCaps || {}), ...Object.keys(d.positionCaps || {})]);
+  for (const pos of capKeys) {
+    if ((cfg.positionCaps[pos] ?? null) !== (d.positionCaps[pos] ?? null)) weights++;
+  }
+
+  for (const key of ['dropLeniency', 'defaultDrop', 'calibrationJitter', 'quantileJitter']) {
+    if (cfg.general[key] !== d.general[key]) physical++;
+  }
+  for (const rating of META.physicalRatings) {
+    const a = cfg.ratingAdjustments[rating], b = d.ratingAdjustments[rating];
+    if (a.extraDrop !== b.extraDrop) physical++;
+    if ((a.jitter ?? null) !== (b.jitter ?? null)) physical++;
+    if ((a.maxDrop ?? null) !== (b.maxDrop ?? null)) physical++;
+  }
+
+  if (cfg.general.classSize !== d.general.classSize) advanced++;
+  if ((cfg.general.seed || '') !== (d.general.seed || '')) advanced++;
+  if (cfg.kpAwarenessCap !== d.kpAwarenessCap) advanced++;
+  for (const key of ['peakPercentile', 'peakExtraDrop', 'spreadBelow', 'spreadAbove']) {
+    if (cfg.bell[key] !== d.bell[key]) advanced++;
+  }
+  for (const key of ['xfactorMinOverall', 'superstarCount', 'starPercentTarget']) {
+    if (cfg.devTraits[key] !== d.devTraits[key]) advanced++;
+  }
+
+  return { weights, physical, advanced };
+}
+
+function renderConfigSummary() {
+  const body = $('configSummaryBody');
+  if (!body || !META) return;
+  body.innerHTML = '';
+  const { weights, physical, advanced } = countSectionDiffs();
+  if (!weights && !physical && !advanced) {
+    body.appendChild(el('p', 'config-summary-default', 'Using Default Settings'));
+    return;
+  }
+  const list = el('div', 'config-summary-list');
+  for (const [page, label, count] of [
+    ['weights', 'Position Weights', weights],
+    ['physical', 'Physical Attributes', physical],
+    ['advanced', 'Advanced', advanced],
+  ]) {
+    if (!count) continue;
+    const row = el('button', 'config-summary-row');
+    row.appendChild(el('span', 'config-summary-bullet', '•'));
+    row.appendChild(el('span', 'config-summary-text', `${label} (${count} modified)`));
+    row.addEventListener('click', () => gotoPage(page));
+    list.appendChild(row);
+  }
+  body.appendChild(list);
+}
+
+/* ---------------- intelligent warnings ---------------- */
+// Flags settings combinations likely to produce an unrealistic class. Purely
+// advisory -- never blocks generation, and disappears on its own once the
+// triggering value moves back into a normal range.
+function computeWarnings() {
+  const msgs = [];
+  const g = cfg.general, b = cfg.bell, dt = cfg.devTraits;
+
+  if (g.dropLeniency >= 1.1) {
+    msgs.push('This configuration is likely to generate an unusually weak draft class.');
+  } else if (g.dropLeniency <= 0.03) {
+    msgs.push('Ratings are staying almost identical to college numbers — this will generate an unusually strong draft class.');
+  }
+
+  if (g.calibrationJitter >= 10) {
+    msgs.push('Very high Physical Jitter can create extremely inconsistent athletic ratings.');
+  }
+  if (g.quantileJitter >= 10) {
+    msgs.push('Very high Skill Jitter can create extremely inconsistent skill ratings.');
+  }
+
+  const extremePositions = META.positions.filter((p) => Math.abs(cfg.positionExtraDrop[p]) >= 15);
+  if (extremePositions.length) {
+    const names = extremePositions.map((p) => META.positionLabels[p] || p).join(', ');
+    msgs.push(`Position Weights for ${names} are set to an extreme value and may produce unrealistic ratings.`);
+  }
+
+  if (g.classSize < 32) {
+    msgs.push('A Class Size this small may leave some draft rounds without enough prospects to fill every pick.');
+  }
+
+  if (dt.starPercentTarget >= 60) {
+    msgs.push('A Star Target % this high will make most of the class elite-tier — far above a typical draft class.');
+  }
+  if (dt.xfactorMinOverall <= 85) {
+    msgs.push('A low X-Factor Min Overall will hand out X-Factor far more often than a real draft class would.');
+  }
+
+  if (b.peakExtraDrop >= 28) {
+    msgs.push('A very high Peak Extra Drop can crush the middle tier of your draft class.');
+  }
+
+  return msgs;
+}
+
+function renderWarnings() {
+  const box = $('settingsWarnings');
+  if (!box || !META) return;
+  box.innerHTML = '';
+  const msgs = computeWarnings();
+  if (!msgs.length) { box.style.display = 'none'; return; }
+  box.style.display = '';
+  for (const msg of msgs) {
+    const w = el('div', 'warning-box');
+    w.appendChild(el('strong', null, 'Warning'));
+    w.appendChild(el('span', null, msg));
+    box.appendChild(w);
+  }
+}
+
+function onConfigChanged() {
+  renderConfigSummary();
+  renderWarnings();
 }
 
 /* ---------------- numeric knob helper ---------------- */
@@ -241,6 +375,7 @@ async function resetSection(mutate) {
   cfg = await window.api.configSet(cfg);
   rebuildAllPages();
   markResultsStale();
+  onConfigChanged();
   toast('Reset to defaults');
 }
 $('resetWeights').addEventListener('click', () => resetSection(() => {
@@ -274,6 +409,7 @@ $('presetImport').addEventListener('click', async () => {
       cfg = imported;
       rebuildAllPages();
       markResultsStale();
+      onConfigChanged();
       toast('Preset imported');
     }
   } catch (e) {
@@ -420,8 +556,17 @@ function formatHeight(h) {
   return `${Math.floor(n / 12)}'${n % 12}"`;
 }
 
+function currentColumns() {
+  if (!extraColumnKey) return COLUMNS;
+  const opt = (META.additionalColumns || []).find((c) => c.key === extraColumnKey);
+  if (!opt) return COLUMNS;
+  return COLUMNS.concat([{ key: opt.key, label: opt.label, num: true, extra: true }]);
+}
+
 function visibleColumns() {
-  return hideStats ? COLUMNS.filter((c) => !HIDDEN_WHEN_TOGGLED.has(c.key)) : COLUMNS;
+  const cols = currentColumns();
+  if (!hideStats) return cols;
+  return cols.filter((c) => !HIDDEN_WHEN_TOGGLED.has(c.key) && !c.extra);
 }
 
 function buildResultsHeader() {
@@ -544,6 +689,14 @@ hideStatsToggle.addEventListener('change', () => {
   if (players.length) renderResults();
 });
 
+/* ---------------- additional draft class column ---------------- */
+const extraColumnSelect = $('extraColumnSelect');
+extraColumnSelect.addEventListener('change', () => {
+  extraColumnKey = extraColumnSelect.value;
+  localStorage.setItem('extraColumnKey', extraColumnKey);
+  if (players.length) renderResults();
+});
+
 /* ---------------- init ---------------- */
 (async function init() {
   META = await window.api.configGet();
@@ -556,5 +709,16 @@ hideStatsToggle.addEventListener('change', () => {
     posSel.appendChild(o);
   }
 
+  for (const c of (META.additionalColumns || [])) {
+    const o = el('option'); o.value = c.key; o.textContent = c.label;
+    extraColumnSelect.appendChild(o);
+  }
+  if ((META.additionalColumns || []).some((c) => c.key === extraColumnKey)) {
+    extraColumnSelect.value = extraColumnKey;
+  } else {
+    extraColumnKey = '';
+  }
+
   rebuildAllPages();
+  onConfigChanged();
 })();

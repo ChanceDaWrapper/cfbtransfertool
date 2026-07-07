@@ -7,7 +7,10 @@ const {
   defaultCfbSavesDir, defaultMaddenSavesDir,
 } = require('./lib/pipeline');
 const { ConfigStore } = require('./lib/configStore');
-const { DEFAULT_CONFIG, DESCRIPTIONS, POSITIONS, POSITION_LABELS, PHYSICAL_RATINGS, RATING_LABELS, mergeConfig } = require('./lib/defaults');
+const {
+  DEFAULT_CONFIG, DESCRIPTIONS, POSITIONS, POSITION_LABELS,
+  PHYSICAL_RATINGS, RATING_LABELS, ADDITIONAL_COLUMNS, mergeConfig,
+} = require('./lib/defaults');
 
 let mainWindow;
 let configStore;
@@ -87,6 +90,7 @@ ipcMain.handle('config-get', () => ({
   positionLabels: POSITION_LABELS,
   physicalRatings: PHYSICAL_RATINGS,
   ratingLabels: RATING_LABELS,
+  additionalColumns: ADDITIONAL_COLUMNS,
 }));
 
 ipcMain.handle('config-set', (_e, config) => configStore.save(config));
