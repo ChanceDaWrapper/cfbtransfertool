@@ -14,7 +14,7 @@
     "url": "https://github.com/ChanceDaWrapper/cfbtransfertool.git"
   },
   "dependencies": {
-    "madden-franchise": "^3.8.0"
+    "madden-franchise": "file:vendor/madden-franchise-4.3.0.tgz"
   },
   "devDependencies": {
     "electron": "^32.0.0",
