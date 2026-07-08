@@ -1,13 +1,16 @@
 {
   "name": "cfb-transfer-application",
-  "version": "0.1.0",
-  "description": "GUI app for transferring draft classes (and eventually stats/scouting) from EA SPORTS College Football 27 into Madden NFL 26 franchise saves.",
+  "version": "0.2.0",
+  "description": "GUI app for converting an EA SPORTS College Football 27 dynasty's departing players into a calibrated, projected Madden NFL 26 rookie draft class -- ratings conversion, draft declaration prediction, draft projection, dev traits, combine generation, and franchise-save export.",
   "main": "main.js",
   "scripts": {
     "start": "electron .",
     "build": "electron-builder --win nsis"
   },
   "author": "ChanceDaWrapper",
+  "contributors": [
+    "Sean Dwyer (seanpdwyer7) -- draft projection, declaration prediction, combine generation, and export enrichment adapted from cfb2madden; see NOTICE.md"
+  ],
   "license": "MIT",
   "repository": {
     "type": "git",
