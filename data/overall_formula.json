@@ -1,19 +1,23 @@
 {
   "QB": {
-    "intercept": -66.98628546888449,
-    "r2": 0.9472952888558285,
+    "intercept": -91.34079944715813,
+    "r2": 0.9956850807012309,
     "archetype": "QB_Scrambler",
     "fitType": "archetype",
     "coefficients": {
-      "ThrowPowerRating": 0.44667111139922966,
-      "ThrowAccuracyShortRating": 0.2105133251735971,
-      "ThrowAccuracyMidRating": 0.3014603134820959,
-      "ThrowAccuracyDeepRating": -0.005798253166693801,
-      "ThrowOnTheRunRating": 0.30343500525045464,
-      "ThrowUnderPressureRating": 0.018475158078822496,
-      "PlayActionRating": 0.021069703541169105,
-      "BreakSackRating": 0.2625988150227814,
-      "AwarenessRating": 0.12117270973357108
+      "ThrowPowerRating": 0.453173075539258,
+      "ThrowAccuracyShortRating": 0.26806865507637667,
+      "ThrowAccuracyMidRating": 0.2839316952512565,
+      "ThrowAccuracyDeepRating": -0.009517817940654538,
+      "ThrowOnTheRunRating": 0.19066433245650316,
+      "ThrowUnderPressureRating": 0.13294131662687647,
+      "PlayActionRating": -0.000607395941379707,
+      "BreakSackRating": 0.20253943331694835,
+      "SpeedRating": 0.17451938953097468,
+      "AgilityRating": 0.046999646572032816,
+      "CarryingRating": 0.04323249502278159,
+      "BCVisionRating": 0.05887301256247213,
+      "AwarenessRating": 0.13813060540508104
     }
   },
   "HB": {
