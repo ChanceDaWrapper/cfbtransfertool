@@ -33,7 +33,11 @@
       "renderer/**/*",
       "data/**/*",
       "schema/**/*",
-      "node_modules/**/*"
+      "node_modules/**/*",
+      "NOTICE.md",
+      "README.md",
+      "LICENSE",
+      "CHANGELOG.md"
     ],
     "win": {
       "target": "nsis",
