@@ -85,6 +85,7 @@ function countSectionDiffs() {
 
   for (const pos of META.positions) {
     if (cfg.positionExtraDrop[pos] !== d.positionExtraDrop[pos]) weights++;
+    if (cfg.positionValue[pos] !== d.positionValue[pos]) weights++;
   }
   const capKeys = new Set([...Object.keys(cfg.positionCaps || {}), ...Object.keys(d.positionCaps || {})]);
   for (const pos of capKeys) {
@@ -109,6 +110,9 @@ function countSectionDiffs() {
   }
   for (const key of ['xfactorPercentTarget', 'superstarPercentTarget', 'starPercentTarget']) {
     if (cfg.devTraits[key] !== d.devTraits[key]) advanced++;
+  }
+  for (const key of ['positionValueWeight', 'awardsWeight', 'athleticismWeight', 'roundWeight']) {
+    if (cfg.draftValue[key] !== d.draftValue[key]) advanced++;
   }
 
   return { weights, physical, advanced };
@@ -164,6 +168,12 @@ function computeWarnings() {
   if (extremePositions.length) {
     const names = extremePositions.map((p) => META.positionLabels[p] || p).join(', ');
     msgs.push(`Position Weights for ${names} are set to an extreme value and may produce unrealistic ratings.`);
+  }
+
+  const extremeValue = META.positions.filter((p) => Math.abs(cfg.positionValue[p]) >= 12);
+  if (extremeValue.length) {
+    const names = extremeValue.map((p) => META.positionLabels[p] || p).join(', ');
+    msgs.push(`Draft Value for ${names} is set to an extreme value and may push them far outside where their overall would normally land.`);
   }
 
   if (g.classSize < 32) {
@@ -274,6 +284,20 @@ function buildWeightsPage() {
     if (defCap) tdCap.appendChild(el('span', 'default-ref', `default ${defCap}`));
     tr.appendChild(tdCap);
 
+    const tdValue = el('td');
+    const valueInput = numberInput(cfg.positionValue[pos], { step: 0.5, min: -20, max: 20 }, (v) => {
+      cfg.positionValue[pos] = v;
+      valueDot.style.visibility = v !== META.defaults.positionValue[pos] ? 'visible' : 'hidden';
+    });
+    valueInput.title = META.descriptions.positionValue;
+    tdValue.appendChild(valueInput);
+    tdValue.appendChild(el('span', 'default-ref', `default ${META.defaults.positionValue[pos]}`));
+    const valueDot = el('span', 'modified-dot', '●');
+    valueDot.title = 'Modified from default';
+    valueDot.style.visibility = cfg.positionValue[pos] !== META.defaults.positionValue[pos] ? 'visible' : 'hidden';
+    tdValue.appendChild(valueDot);
+    tr.appendChild(tdValue);
+
     tbody.appendChild(tr);
   }
 }
@@ -364,6 +388,17 @@ function buildAdvancedPage() {
     numberInput(cfg.devTraits.superstarPercentTarget, { step: 0.1, min: 0, max: 100 }, (v) => { cfg.devTraits.superstarPercentTarget = v; })));
   d.appendChild(knob('Star Target %', D['devTraits.starPercentTarget'],
     numberInput(cfg.devTraits.starPercentTarget, { step: 1, min: 0, max: 100 }, (v) => { cfg.devTraits.starPercentTarget = v; })));
+
+  const dv = $('advDraftValue');
+  dv.innerHTML = '';
+  dv.appendChild(knob('Position Value Weight', D['draftValue.positionValueWeight'],
+    numberInput(cfg.draftValue.positionValueWeight, { step: 0.25, min: 0, max: 5 }, (v) => { cfg.draftValue.positionValueWeight = v; })));
+  dv.appendChild(knob('Awards Weight', D['draftValue.awardsWeight'],
+    numberInput(cfg.draftValue.awardsWeight, { step: 0.1, min: 0, max: 5 }, (v) => { cfg.draftValue.awardsWeight = v; })));
+  dv.appendChild(knob('Athleticism Weight', D['draftValue.athleticismWeight'],
+    numberInput(cfg.draftValue.athleticismWeight, { step: 0.25, min: 0, max: 5 }, (v) => { cfg.draftValue.athleticismWeight = v; })));
+  dv.appendChild(knob('Projected Round Weight', D['draftValue.roundWeight'],
+    numberInput(cfg.draftValue.roundWeight, { step: 0.25, min: 0, max: 5 }, (v) => { cfg.draftValue.roundWeight = v; })));
 }
 
 function rebuildAllPages() {
@@ -384,6 +419,7 @@ async function resetSection(mutate) {
 $('resetWeights').addEventListener('click', () => resetSection(() => {
   cfg.positionExtraDrop = JSON.parse(JSON.stringify(META.defaults.positionExtraDrop));
   cfg.positionCaps = JSON.parse(JSON.stringify(META.defaults.positionCaps));
+  cfg.positionValue = JSON.parse(JSON.stringify(META.defaults.positionValue));
 }));
 $('resetPhysical').addEventListener('click', () => resetSection(() => {
   cfg.ratingAdjustments = JSON.parse(JSON.stringify(META.defaults.ratingAdjustments));
@@ -395,6 +431,7 @@ $('resetPhysical').addEventListener('click', () => resetSection(() => {
 $('resetAdvanced').addEventListener('click', () => resetSection(() => {
   cfg.bell = JSON.parse(JSON.stringify(META.defaults.bell));
   cfg.devTraits = JSON.parse(JSON.stringify(META.defaults.devTraits));
+  cfg.draftValue = JSON.parse(JSON.stringify(META.defaults.draftValue));
   cfg.general.classSize = META.defaults.general.classSize;
   cfg.general.seed = META.defaults.general.seed;
   cfg.kpAwarenessCap = META.defaults.kpAwarenessCap;

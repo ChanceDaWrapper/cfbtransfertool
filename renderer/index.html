@@ -164,10 +164,10 @@
         </div>
       </header>
       <div class="card">
-        <p class="hint compact"><strong>Extra Drop</strong> = toughness dial for the position (higher = weaker, lower/negative = stronger). <strong>Class Cap</strong> = max players at that position in the class (blank = no limit).</p>
+        <p class="hint compact"><strong>Extra Drop</strong> = toughness dial for the position (higher = weaker, lower/negative = stronger). <strong>Class Cap</strong> = max players at that position in the class (blank = no limit). <strong>Draft Value</strong> = draft-ORDER-only bump/penalty for the position (doesn't touch ratings -- just where they land in the class, positive = drafted earlier, negative = later).</p>
         <table class="config-table" id="weightsTable">
           <thead>
-            <tr><th>Position</th><th></th><th>Extra Drop <span class="th-hint">(default shown right)</span></th><th>Class Cap</th></tr>
+            <tr><th>Position</th><th></th><th>Extra Drop <span class="th-hint">(default shown right)</span></th><th>Class Cap</th><th>Draft Value <span class="th-hint">(default shown right)</span></th></tr>
           </thead>
           <tbody></tbody>
         </table>
@@ -230,6 +230,12 @@
         <h2>Development Traits</h2>
         <p class="hint compact">Controls how Normal, Star, Superstar, and X-Factor dev traits get handed out across the class.</p>
         <div class="knob-grid" id="advDev"></div>
+      </div>
+
+      <div class="card">
+        <h2>Draft Projection <span class="badge-info">draft order only</span></h2>
+        <p class="hint compact">Where a player lands in the class (round/pick) can come from more than just overall -- CFB's own projected round, career awards, elite measurables, and position value all factor in. None of this touches a player's ratings.</p>
+        <div class="knob-grid" id="advDraftValue"></div>
       </div>
     </section>
 
