@@ -1,6 +1,6 @@
 {
   "name": "cfb-transfer-application",
-  "version": "1.0.0",
+  "version": "0.1.0",
   "description": "GUI app for transferring draft classes (and eventually stats/scouting) from EA SPORTS College Football 27 into Madden NFL 26 franchise saves.",
   "main": "main.js",
   "scripts": {
