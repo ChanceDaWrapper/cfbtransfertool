@@ -8,14 +8,14 @@ let players = [];       // last generated class
 let sortKey = 'Rank', sortDir = 1;
 
 // Columns hidden by the "Hide Adjusted Stats" toggle -- lets a user look at
-// a class without seeing the direct payoff of whatever they just tuned. The
-// user's chosen Additional Column is always part of this set too, since it's
-// just as much an "adjusted stat" as the fixed ones.
+// a class without seeing the direct payoff of whatever they just tuned. Every
+// Madden_* rating column is just as much an "adjusted stat" as the fixed
+// ones, so this gets filled in with all of them once META arrives (see init).
 const HIDDEN_WHEN_TOGGLED = new Set([
   'DevTrait', 'Madden_SpeedRating', 'Madden_StrengthRating', 'Madden_AgilityRating', 'Madden_AwarenessRating',
+  'EstMaddenOverall',
 ]);
 let hideStats = localStorage.getItem('hideAdjustedStats') === 'true';
-let extraColumnKey = localStorage.getItem('extraColumnKey') || '';
 
 const $ = (id) => document.getElementById(id);
 const el = (tag, cls, text) => {
@@ -535,7 +535,7 @@ $('writeBtn').addEventListener('click', async () => {
 });
 
 /* ---------------- results table ---------------- */
-const COLUMNS = [
+const BASE_COLUMNS = [
   { key: 'Rank', label: '#', num: true },
   { key: 'FirstName', label: 'First' },
   { key: 'LastName', label: 'Last' },
@@ -543,6 +543,7 @@ const COLUMNS = [
   { key: 'FormerTeam', label: 'College' },
   { key: 'ProjectRound', label: 'Rd', num: true },
   { key: 'CFB_Overall', label: 'CFB OVR', num: true },
+  { key: 'EstMaddenOverall', label: 'Est. Madden OVR', num: true },
   { key: 'DevTrait', label: 'Dev' },
   { key: 'Age', label: 'Age', num: true },
   { key: 'Height', label: 'Ht', num: true },
@@ -553,6 +554,11 @@ const COLUMNS = [
   { key: 'Madden_AwarenessRating', label: 'AWR', num: true },
 ];
 
+// Every other rating, always shown alongside the base columns now -- filled
+// in from META.additionalColumns once it arrives in init(). No more picking
+// one at a time; the whole class's full rating sheet is always on screen.
+let ALL_RATING_COLUMNS = [];
+
 function formatHeight(h) {
   const n = Number(h);
   if (!n) return '';
@@ -560,16 +566,13 @@ function formatHeight(h) {
 }
 
 function currentColumns() {
-  if (!extraColumnKey) return COLUMNS;
-  const opt = (META.additionalColumns || []).find((c) => c.key === extraColumnKey);
-  if (!opt) return COLUMNS;
-  return COLUMNS.concat([{ key: opt.key, label: opt.label, num: true, extra: true }]);
+  return BASE_COLUMNS.concat(ALL_RATING_COLUMNS);
 }
 
 function visibleColumns() {
   const cols = currentColumns();
   if (!hideStats) return cols;
-  return cols.filter((c) => !HIDDEN_WHEN_TOGGLED.has(c.key) && !c.extra);
+  return cols.filter((c) => !HIDDEN_WHEN_TOGGLED.has(c.key));
 }
 
 function buildResultsHeader() {
@@ -692,14 +695,6 @@ hideStatsToggle.addEventListener('change', () => {
   if (players.length) renderResults();
 });
 
-/* ---------------- additional draft class column ---------------- */
-const extraColumnSelect = $('extraColumnSelect');
-extraColumnSelect.addEventListener('change', () => {
-  extraColumnKey = extraColumnSelect.value;
-  localStorage.setItem('extraColumnKey', extraColumnKey);
-  if (players.length) renderResults();
-});
-
 /* ---------------- init ---------------- */
 (async function init() {
   META = await window.api.configGet();
@@ -712,15 +707,7 @@ extraColumnSelect.addEventListener('change', () => {
     posSel.appendChild(o);
   }
 
-  for (const c of (META.additionalColumns || [])) {
-    const o = el('option'); o.value = c.key; o.textContent = c.label;
-    extraColumnSelect.appendChild(o);
-  }
-  if ((META.additionalColumns || []).some((c) => c.key === extraColumnKey)) {
-    extraColumnSelect.value = extraColumnKey;
-  } else {
-    extraColumnKey = '';
-  }
+  ALL_RATING_COLUMNS = (META.additionalColumns || []).map((c) => ({ key: c.key, label: c.label, num: true }));
 
   rebuildAllPages();
   onConfigChanged();

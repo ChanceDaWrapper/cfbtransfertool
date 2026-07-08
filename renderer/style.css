@@ -399,17 +399,6 @@ input[type="number"] { width: 90px; text-align: right; font-family: var(--mono);
 .results-toolbar input[type="search"] { width: 220px; }
 .row-count { margin-left: auto; font-size: 12px; color: var(--text-faint); }
 
-.extra-col-label {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  font-size: 11px;
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
-  color: var(--text-faint);
-}
-.extra-col-label select { font-size: 12px; padding: 6px 8px; text-transform: none; letter-spacing: normal; }
-
 .table-scroll { overflow: auto; max-height: calc(100vh - 320px); }
 
 .results-table { width: 100%; border-collapse: collapse; font-size: 12.5px; }
@@ -436,6 +425,28 @@ input[type="number"] { width: 90px; text-align: right; font-family: var(--mono);
 }
 .results-table tr:hover td { background: #1c202a; }
 .num { font-family: var(--mono); font-size: 12px; text-align: right; }
+
+/* First/Last name (columns 2 and 3) stay put when scrolling horizontally
+   through the ~60 rating columns, so you always know whose row you're on. */
+.results-table th:nth-child(2), .results-table td:nth-child(2),
+.results-table th:nth-child(3), .results-table td:nth-child(3) {
+  position: sticky;
+  width: 110px; min-width: 110px; max-width: 110px;
+  overflow: hidden; text-overflow: ellipsis;
+}
+.results-table th:nth-child(2), .results-table td:nth-child(2) { left: 0; }
+.results-table th:nth-child(3), .results-table td:nth-child(3) { left: 110px; }
+.results-table td:nth-child(2), .results-table td:nth-child(3) {
+  background: var(--bg-raised);
+  z-index: 1;
+}
+.results-table th:nth-child(2), .results-table th:nth-child(3) {
+  z-index: 3; /* above both the plain sticky header row and the sticky name columns */
+}
+.results-table tr:hover td:nth-child(2), .results-table tr:hover td:nth-child(3) {
+  background: #1c202a;
+}
+.results-table td:nth-child(3) { border-right: 1px solid var(--border-strong); }
 
 .dev-badge {
   font-size: 10.5px;

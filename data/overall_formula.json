@@ -1,0 +1,343 @@
+{
+  "QB": {
+    "intercept": -66.98628546888449,
+    "r2": 0.9472952888558285,
+    "archetype": "QB_Scrambler",
+    "fitType": "archetype",
+    "coefficients": {
+      "ThrowPowerRating": 0.44667111139922966,
+      "ThrowAccuracyShortRating": 0.2105133251735971,
+      "ThrowAccuracyMidRating": 0.3014603134820959,
+      "ThrowAccuracyDeepRating": -0.005798253166693801,
+      "ThrowOnTheRunRating": 0.30343500525045464,
+      "ThrowUnderPressureRating": 0.018475158078822496,
+      "PlayActionRating": 0.021069703541169105,
+      "BreakSackRating": 0.2625988150227814,
+      "AwarenessRating": 0.12117270973357108
+    }
+  },
+  "HB": {
+    "intercept": -137.57639610459546,
+    "r2": 0.9908705602240083,
+    "archetype": "HB_ElusiveBack",
+    "fitType": "archetype",
+    "coefficients": {
+      "SpeedRating": 0.35181149056143823,
+      "AccelerationRating": 0.33202597329439953,
+      "AgilityRating": 0.45456134487911015,
+      "BCVisionRating": 0.26690148095826416,
+      "BreakTackleRating": 0.13319674367463108,
+      "CarryingRating": 0.27177858154339063,
+      "JukeMoveRating": 0.21988309855930854,
+      "SpinMoveRating": 0.22919677598479993,
+      "TruckingRating": -0.0005053334945106513,
+      "StiffArmRating": -0.008649622481455399,
+      "AwarenessRating": 0.2690162076113296
+    }
+  },
+  "FB": {
+    "intercept": -23.337735048415652,
+    "r2": 0.8832195177804184,
+    "archetype": "FB_Utility",
+    "fitType": "archetype",
+    "coefficients": {
+      "RunBlockRating": 0.08336836655269053,
+      "LeadBlockRating": 0.12093221971715451,
+      "ImpactBlockingRating": 0.24431335041366964,
+      "StrengthRating": 0.16797802733342238,
+      "CarryingRating": 0.3713906100732345,
+      "AwarenessRating": 0.34573140320333096
+    }
+  },
+  "WR": {
+    "intercept": -46.53102304861454,
+    "r2": 0.8384133600561037,
+    "archetype": "WR_Playmaker",
+    "fitType": "archetype",
+    "coefficients": {
+      "SpeedRating": 0.2569791979022962,
+      "AccelerationRating": 0.247537679992611,
+      "CatchingRating": 0.161428091475889,
+      "ShortRouteRunningRating": 0.1804579479092041,
+      "MediumRouteRunningRating": 0.14719286180823588,
+      "DeepRouteRunningRating": 0.12214757655968356,
+      "CatchInTrafficRating": -0.016096594282920762,
+      "SpectacularCatchRating": 0.19916615826805995,
+      "ReleaseRating": 0.08675073204219075,
+      "AwarenessRating": 0.09631279924991532
+    }
+  },
+  "TE": {
+    "intercept": -58.694891667224056,
+    "r2": 0.9738627468664148,
+    "archetype": "TE_VerticalThreat",
+    "fitType": "archetype",
+    "coefficients": {
+      "CatchingRating": 0.1718274895590639,
+      "MediumRouteRunningRating": 0.3650598516488799,
+      "ShortRouteRunningRating": 0.14446356536635818,
+      "RunBlockRating": 0.1829404722013256,
+      "ImpactBlockingRating": 0.04956389557844432,
+      "StrengthRating": -0.026244050704457678,
+      "SpeedRating": 0.3823856985908378,
+      "CatchInTrafficRating": 0.2794208443597981,
+      "AwarenessRating": 0.23350362931901714
+    }
+  },
+  "LT": {
+    "intercept": -45.4177556588711,
+    "r2": 0.9640937270904881,
+    "archetype": "OT_Agile",
+    "fitType": "archetype",
+    "coefficients": {
+      "PassBlockRating": 0.0772301324338116,
+      "PassBlockPowerRating": 0.02380098347836679,
+      "PassBlockFinesseRating": 0.44961065638682385,
+      "RunBlockRating": 0.4432849066182598,
+      "RunBlockPowerRating": 0.07047384852317151,
+      "StrengthRating": 0.31331736715543457,
+      "AwarenessRating": 0.12845511057673775
+    }
+  },
+  "RT": {
+    "intercept": -38.89156738271049,
+    "r2": 0.9962463003048438,
+    "archetype": "OT_Power",
+    "fitType": "archetype",
+    "coefficients": {
+      "PassBlockRating": 0.013365247749682396,
+      "PassBlockPowerRating": 0.3557628880712542,
+      "PassBlockFinesseRating": 0.0209237683443817,
+      "RunBlockRating": 0.16036963795905024,
+      "RunBlockPowerRating": 0.4016321392524902,
+      "StrengthRating": 0.26898261252661193,
+      "AwarenessRating": 0.19541991774750045
+    }
+  },
+  "LG": {
+    "intercept": -39.8078885426155,
+    "r2": 0.9385134525090888,
+    "archetype": "G_Power",
+    "fitType": "archetype",
+    "coefficients": {
+      "RunBlockRating": 0.07348901107823913,
+      "RunBlockPowerRating": 0.45670026305853817,
+      "RunBlockFinesseRating": 0.030586053703103744,
+      "PassBlockRating": 0.27354251624538506,
+      "ImpactBlockingRating": 0.14862294109096297,
+      "StrengthRating": 0.26000634280017,
+      "AwarenessRating": 0.18879255005873574
+    }
+  },
+  "RG": {
+    "intercept": -36.55611630705198,
+    "r2": 0.9667172976669259,
+    "archetype": "G_Power",
+    "fitType": "archetype",
+    "coefficients": {
+      "RunBlockRating": 0.34121861999162206,
+      "RunBlockPowerRating": 0.3157920294517389,
+      "RunBlockFinesseRating": -0.04584303132533307,
+      "PassBlockRating": 0.23260828241658515,
+      "ImpactBlockingRating": 0.12106175730938773,
+      "StrengthRating": 0.20362038881219746,
+      "AwarenessRating": 0.22768419044945176
+    }
+  },
+  "C": {
+    "intercept": -28.147170947548602,
+    "r2": 0.9615194672795484,
+    "archetype": "C_Agile",
+    "fitType": "archetype",
+    "coefficients": {
+      "RunBlockRating": 0.1974089832306163,
+      "RunBlockPowerRating": -0.13956909719533428,
+      "RunBlockFinesseRating": 0.5891201946710112,
+      "PassBlockRating": 0.27309697880967576,
+      "ImpactBlockingRating": 0.1835187074576039,
+      "AwarenessRating": 0.18281833466357966
+    }
+  },
+  "LE": {
+    "intercept": -47.824926836073246,
+    "r2": 0.9901881471675837,
+    "archetype": "DE_SmallerSpeedRusher",
+    "fitType": "archetype",
+    "coefficients": {
+      "FinesseMovesRating": 0.42054581762749876,
+      "PowerMovesRating": -0.04997314172844369,
+      "SpeedRating": 0.38598594588302504,
+      "StrengthRating": 0.054083772466199775,
+      "BlockSheddingRating": -0.03467106375995854,
+      "PursuitRating": 0.14723738528815744,
+      "TackleRating": 0.3132905444710872,
+      "AwarenessRating": 0.3141754381038879
+    }
+  },
+  "RE": {
+    "intercept": -42.53549467020275,
+    "r2": 0.9698282986326989,
+    "archetype": "DE_SmallerSpeedRusher",
+    "fitType": "archetype",
+    "coefficients": {
+      "FinesseMovesRating": 0.40442415826523614,
+      "PowerMovesRating": 0.07540709223961528,
+      "SpeedRating": 0.3501243549395614,
+      "StrengthRating": -0.0075895919565227565,
+      "BlockSheddingRating": -0.02078363588376675,
+      "PursuitRating": 0.16729190147970385,
+      "TackleRating": 0.29674578421960973,
+      "AwarenessRating": 0.22392343016051086
+    }
+  },
+  "DT": {
+    "intercept": -52.158303757735666,
+    "r2": 0.9103599452132469,
+    "archetype": "DT_NoseTackle",
+    "fitType": "archetype",
+    "coefficients": {
+      "PowerMovesRating": -0.0216860468316753,
+      "StrengthRating": 0.44441892270271843,
+      "BlockSheddingRating": 0.4593604611284121,
+      "TackleRating": 0.2643255665917206,
+      "PursuitRating": 0.23461906680902445,
+      "AwarenessRating": 0.18084318654058507
+    }
+  },
+  "LOLB": {
+    "intercept": -50.892154561943244,
+    "r2": 0.976835823513792,
+    "archetype": "OLB_RunStopper",
+    "fitType": "archetype",
+    "coefficients": {
+      "SpeedRating": 0.2572322824035993,
+      "PursuitRating": 0.26894718929980854,
+      "TackleRating": 0.3006588325340829,
+      "BlockSheddingRating": 0.4205826913159285,
+      "ManCoverageRating": 0.09407048850214039,
+      "ZoneCoverageRating": 0.04490533564784016,
+      "PlayRecognitionRating": 0.1929504891266447,
+      "AwarenessRating": 0.028785428278183645
+    }
+  },
+  "ROLB": {
+    "intercept": -59.658178618899,
+    "r2": 0.9867842275724219,
+    "archetype": "OLB_RunStopper",
+    "fitType": "archetype",
+    "coefficients": {
+      "SpeedRating": 0.3375558056155583,
+      "PursuitRating": 0.24503218154899287,
+      "TackleRating": 0.39205623201400375,
+      "BlockSheddingRating": 0.3145876851662166,
+      "ManCoverageRating": 0.08566228588134095,
+      "ZoneCoverageRating": 0.07842540770954542,
+      "PlayRecognitionRating": 0.21670485044387533,
+      "AwarenessRating": 0.039162612614518366
+    }
+  },
+  "MLB": {
+    "intercept": -34.06945492480827,
+    "r2": 0.9568624882700125,
+    "archetype": "MLB_RunStopper",
+    "fitType": "archetype",
+    "coefficients": {
+      "TackleRating": 0.5701046551647302,
+      "PursuitRating": 0.12632625420450339,
+      "PlayRecognitionRating": 0.2563925515773917,
+      "ZoneCoverageRating": 0.031170327034693912,
+      "HitPowerRating": -0.03823288002372749,
+      "BlockSheddingRating": 0.35902960879039014,
+      "AwarenessRating": 0.06533818159039129
+    }
+  },
+  "CB": {
+    "intercept": -71.90708360134522,
+    "r2": 0.9865226219195565,
+    "archetype": "CB_Zone",
+    "fitType": "archetype",
+    "coefficients": {
+      "SpeedRating": 0.34083303061670733,
+      "AccelerationRating": 0.4183322235066669,
+      "ManCoverageRating": 0.05997548668639752,
+      "ZoneCoverageRating": 0.3829868733657875,
+      "PressRating": 0.1055622687954525,
+      "PlayRecognitionRating": 0.14387070838401428,
+      "AgilityRating": 0.10314018334569397,
+      "AwarenessRating": 0.21366937252628304
+    }
+  },
+  "FS": {
+    "intercept": -43.790226205099316,
+    "r2": 0.9955780118154941,
+    "archetype": "S_Zone",
+    "fitType": "archetype",
+    "coefficients": {
+      "SpeedRating": 0.35238106305789785,
+      "ZoneCoverageRating": 0.3640025348806546,
+      "ManCoverageRating": 0.03191435716903612,
+      "PlayRecognitionRating": 0.04615581589848716,
+      "TackleRating": 0.1725839046326314,
+      "HitPowerRating": 0.01599969664493983,
+      "PursuitRating": 0.17838493622431884,
+      "CatchingRating": 0.021282921085088446,
+      "SpectacularCatchRating": 0.006842860427695996,
+      "CatchInTrafficRating": -0.005269273278727837,
+      "BreakTackleRating": 0.01562996959492935,
+      "AwarenessRating": 0.32986144523374605
+    }
+  },
+  "SS": {
+    "intercept": -58.835464672536546,
+    "r2": 0.9915737191371725,
+    "archetype": "S_Zone",
+    "fitType": "archetype",
+    "coefficients": {
+      "SpeedRating": 0.49647695637423794,
+      "ZoneCoverageRating": 0.4170810844404116,
+      "ManCoverageRating": 0.02695576775209929,
+      "PlayRecognitionRating": 0.0043851841032847005,
+      "TackleRating": 0.12663713130552878,
+      "HitPowerRating": -0.009483452232331047,
+      "PursuitRating": 0.23206234447376772,
+      "CatchingRating": 0.021452208255539063,
+      "SpectacularCatchRating": 0.007699531132733695,
+      "CatchInTrafficRating": 0.0056230932450560545,
+      "BreakTackleRating": -0.019607717279484405,
+      "AwarenessRating": 0.37965784190464547
+    }
+  },
+  "K": {
+    "intercept": -11.363034064226667,
+    "r2": 0.9942997410204409,
+    "archetype": "KP_Power",
+    "fitType": "archetype",
+    "coefficients": {
+      "KickPowerRating": 0.41119807200860237,
+      "KickAccuracyRating": 0.23566382295584276,
+      "AwarenessRating": 0.465425006888438
+    }
+  },
+  "P": {
+    "intercept": -11.857976990285351,
+    "r2": 0.9968157898411264,
+    "archetype": "KP_Power",
+    "fitType": "archetype",
+    "coefficients": {
+      "KickPowerRating": 0.40947427698666417,
+      "KickAccuracyRating": 0.24275359037866195,
+      "AwarenessRating": 0.46829089584969097
+    }
+  },
+  "LS": {
+    "intercept": -8.167996183508649,
+    "r2": 0.9542651576331868,
+    "archetype": "LS_Accurate",
+    "fitType": "archetype",
+    "coefficients": {
+      "LongSnapRating": 0.6517740936286671,
+      "StrengthRating": 0.1114275976966752,
+      "AwarenessRating": 0.2763320525467776
+    }
+  }
+}
