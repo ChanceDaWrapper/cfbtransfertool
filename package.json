@@ -14,7 +14,6 @@
     "url": "https://github.com/ChanceDaWrapper/cfbtransfertool.git"
   },
   "dependencies": {
-    "@toondepauw/node-zstd": "^1.2.0",
     "madden-franchise": "^3.8.0"
   },
   "devDependencies": {
