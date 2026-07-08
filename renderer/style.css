@@ -464,6 +464,12 @@ input[type="number"] { width: 90px; text-align: right; font-family: var(--mono);
 .round-2 { color: #d7d7e0; font-weight: 600; }
 .round-3 { color: #d3a05f; }
 
+/* Two-color rating highlight: gold for a position's key ratings (same
+   language as the round-1 highlight), blue for the universal physical
+   ratings -- visually distinct so it's obvious which is which at a glance. */
+.key-rating-position { color: #ffd700; font-weight: 700; }
+.key-rating-physical { color: #5b9dff; font-weight: 700; }
+
 .badge-info {
   font-size: 10px;
   font-weight: 600;

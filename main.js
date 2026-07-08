@@ -9,7 +9,9 @@ const {
 const { ConfigStore } = require('./lib/configStore');
 const {
   DEFAULT_CONFIG, DESCRIPTIONS, POSITIONS, POSITION_LABELS,
-  PHYSICAL_RATINGS, RATING_LABELS, ADDITIONAL_COLUMNS, mergeConfig,
+  PHYSICAL_RATINGS, RATING_LABELS, ALL_RATING_COLUMNS,
+  PHYSICAL_HIGHLIGHT_ATTRIBUTES, PHYSICAL_HIGHLIGHT_EXTRA_BY_POSITION,
+  POSITION_KEY_ATTRIBUTES, mergeConfig,
 } = require('./lib/defaults');
 
 let mainWindow;
@@ -90,7 +92,10 @@ ipcMain.handle('config-get', () => ({
   positionLabels: POSITION_LABELS,
   physicalRatings: PHYSICAL_RATINGS,
   ratingLabels: RATING_LABELS,
-  additionalColumns: ADDITIONAL_COLUMNS,
+  allRatingColumns: ALL_RATING_COLUMNS,
+  physicalHighlightAttributes: PHYSICAL_HIGHLIGHT_ATTRIBUTES,
+  physicalHighlightExtraByPosition: PHYSICAL_HIGHLIGHT_EXTRA_BY_POSITION,
+  positionKeyAttributes: POSITION_KEY_ATTRIBUTES,
 }));
 
 ipcMain.handle('config-set', (_e, config) => configStore.save(config));

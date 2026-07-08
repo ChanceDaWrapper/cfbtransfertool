@@ -585,15 +585,11 @@ const BASE_COLUMNS = [
   { key: 'Age', label: 'Age', num: true },
   { key: 'Height', label: 'Ht', num: true },
   { key: 'Weight', label: 'Wt', num: true },
-  { key: 'Madden_SpeedRating', label: 'SPD', num: true },
-  { key: 'Madden_StrengthRating', label: 'STR', num: true },
-  { key: 'Madden_AgilityRating', label: 'AGI', num: true },
-  { key: 'Madden_AwarenessRating', label: 'AWR', num: true },
 ];
 
-// Every other rating, always shown alongside the base columns now -- filled
-// in from META.additionalColumns once it arrives in init(). No more picking
-// one at a time; the whole class's full rating sheet is always on screen.
+// Every rating, in the grouped display order from META.allRatingColumns
+// (filled in once it arrives in init()) -- related ratings sit together
+// (Speed & Athleticism, Throwing, Catching, ...) instead of alphabetically.
 let ALL_RATING_COLUMNS = [];
 
 function formatHeight(h) {
@@ -633,6 +629,25 @@ function buildResultsHeader() {
   thead.appendChild(tr);
 }
 
+// Two-color highlight lookups, built once per position and cached -- Physical
+// (same handful of measurables for every position, plus Throw Power for QBs)
+// and Position-specific (the ratings that matter most for that position's
+// evaluation, defined in lib/defaults.js POSITION_KEY_ATTRIBUTES so they're
+// easy to find and edit in one place). A cell only ever gets one of the two.
+const _highlightSetCache = new Map();
+function highlightSetsFor(position) {
+  if (_highlightSetCache.has(position)) return _highlightSetCache.get(position);
+  const physical = new Set(
+    (META.physicalHighlightAttributes || []).concat(
+      (META.physicalHighlightExtraByPosition && META.physicalHighlightExtraByPosition[position]) || []
+    )
+  );
+  const positionKey = new Set((META.positionKeyAttributes && META.positionKeyAttributes[position]) || []);
+  const sets = { physical, positionKey };
+  _highlightSetCache.set(position, sets);
+  return sets;
+}
+
 function renderResults() {
   const cols = visibleColumns();
   if (!cols.some((c) => c.key === sortKey)) { sortKey = 'Rank'; sortDir = 1; }
@@ -665,8 +680,15 @@ function renderResults() {
   const frag = document.createDocumentFragment();
   for (const p of rows) {
     const tr = el('tr');
+    const { physical, positionKey } = highlightSetsFor(p.CFB_Position);
     for (const c of cols) {
-      const td = el('td', c.num ? 'num' : '');
+      let cls = c.num ? 'num' : '';
+      if (c.key.startsWith('Madden_')) {
+        const name = c.key.slice('Madden_'.length);
+        if (physical.has(name)) cls += ' key-rating-physical';
+        else if (positionKey.has(name)) cls += ' key-rating-position';
+      }
+      const td = el('td', cls.trim());
       let v = p[c.key];
       if (c.key === 'DevTrait') {
         const badge = el('span', `dev-badge dev-${v}`, v === 'XFactor' ? 'X-FACTOR' : String(v).toUpperCase());
@@ -691,7 +713,7 @@ function renderResults() {
   $('rowCount').textContent = `${rows.length} of ${players.length} players`;
   if (!resultsStale) {
     $('resultsSummary').textContent =
-      `${players.length} players generated. Round-1 grades in gold, dev traits color-coded. Click headers to sort.`;
+      `${players.length} players generated. Physical ratings in blue, position-key ratings in gold, dev traits color-coded. Click headers to sort.`;
   }
 }
 
@@ -744,7 +766,7 @@ hideStatsToggle.addEventListener('change', () => {
     posSel.appendChild(o);
   }
 
-  ALL_RATING_COLUMNS = (META.additionalColumns || []).map((c) => ({ key: c.key, label: c.label, num: true }));
+  ALL_RATING_COLUMNS = (META.allRatingColumns || []).map((c) => ({ key: c.key, label: c.label, num: true }));
 
   rebuildAllPages();
   onConfigChanged();
