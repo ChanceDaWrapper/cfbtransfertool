@@ -129,16 +129,18 @@ ipcMain.handle('config-import', async () => {
 
 // --- pipeline ------------------------------------------------------------
 
-ipcMain.handle('extract-pool', async (_e, { sourcePath, sourceType }) => {
+ipcMain.handle('extract-pool', async (_e, { sourcePath, sourceType, forceSource }) => {
   try {
     if (sourceType === 'csv') {
       cachedPool = loadDepartedCsv(sourcePath, sendLog);
     } else {
       sendLog('Reading CFB dynasty save (this can take a moment)...');
-      cachedPool = await extractLeavingPlayers(sourcePath, sendLog);
+      cachedPool = await extractLeavingPlayers(sourcePath, sendLog, { forceSource: forceSource || null });
     }
     cachedPoolSource = sourcePath;
-    return { ok: true, count: cachedPool.length, source: sourcePath };
+    // detectedSource: 'leaving' (official EA declarations) | 'synthesized'
+    // (predicted, pre-declaration dynasty) | null for CSV pools, which have no concept of this.
+    return { ok: true, count: cachedPool.length, source: sourcePath, detectedSource: cachedPool.source || null };
   } catch (e) {
     cachedPool = null; cachedPoolSource = null;
     return { ok: false, error: e.message || String(e) };

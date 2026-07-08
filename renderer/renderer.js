@@ -16,6 +16,7 @@ const HIDDEN_WHEN_TOGGLED = new Set([
   'EstMaddenOverall',
 ]);
 let hideStats = localStorage.getItem('hideAdjustedStats') === 'true';
+let showCareerStats = localStorage.getItem('showCareerStats') === 'true';
 
 const $ = (id) => document.getElementById(id);
 const el = (tag, cls, text) => {
@@ -111,7 +112,7 @@ function countSectionDiffs() {
   for (const key of ['xfactorPercentTarget', 'superstarPercentTarget', 'starPercentTarget']) {
     if (cfg.devTraits[key] !== d.devTraits[key]) advanced++;
   }
-  for (const key of ['positionValueWeight', 'awardsWeight', 'athleticismWeight', 'roundWeight']) {
+  for (const key of ['positionValueWeight', 'awardsWeight', 'athleticismWeight', 'productionWeight', 'roundWeight', 'boardVariance', 'generationalEnabled']) {
     if (cfg.draftValue[key] !== d.draftValue[key]) advanced++;
   }
 
@@ -235,6 +236,14 @@ function numberInput(value, { step = 1, min, max, blankable = false } = {}, onCh
     onChange(v);
     scheduleSave();
   });
+  return inp;
+}
+
+function checkboxInput(checked, onChange) {
+  const inp = el('input');
+  inp.type = 'checkbox';
+  inp.checked = !!checked;
+  inp.addEventListener('change', () => { onChange(inp.checked); scheduleSave(); });
   return inp;
 }
 
@@ -399,6 +408,12 @@ function buildAdvancedPage() {
     numberInput(cfg.draftValue.athleticismWeight, { step: 0.25, min: 0, max: 5 }, (v) => { cfg.draftValue.athleticismWeight = v; })));
   dv.appendChild(knob('Projected Round Weight', D['draftValue.roundWeight'],
     numberInput(cfg.draftValue.roundWeight, { step: 0.25, min: 0, max: 5 }, (v) => { cfg.draftValue.roundWeight = v; })));
+  dv.appendChild(knob('Production Weight', D['draftValue.productionWeight'],
+    numberInput(cfg.draftValue.productionWeight, { step: 0.25, min: 0, max: 10 }, (v) => { cfg.draftValue.productionWeight = v; })));
+  dv.appendChild(knob('Board Variance', D['draftValue.boardVariance'],
+    numberInput(cfg.draftValue.boardVariance, { step: 0.25, min: 0, max: 10 }, (v) => { cfg.draftValue.boardVariance = v; })));
+  dv.appendChild(knob('Generational Prospect', D['draftValue.generationalEnabled'],
+    checkboxInput(cfg.draftValue.generationalEnabled, (v) => { cfg.draftValue.generationalEnabled = v; })));
 }
 
 function rebuildAllPages() {
@@ -472,15 +487,29 @@ function setGenStatus(text, cls) {
   c.className = 'status-chip ' + (cls || 'empty');
 }
 
+let sourceMode = 'auto'; // 'auto' | 'leaving' | 'synthesized' -- manual override for dynasty stage detection
+document.querySelectorAll('input[name="sourceMode"]').forEach((r) => {
+  r.addEventListener('change', (e) => { sourceMode = e.target.value; });
+});
+
+const SOURCE_LABELS = {
+  leaving: 'official declarations',
+  synthesized: 'predicted declarations (early dynasty)',
+};
+
 async function loadPool(sourceType) {
   const file = await window.api.pickFile(sourceType === 'csv'
     ? { title: 'Select departed-players CSV', filters: [{ name: 'CSV', extensions: ['csv'] }] }
     : { title: 'Select your CFB 27 dynasty save', defaultDir: defaultDirs.cfb });
   if (!file) return;
   setPoolStatus('Loading…', 'busy');
-  const res = await window.api.extractPool({ sourcePath: file, sourceType });
+  const res = await window.api.extractPool({
+    sourcePath: file, sourceType,
+    forceSource: sourceType === 'save' && sourceMode !== 'auto' ? sourceMode : null,
+  });
   if (res.ok) {
-    setPoolStatus(`${res.count} players loaded — ${res.source.split(/[\\/]/).pop()}`, 'ok');
+    const label = res.detectedSource ? ` — ${SOURCE_LABELS[res.detectedSource] || res.detectedSource}` : '';
+    setPoolStatus(`${res.count} players loaded${label}`, 'ok');
     $('generateBtn').disabled = false;
     toast(`Pool loaded: ${res.count} players`);
   } else {
@@ -579,12 +608,32 @@ const BASE_COLUMNS = [
   { key: 'CFB_Position', label: 'Pos' },
   { key: 'FormerTeam', label: 'College' },
   { key: 'ProjectRound', label: 'Rd', num: true },
+  { key: 'DraftPick', label: 'Pick', num: true },
   { key: 'CFB_Overall', label: 'CFB OVR', num: true },
   { key: 'EstMaddenOverall', label: 'Est. Madden OVR', num: true },
   { key: 'DevTrait', label: 'Dev' },
+  { key: 'Profile', label: 'Profile' },
+  { key: 'ProdScore', label: 'Prod', num: true },
+  { key: 'AthScore', label: 'Ath', num: true },
   { key: 'Age', label: 'Age', num: true },
   { key: 'Height', label: 'Ht', num: true },
   { key: 'Weight', label: 'Wt', num: true },
+];
+
+// Columns hidden by default (available via horizontal scroll / sort, but not
+// clutter for a first look) -- career production totals, one per stat, only
+// meaningful for the position that has them so most cells are blank.
+const CAREER_STAT_COLUMNS = [
+  { key: 'career.passYds', label: 'Pass Yds', num: true },
+  { key: 'career.passTds', label: 'Pass TD', num: true },
+  { key: 'career.rushYds', label: 'Rush Yds', num: true },
+  { key: 'career.rushTds', label: 'Rush TD', num: true },
+  { key: 'career.recYds', label: 'Rec Yds', num: true },
+  { key: 'career.recTds', label: 'Rec TD', num: true },
+  { key: 'career.recCatches', label: 'Rec', num: true },
+  { key: 'career.tackles', label: 'Tkl', num: true },
+  { key: 'career.sacks', label: 'Sacks', num: true },
+  { key: 'career.ints', label: 'INT', num: true },
 ];
 
 // Every rating, in the grouped display order from META.allRatingColumns
@@ -599,13 +648,21 @@ function formatHeight(h) {
 }
 
 function currentColumns() {
-  return BASE_COLUMNS.concat(ALL_RATING_COLUMNS);
+  return BASE_COLUMNS.concat(showCareerStats ? CAREER_STAT_COLUMNS : []).concat(ALL_RATING_COLUMNS);
 }
 
 function visibleColumns() {
   const cols = currentColumns();
   if (!hideStats) return cols;
   return cols.filter((c) => !HIDDEN_WHEN_TOGGLED.has(c.key));
+}
+
+// CareerStats rides on each row as a nested object (see lib/pipeline.js) --
+// this is the one place that knows how to reach into it, so both the cell
+// renderer and the sort comparator stay in sync automatically.
+function cellValue(p, key) {
+  if (key.startsWith('career.')) return p.CareerStats ? p.CareerStats[key.slice(7)] : undefined;
+  return p[key];
 }
 
 function buildResultsHeader() {
@@ -659,6 +716,7 @@ function renderResults() {
   const fPos = $('filterPos').value;
   const fRound = $('filterRound').value;
   const fDev = $('filterDev').value;
+  const fProfile = $('filterProfile').value;
 
   const roundOf = (v) => { const r = Number(v); return r >= 1 && r <= 7 ? r : 8; };
 
@@ -667,12 +725,13 @@ function renderResults() {
     if (fPos && p.CFB_Position !== fPos) return false;
     if (fRound && roundOf(p.ProjectRound) !== Number(fRound)) return false;
     if (fDev && p.DevTrait !== fDev) return false;
+    if (fProfile && p.Profile !== fProfile) return false;
     return true;
   });
 
   const col = cols.find((c) => c.key === sortKey);
   rows.sort((a, b) => {
-    const av = a[sortKey], bv = b[sortKey];
+    const av = cellValue(a, sortKey), bv = cellValue(b, sortKey);
     if (col && col.num) return (Number(av) - Number(bv)) * sortDir;
     return String(av ?? '').localeCompare(String(bv ?? '')) * sortDir;
   });
@@ -689,7 +748,7 @@ function renderResults() {
         else if (positionKey.has(name)) cls += ' key-rating-position';
       }
       const td = el('td', cls.trim());
-      let v = p[c.key];
+      let v = cellValue(p, c.key);
       if (c.key === 'DevTrait') {
         const badge = el('span', `dev-badge dev-${v}`, v === 'XFactor' ? 'X-FACTOR' : String(v).toUpperCase());
         td.appendChild(badge);
@@ -701,6 +760,9 @@ function renderResults() {
         td.textContent = formatHeight(v);
       } else if (c.key === 'CFB_Position') {
         td.appendChild(el('span', 'pos-code', String(v)));
+      } else if (c.key === 'Profile' && v) {
+        const badge = el('span', `profile-badge profile-${String(v).replace(/\s+/g, '')}`, v);
+        td.appendChild(badge);
       } else {
         td.textContent = v ?? '';
       }
@@ -717,7 +779,7 @@ function renderResults() {
   }
 }
 
-['searchBox', 'filterPos', 'filterRound', 'filterDev'].forEach((id) => {
+['searchBox', 'filterPos', 'filterRound', 'filterDev', 'filterProfile'].forEach((id) => {
   $(id).addEventListener('input', renderResults);
 });
 
@@ -751,6 +813,15 @@ hideStatsToggle.checked = hideStats;
 hideStatsToggle.addEventListener('change', () => {
   hideStats = hideStatsToggle.checked;
   localStorage.setItem('hideAdjustedStats', String(hideStats));
+  if (players.length) renderResults();
+});
+
+/* ---------------- show career stats toggle ---------------- */
+const careerStatsToggle = $('careerStatsToggle');
+careerStatsToggle.checked = showCareerStats;
+careerStatsToggle.addEventListener('change', () => {
+  showCareerStats = careerStatsToggle.checked;
+  localStorage.setItem('showCareerStats', String(showCareerStats));
   if (players.length) renderResults();
 });
 

@@ -47,6 +47,13 @@
           <span class="toggle-track"><span class="toggle-thumb"></span></span>
         </span>
       </label>
+      <label class="toggle-row" for="careerStatsToggle" title="Shows career college production columns (passing/rushing/receiving/tackling totals) in the Draft Class table. Only populated for saves with season stats available.">
+        <span>Show Career Stats</span>
+        <span class="toggle-switch">
+          <input type="checkbox" id="careerStatsToggle">
+          <span class="toggle-track"><span class="toggle-thumb"></span></span>
+        </span>
+      </label>
       <button id="presetExport" class="ghost small">Export Preset</button>
       <button id="presetImport" class="ghost small">Import Preset</button>
     </div>
@@ -72,14 +79,23 @@
         <div class="card">
           <h2>1 · Player Pool</h2>
           <p class="hint">Load the players leaving your CFB dynasty via college save file, or a CSV export.</p>
-          <div class="warning-box">
-            <strong>Your CFB save MUST be Offseason Week 1 (the "Draft Stage").</strong>
-            This is the one point in a dynasty where the game has finalized exactly
-            who's declaring for the draft. It cannot be any earlier or later week —
-            other weeks either don't have this data yet or have already moved past it,
-            and will give wrong or incomplete results.
+          <div class="warning-box subtle">
+            <strong>Best accuracy at Offseason Week 1 (the "Draft Stage").</strong>
+            That's the one point in a dynasty where the game has finalized exactly
+            who's declaring for the draft. Earlier saves work too -- the tool predicts
+            who's likely to declare from Junior/Senior rosters -- but the closer you
+            are to Week 1, the more accurate the class.
           </div>
           <p class="hint">No direct save access? Export your roster to a CSV instead (must include at minimum FirstName, LastName, Position, OverallRating columns) and load that.</p>
+          <div class="field">
+            <label>Declaration source</label>
+            <div class="radio-row" id="sourceModeRow">
+              <label class="radio"><input type="radio" name="sourceMode" value="auto" checked> Auto-detect</label>
+              <label class="radio"><input type="radio" name="sourceMode" value="leaving"> Official only</label>
+              <label class="radio"><input type="radio" name="sourceMode" value="synthesized"> Predict declarations</label>
+            </div>
+            <p class="hint compact" id="sourceModeHint">Auto-detect uses the game's official declared-draft-class list if your save has reached that point, and falls back to predicting declarations from Junior/Senior rosters otherwise -- so this also works on saves earlier than Offseason Week 1.</p>
+          </div>
           <div class="btn-row">
             <button id="loadSave" class="primary">Load CFB Save…</button>
             <button id="loadCsv">Load CSV…</button>
@@ -265,6 +281,10 @@
           <select id="filterDev" aria-label="Filter by dev trait">
             <option value="">All dev traits</option>
             <option>XFactor</option><option>Superstar</option><option>Star</option><option>Normal</option>
+          </select>
+          <select id="filterProfile" aria-label="Filter by scouting profile">
+            <option value="">All profiles</option>
+            <option>Generational</option><option>Complete</option><option>High Floor</option><option>High Ceiling</option><option>Balanced</option>
           </select>
           <span id="rowCount" class="row-count"></span>
         </div>
