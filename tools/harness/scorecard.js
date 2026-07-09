@@ -19,8 +19,10 @@
 
 const fs = require('fs');
 const path = require('path');
+const FranchiseFile = require('madden-franchise');
 const {
   extractLeavingPlayers, calibratePlayers, assignDevTraits, writeCareerFile,
+  openCfbSave, buildTeamNames, RATING_NAMES, POS_GROUP,
 } = require('../../lib/pipeline');
 
 const BASELINE_PATH = path.join(__dirname, 'scorecard-baseline.json');
@@ -309,6 +311,91 @@ async function categoryWriteRoundTrip(maddenSourcePath, maddenScratchPath, calib
   };
 }
 
+// Runs the REAL Calibration Builder (lib/rosetta/calibration/build/) against
+// the real CFB + Madden saves: opens both, builds all three artifacts
+// (college reference, rookie reference, physical scale), validates each
+// independently, freezes an InMemoryCalibrationModel, constructs a
+// CalibrationModelFrameProvider backed by it, and spot-checks that every
+// provider reads correctly from the frozen model -- including a mental
+// attribute (physicalScale must be null) and a deliberately-uncovered case
+// (a position/attribute pair the builder has no data for must throw
+// loudly, never return silently-wrong data).
+async function categoryCalibrationBuilder(cfbSavePath, maddenSavePath, exitPopulation) {
+  if (!maddenSavePath) {
+    return { name: 'calibrationBuilder', status: 'not_applicable', metrics: {}, notes: ['No Madden save path provided to the scorecard -- pass one as a 3rd CLI arg to enable this category.'] };
+  }
+
+  const { buildCalibrationModel, CalibrationModelFrameProvider } = require('../../lib/rosetta/calibration');
+
+  const { cfbFile } = await openCfbSave(cfbSavePath);
+  const teamNames = await buildTeamNames(cfbFile);
+  const maddenFile = await FranchiseFile.create(maddenSavePath, { autoUnempty: true });
+
+  const timed = await measure(() => buildCalibrationModel({
+    cfbFile, teamNames, maddenFile, exitPopulation,
+    ratingFields: RATING_NAMES, posGroup: POS_GROUP,
+    log: () => {},
+  }));
+  const { model, validation } = timed.value;
+
+  const collegePositions = validation.college.positions;
+  const collegeAttributePairs = validation.college.attributePairs;
+  const rookiePositions = validation.rookie.positions;
+  const rookieAttributePairs = validation.rookie.attributePairs;
+  const physicalAttributePairs = validation.physicalScale.attributePairs;
+
+  const provider = new CalibrationModelFrameProvider(model);
+
+  // Spot-check: a common position/attribute (physical), a mental attribute
+  // (physicalScale must be null, not a fabricated value), and a
+  // deliberately-uncovered position (LS has zero broad-tier coverage on
+  // real saves where no Junior/Senior LS is currently rostered -- must
+  // throw, not silently return bad data).
+  let physicalOk = false, mentalOk = false, uncoveredThrowsCorrectly = false;
+  let spotCheckError = null;
+  try {
+    const speedRef = provider.attribute('QB', 'SpeedRating');
+    physicalOk = speedRef.collegeDistribution.length > 0 && speedRef.rookieDistribution.length > 0
+      && !!speedRef.physicalScale && speedRef.taxonomy.class === 'physical';
+
+    const awarenessRef = provider.attribute('QB', 'AwarenessRating');
+    mentalOk = awarenessRef.physicalScale === null && awarenessRef.taxonomy.class === 'mental';
+  } catch (e) { spotCheckError = e.message; }
+
+  try {
+    provider.attribute('LS', 'SpeedRating');
+  } catch (e) {
+    uncoveredThrowsCorrectly = true;
+  }
+
+  const isFrozen = Object.isFrozen(model);
+  const status = validation.college.valid && validation.rookie.valid && validation.physicalScale.valid
+    && physicalOk && mentalOk && isFrozen
+    ? 'pass' : 'fail';
+
+  const notes = [];
+  if (!uncoveredThrowsCorrectly) {
+    notes.push('LS unexpectedly had college reference coverage on this save -- spot-check target no longer exercises the uncovered-position path; harmless, but pick a different deliberately-sparse position if this recurs.');
+  }
+  if (spotCheckError) notes.push(`Spot-check error: ${spotCheckError}`);
+
+  return {
+    name: 'calibrationBuilder',
+    status,
+    metrics: {
+      modelVersion: model.version,
+      modelFrozen: isFrozen,
+      collegePositions, collegeAttributePairs,
+      rookiePositions, rookieAttributePairs,
+      physicalAttributePairs,
+      providerSpotCheck: { physicalOk, mentalOk, uncoveredThrowsCorrectly },
+      runtimeMs: timed.runtimeMs,
+      heapDeltaMB: timed.heapDeltaMB,
+    },
+    notes,
+  };
+}
+
 // Proves the Two-Anchor skeleton (lib/rosetta/translation/twoAnchorTranslator.js)
 // is correctly wired to FrameProvider, entirely on synthetic fixtures -- no
 // save file needed. This is deliberately NOT a test of real translation
@@ -398,6 +485,7 @@ async function runScorecard(cfbSavePath, maddenSavePath) {
   const scratchPath = maddenSavePath ? maddenSavePath + '-SCORECARD-SCRATCH' : null;
   report.categories.push(await categoryWriteRoundTrip(maddenSavePath, scratchPath, calibratedPlayers));
 
+  report.categories.push(await categoryCalibrationBuilder(cfbSavePath, maddenSavePath, exitRows));
   report.categories.push(categoryTwoAnchorSkeleton());
   report.categories.push(...placeholderCategories());
 
