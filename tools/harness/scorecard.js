@@ -134,7 +134,7 @@ async function categoryDeterminism(exitRows) {
   const b = await measure(() => runFixed(cloneRows()));
   const fixedSeedIdenticalFreshInput = JSON.stringify(a.value) === JSON.stringify(b.value);
 
-  // KNOWN ISSUE, pre-existing, out of Rosetta migration scope: calling
+  // LEGACY BUG #001, pre-existing, out of Rosetta migration scope: calling
   // calibratePlayers twice on the SAME row-object references (exactly what
   // happens in production if a user clicks Regenerate without re-extracting
   // the pool) does NOT reproduce a fixed seed's output, because the first
@@ -142,7 +142,11 @@ async function categoryDeterminism(exitRows) {
   // state for the second. Tracked as a metric so it's visible in the
   // permanent baseline, but does not gate this category -- fixing it means
   // touching legacy projectDraftClass, which stays untouched until a later
-  // phase formally replaces it.
+  // phase formally replaces it. Rosetta should eliminate this class of bug
+  // structurally, not by patching it: translation becomes a pure function
+  // over immutable player identity (population in, new translated
+  // population out, nothing mutated in place), so there's no shared,
+  // stateful reference left for a second call to trip over.
   const sharedRows = cloneRows();
   const c = runFixed(sharedRows);
   const d = runFixed(sharedRows);
@@ -164,7 +168,7 @@ async function categoryDeterminism(exitRows) {
     notes.push('A fixed seed must reproduce byte-identical output on a fresh population; a blank seed must vary run to run. One of those invariants broke.');
   }
   if (!fixedSeedIdenticalSharedReference) {
-    notes.push("KNOWN ISSUE (pre-existing, out of Rosetta migration scope): calibratePlayers mutates its input row objects in place, so re-running it on the SAME reference (e.g. clicking Regenerate without re-extracting) does not reproduce a fixed seed's output. Tracked, not gating.");
+    notes.push("LEGACY BUG #001 (pre-existing, out of Rosetta migration scope): calibratePlayers mutates its input row objects in place, so re-running it on the SAME reference (e.g. clicking Regenerate without re-extracting) does not reproduce a fixed seed's output. Tracked, not gating. Rosetta's pure-function, population-level translation naturally eliminates this once it's the live strategy.");
   }
 
   return {
@@ -210,6 +214,37 @@ async function categoryDraftIndependence(exitRows) {
     status,
     metrics: { compared, ratingsIdentical, ratingsDiffer, rankDiffer, ratingColumnsChecked: ratingCols.length },
     notes: status === 'fail' ? ['Ratings changed when only board variance changed -- the Phase 4 firewall is broken.'] : [],
+  };
+}
+
+// Proves the Translator seam (lib/rosetta/translation/) is actually wired
+// into the live public calibratePlayers() entry point, not just a disconnected
+// abstraction -- 'v1' and 'rosetta' strategies must produce byte-identical
+// output today, since RosettaTranslator currently just delegates to
+// V1Translator. Each run gets its own clone (see Legacy Bug #001 above --
+// otherwise this would conflate seam correctness with that mutation bug).
+async function categoryTranslatorSeam(exitRows) {
+  const cloneRows = () => JSON.parse(JSON.stringify(exitRows));
+  const runWithStrategy = (strategy) => {
+    const players = calibratePlayers(cloneRows(), { config: { general: { seed: FIXED_SEED }, translation: { strategy } } });
+    const dev = assignDevTraits(players, { general: { seed: FIXED_SEED } });
+    for (const p of players) p.DevTrait = dev.get(p);
+    return players;
+  };
+  const v1 = await measure(() => runWithStrategy('v1'));
+  const rosetta = await measure(() => runWithStrategy('rosetta'));
+  const identical = JSON.stringify(v1.value) === JSON.stringify(rosetta.value);
+
+  return {
+    name: 'translatorSeam',
+    status: identical ? 'pass' : 'fail',
+    metrics: {
+      v1RosettaIdentical: identical,
+      playerCount: v1.value.length,
+      v1RuntimeMs: v1.runtimeMs,
+      rosettaRuntimeMs: rosetta.runtimeMs,
+    },
+    notes: identical ? [] : ["The 'v1' and 'rosetta' translation strategies diverged -- RosettaTranslator should currently be a pure delegate to V1Translator with no translation math built yet."],
   };
 }
 
@@ -307,6 +342,7 @@ async function runScorecard(cfbSavePath, maddenSavePath) {
 
   report.categories.push(await categoryDeterminism(exitRows));
   report.categories.push(await categoryDraftIndependence(exitRows));
+  report.categories.push(await categoryTranslatorSeam(exitRows));
 
   const calibrated = await categoryCalibratedDistribution(exitRows);
   const calibratedPlayers = calibrated._players;
