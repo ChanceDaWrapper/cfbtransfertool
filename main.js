@@ -135,7 +135,11 @@ ipcMain.handle('extract-pool', async (_e, { sourcePath, sourceType, forceSource 
       cachedPool = loadDepartedCsv(sourcePath, sendLog);
     } else {
       sendLog('Reading CFB dynasty save (this can take a moment)...');
-      cachedPool = await extractLeavingPlayers(sourcePath, sendLog, { forceSource: forceSource || null });
+      // populationMode isn't user-facing yet -- read from the persisted
+      // config so it's settable via an imported preset for validation, per
+      // the Rosetta migration's feature-flag rule (defaults to 'legacy').
+      const populationMode = configStore.load().population?.mode || 'legacy';
+      cachedPool = await extractLeavingPlayers(sourcePath, sendLog, { forceSource: forceSource || null, populationMode });
     }
     cachedPoolSource = sourcePath;
     // detectedSource: 'leaving' (official EA declarations) | 'synthesized'

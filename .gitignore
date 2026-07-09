@@ -6,3 +6,8 @@ dist/
 # offline (tools/fit_overall_formula.js in the sibling CLI project) --
 # large, derived from a personal save, and not needed by the app at runtime.
 data/real_draft_classes*.json
+
+# Rosetta migration regression baseline (tools/harness/goldenMaster.js) --
+# captured from a personal save (real dynasty player names), regenerate
+# locally with `node tools/harness/goldenMaster.js capture <save>`.
+tools/harness/golden-master.json
