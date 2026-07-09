@@ -309,21 +309,62 @@ async function categoryWriteRoundTrip(maddenSourcePath, maddenScratchPath, calib
   };
 }
 
+// Proves the Two-Anchor skeleton (lib/rosetta/translation/twoAnchorTranslator.js)
+// is correctly wired to FrameProvider, entirely on synthetic fixtures -- no
+// save file needed. This is deliberately NOT a test of real translation
+// math (there isn't any yet): it verifies construction requires a real
+// FrameProvider, that translate() reads the right artifacts for every
+// attribute it processes, that a missing fixture fails loudly rather than
+// silently passing through, and that the output is tagged correctly.
+function categoryTwoAnchorSkeleton() {
+  const { TwoAnchorTranslator } = require('../../lib/rosetta/translation/twoAnchorTranslator');
+  const { StubFrameProvider } = require('../../lib/rosetta/calibration/providers/stubFrameProvider');
+  const { createRosettaContext } = require('../../lib/rosetta/context');
+
+  const sample = [40, 50, 60, 70, 80, 90, 99];
+  const frames = StubFrameProvider.identity('QB', ['SpeedRating', 'AwarenessRating', 'ThrowPowerRating'], sample);
+  const translator = new TwoAnchorTranslator(frames);
+  const context = createRosettaContext({ config: {}, log: () => {} });
+  const fixture = [{ FirstName: 'Test', LastName: 'Player', Position: 'QB', SpeedRating: 80, AwarenessRating: 60, ThrowPowerRating: 90 }];
+
+  let wiringOk = false, wiringError = null;
+  try {
+    const result = translator.translate(fixture, context);
+    wiringOk = result.stage === 'translated' && result.length === 1 && result.strategy === 'rosetta-two-anchor-skeleton';
+  } catch (e) { wiringError = e.message; }
+
+  let missingFixtureThrows = false;
+  try { translator._translateAttribute('QB', 'CatchingRating', 50); }
+  catch (e) { missingFixtureThrows = true; }
+
+  let constructorGuardHolds = false;
+  try { new TwoAnchorTranslator({}); }
+  catch (e) { constructorGuardHolds = true; }
+
+  const status = wiringOk && missingFixtureThrows && constructorGuardHolds ? 'pass' : 'fail';
+  return {
+    name: 'twoAnchorSkeleton',
+    status,
+    metrics: { wiringOk, wiringError, missingFixtureThrows, constructorGuardHolds },
+    notes: ['Skeleton wiring only -- NOT real translation math (identity passthrough). See lib/rosetta/translation/twoAnchorTranslator.js.'],
+  };
+}
+
 // Placeholders -- explicit, not omitted. Each names the phase that unlocks
 // it and exactly what it will check once that phase's subsystem exists.
 function placeholderCategories() {
   return [
     {
       name: 'identityPreservation', status: 'not_applicable', metrics: {},
-      notes: ['Requires the Rosetta translation engine (Phase 4). Will check: within-player attribute-rank Spearman correlation pre/post translation ~= 1; strength/weakness top-k/bottom-k set conservation.'],
+      notes: ['Requires real Two-Anchor translation math (Phase 4 -- skeleton now wired, math not yet implemented). Will check: within-player attribute-rank Spearman correlation pre/post translation ~= 1; strength/weakness top-k/bottom-k set conservation.'],
     },
     {
       name: 'archetypeStability', status: 'not_applicable', metrics: {},
-      notes: ['Requires inferred archetypes (Phase 5). Will check: archetype label identical before/after translation for every player (a change indicates a coherence bug, not a real archetype shift).'],
+      notes: ['Requires inferred archetypes (Phase 6). Will check: archetype label identical before/after translation for every player (a change indicates a coherence bug, not a real archetype shift).'],
     },
     {
       name: 'overallSanity', status: 'not_applicable', metrics: {},
-      notes: ['Requires the emergent-Overall display estimator (Phase 5). Will check: monotonicity (dominating a peer in every key rating implies >= Overall) and |display - Madden-recomputed| within tolerance.'],
+      notes: ['Requires the emergent-Overall display estimator (Phase 7). Will check: monotonicity (dominating a peer in every key rating implies >= Overall) and |display - Madden-recomputed| within tolerance.'],
     },
   ];
 }
@@ -357,6 +398,7 @@ async function runScorecard(cfbSavePath, maddenSavePath) {
   const scratchPath = maddenSavePath ? maddenSavePath + '-SCORECARD-SCRATCH' : null;
   report.categories.push(await categoryWriteRoundTrip(maddenSavePath, scratchPath, calibratedPlayers));
 
+  report.categories.push(categoryTwoAnchorSkeleton());
   report.categories.push(...placeholderCategories());
 
   return { report, legacySnapshot };
