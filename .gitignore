@@ -7,7 +7,9 @@ dist/
 # large, derived from a personal save, and not needed by the app at runtime.
 data/real_draft_classes*.json
 
-# Rosetta migration regression baseline (tools/harness/goldenMaster.js) --
-# captured from a personal save (real dynasty player names), regenerate
-# locally with `node tools/harness/goldenMaster.js capture <save>`.
+# Rosetta migration regression baselines -- captured from a personal save
+# (real dynasty player names), regenerate locally:
+#   node tools/harness/goldenMaster.js capture <cfbSave>          (deprecated)
+#   node tools/harness/scorecard.js capture <cfbSave> [maddenSave] (current)
 tools/harness/golden-master.json
+tools/harness/scorecard-baseline.json

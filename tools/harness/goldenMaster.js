@@ -1,3 +1,10 @@
+// @deprecated -- superseded by tools/harness/scorecard.js, the single
+// permanent validation framework for this migration (its `legacyInvariance`
+// category covers exactly what `verify` below does, plus every other
+// quantitative check the migration needs, in one place). Kept, not deleted,
+// per this project's incremental-migration rules; do not extend this file
+// further -- add a category to scorecard.js instead.
+//
 // Rosetta migration safety harness. Not a production feature.
 //
 // capture: runs the full legacy pipeline (extract -> calibrate -> dev
