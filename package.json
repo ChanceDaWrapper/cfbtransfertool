@@ -5,7 +5,8 @@
   "main": "main.js",
   "scripts": {
     "start": "electron .",
-    "build": "electron-builder --win nsis"
+    "build": "electron-builder --win nsis",
+    "test": "node test/powerCurve.spec.js && node test/bioFields.spec.js && node test/draftClassFile.spec.js && node test/draftClassTemplate.spec.js && node test/faceCatalog.spec.js"
   },
   "author": "ChanceDaWrapper",
   "contributors": [

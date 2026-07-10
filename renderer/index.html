@@ -31,8 +31,11 @@
       <button class="nav-item" data-page="weights">
         <span class="nav-icon">⚖</span> Position Weights
       </button>
+      <button class="nav-item" data-page="translation">
+        <span class="nav-icon">🎚</span> Rating Translation
+      </button>
       <button class="nav-item" data-page="physical">
-        <span class="nav-icon">⚡</span> Physical Attributes
+        <span class="nav-icon">🏷</span> Rating Categories
       </button>
       <button class="nav-item" data-page="advanced">
         <span class="nav-icon">⚙</span> Advanced
@@ -171,33 +174,118 @@
       <header class="page-head">
         <h1>Position Weights</h1>
         <p>
-          College ratings get scaled down before entering Madden so freshmen
-          don't show up as 99-overall superstars. Adjust how strong or weak
-          that scaling is, position by position. Hover any field for details.
+          Roster construction, position by position -- how many of a position
+          make the class, and where they land in the draft order. Neither of
+          these touches a player's ratings (that's Rating Translation's job).
+          Hover any field for details.
         </p>
         <div class="head-actions">
           <button id="resetWeights" class="ghost">Reset to Defaults</button>
         </div>
       </header>
       <div class="card">
-        <p class="hint compact"><strong>Extra Drop</strong> = toughness dial for the position (higher = weaker, lower/negative = stronger). <strong>Class Cap</strong> = max players at that position in the class (blank = no limit). <strong>Draft Value</strong> = draft-ORDER-only bump/penalty for the position (doesn't touch ratings -- just where they land in the class, positive = drafted earlier, negative = later).</p>
+        <p class="hint compact"><strong>Class Cap</strong> = max players at that position in the class (blank = no limit). <strong>Draft Value</strong> = draft-ORDER-only bump/penalty for the position (doesn't touch ratings -- just where they land in the class, positive = drafted earlier, negative = later).</p>
         <table class="config-table" id="weightsTable">
           <thead>
-            <tr><th>Position</th><th></th><th>Extra Drop <span class="th-hint">(default shown right)</span></th><th>Class Cap</th><th>Draft Value <span class="th-hint">(default shown right)</span></th></tr>
+            <tr><th>Position</th><th></th><th>Class Cap</th><th>Draft Value <span class="th-hint">(default shown right)</span></th></tr>
           </thead>
           <tbody></tbody>
         </table>
       </div>
     </section>
 
-    <!-- ============================== PHYSICAL ============================== -->
+    <!-- ============================== TRANSLATION ============================== -->
+    <section class="page" id="page-translation">
+      <header class="page-head">
+        <h1>Rating Translation</h1>
+        <p>
+          The heart of the converter: how a college rating becomes a Madden
+          rookie rating. Physical traits barely change (a burner stays a
+          burner), skills compress moderately, and mental ratings drop the most
+          — because rookies rarely process at NFL speed. Every dial here is
+          yours. Hover any field for details.
+        </p>
+        <div class="head-actions">
+          <button id="resetTranslation" class="ghost">Reset to Defaults</button>
+        </div>
+      </header>
+
+      <div class="card">
+        <h2>Engine</h2>
+        <div class="knob-grid" id="translationEngine"></div>
+      </div>
+
+      <div class="card">
+        <h2>Overall Class Strength</h2>
+        <p class="hint compact">
+          One dial for the whole class — scales every position's Technical and
+          Mental compression at once, on top of whatever you've set below.
+          Never touches Physical ratings.
+        </p>
+        <div class="knob-grid" id="globalStrengthControl"></div>
+      </div>
+
+      <div class="card" id="powerCurveControls">
+        <h2>Category Curves</h2>
+        <p class="hint compact">
+          Each category bends college ratings toward Madden along a curve fixed
+          by two calibration points — how much of an <strong>elite</strong> college
+          rating survives, and how much of a <strong>good</strong> one survives.
+          Lower a percentage to make that whole category harsher across the board.
+        </p>
+        <table class="config-table" id="categoryTable">
+          <thead>
+            <tr>
+              <th>Category</th>
+              <th title="What share of an elite college rating carries over.">Elite Rating Keeps</th>
+              <th title="What share of a good college rating carries over.">Good Rating Keeps</th>
+            </tr>
+          </thead>
+          <tbody></tbody>
+        </table>
+      </div>
+
+      <div class="card" id="strengthControls">
+        <h2>Per-Position Controls</h2>
+        <p class="hint compact">
+          How hard each position compresses. <strong>Technical</strong> covers
+          route running, coverage, blocking, pass rush, catching, and throw
+          accuracy; <strong>Mental</strong> is Awareness &amp; Play Recognition;
+          <strong>Physical</strong> is athleticism, including Throw/Kick Power --
+          all three are <em>proportional</em> (1.0 = full model compression, lower = stronger,
+          higher = weaker; keep Mental ≥ Technical for realistic rookies).
+          <strong>Extra Drop</strong> is different: a <em>flat</em> number of points
+          off every rating for that position (all four categories), stacking on top
+          of the proportional dials -- useful for nudging an already-compressed
+          elite rating, where the proportional dials alone barely move the needle.
+        </p>
+        <table class="config-table" id="strengthTable">
+          <thead>
+            <tr><th>Position</th><th></th><th>Technical</th><th>Mental</th><th>Physical</th><th>Extra Drop <span class="th-hint">(flat)</span></th></tr>
+          </thead>
+          <tbody></tbody>
+        </table>
+      </div>
+
+      <div class="card" id="globalTranslationControls">
+        <h2>Global</h2>
+        <div class="knob-grid" id="translationGlobals"></div>
+      </div>
+    </section>
+
+    <!-- ============================== RATING CATEGORIES ============================== -->
     <section class="page" id="page-physical">
       <header class="page-head">
-        <h1>Physical Attributes</h1>
+        <h1>Rating Categories</h1>
         <p>
-          Speed, Strength, Acceleration, Agility, and similar ratings translate
-          fairly directly from college to the pros, so they get a simple point
-          reduction rather than a full remap. This page controls how big.
+          Every rating belongs to a compression bucket that decides how much of
+          it survives the jump to Madden. Editing <strong>All positions</strong>
+          moves a rating's bucket everywhere; switch to a single position below
+          to set an exception just for them (e.g. Awareness compresses harder for
+          CB specifically, without touching every other position). <strong>Extra
+          Drop</strong> and <strong>Max Drop</strong> fine-tune one rating further
+          — a flat point subtraction and a hard floor — and always stay global no
+          matter which position you're viewing.
         </p>
         <div class="head-actions">
           <button id="resetPhysical" class="ghost">Reset to Defaults</button>
@@ -205,16 +293,18 @@
       </header>
 
       <div class="card">
-        <h2>Global</h2>
-        <div class="knob-grid" id="physicalGlobals"></div>
-      </div>
-
-      <div class="card">
-        <h2>Per-Rating Adjustments</h2>
-        <p class="hint compact">Fine-tune one rating at a time. Hover a column header for what it does.</p>
-        <table class="config-table" id="ratingsTable">
+        <div class="field" style="max-width:260px; margin-bottom:14px;">
+          <label>Editing</label>
+          <div id="ratingCatPositionSelect"></div>
+        </div>
+        <p class="hint compact" id="categoryLegend"></p>
+        <table class="config-table" id="ratingCatTable">
           <thead>
-            <tr><th>Rating</th><th title="Extra points subtracted from just this rating.">Extra Drop</th><th title="How much this rating varies player to player. Blank = use the global Physical Jitter.">Jitter Override</th><th title="Hard ceiling on the total cut to this rating. Blank = no ceiling.">Max Drop</th></tr>
+            <tr>
+              <th>Rating</th><th>Bucket</th><th></th>
+              <th title="Extra points subtracted from just this rating, for every position.">Extra Drop</th>
+              <th title="Hard floor on how far this rating can drop below its college value. Blank = no cap.">Max Drop</th>
+            </tr>
           </thead>
           <tbody></tbody>
         </table>
@@ -225,7 +315,7 @@
     <section class="page" id="page-advanced">
       <header class="page-head">
         <h1>Advanced</h1>
-        <p>Class size, how skill ratings get shaped, and how development traits are handed out. Subtler effects than Position Weights or Physical Attributes — each knob explains itself below.</p>
+        <p>Class size, development traits, and draft-order projection weighting. Subtler effects than Position Weights or Rating Translation — each knob explains itself below.</p>
         <div class="head-actions">
           <button id="resetAdvanced" class="ghost">Reset to Defaults</button>
         </div>
@@ -234,12 +324,6 @@
       <div class="card">
         <h2>Class Construction</h2>
         <div class="knob-grid" id="advGeneral"></div>
-      </div>
-
-      <div class="card">
-        <h2>Bell-Curve Squeeze <span class="badge-info">skill ratings</span></h2>
-        <p class="hint compact">Skill ratings (Awareness, coverage, blocking, route running, etc.) get an extra cut concentrated at one tier of the class, fading out toward elites and deep bench players.</p>
-        <div class="knob-grid" id="advBell"></div>
       </div>
 
       <div class="card">

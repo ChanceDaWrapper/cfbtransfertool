@@ -5,6 +5,63 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Added
+- **Power-Curve rating-translation engine** (now the default conversion
+  engine), replacing the quantile/flat-drop model as the primary path: four
+  closed-form category curves (`base = a·xᵖ` — Physical, Technical Light,
+  Technical Heavy, Mental) eased by per-position strength dials, so physical
+  traits barely change, skills compress moderately, and mental ratings drop
+  the most. No calibration data files required; fully deterministic by default.
+  Fully tunable at four independent levels:
+  - **Global** — one "Overall Class Strength" dial scales every position's
+    Technical/Mental compression at once (never touches Physical ratings).
+  - **Category** — each of the four curves is edited as a percentage
+    ("Elite rating keeps X%"), with a live preview, rather than raw points.
+  - **Position** — per-position Technical/Mental/Physical strength dials plus
+    a flat per-position "Extra Drop" that still moves the needle even on an
+    already near-identity elite physical rating.
+  - **Rating** — a **Rating Categories** page lets any rating be reclassified
+    into a different bucket, globally or as a per-position exception, plus a
+    per-rating flat drop and hard floor (Max Drop) on top of everything else.
+- **Rating Translation** and **Rating Categories** settings pages (the latter
+  repurposed from the old Physical Attributes page), all with tooltips,
+  live previews, and per-value modified indicators.
+- `npm test` regression suite (115 assertions) locking engine fidelity against
+  the original model spec's worked examples, the shipped/tuned defaults, every
+  phase's own behavioral proof (global strength, category reclassification,
+  position/rating flat drops and caps, per-position exceptions), and dev-trait
+  invariance to rating-conversion tuning.
+
+### Changed
+- `translation.strategy` now defaults to `powercurve`. The legacy quantile/
+  flat-drop engine remains available as `v1` (no UI exposes it; reachable only
+  by hand-editing a config file), kept dormant as a fallback/reference. The
+  Two-Anchor engine (`rosetta`) is unchanged/unimplemented for live use.
+- **Est. Madden Overall is now purely cosmetic.** It no longer feeds dev-trait
+  weighting (which now reads a pure function of the player's real CFB Overall
+  instead) — tuning any rating-conversion knob can no longer silently reshape
+  who gets Star/Superstar/X-Factor. It's still shown on the Draft Class table
+  and written into the Madden save as a sensible pre-recompute placeholder;
+  Madden recomputes the real Overall itself once you open the player in-game.
+- Retuned several shipped position-strength and rating-bucket defaults against
+  real in-game Madden overalls (documented in full in `POWERCURVE_ROADMAP.md`),
+  including moving BC Vision to heavier compression and folding Throw/Kick
+  Power into the Physical bucket.
+- Removed the Bell-Curve Squeeze and the physical-only per-rating adjustment
+  table from the UI (Power Curve superseded both); Position Weights now covers
+  only roster construction (Class Cap, Draft Value) — rating-toughness moved
+  to Rating Translation/Categories.
+- Removed the Arm/Leg Power and Copy Raw categories entirely — every
+  convertible rating now compresses through one of four real buckets; there
+  is no "leave untouched" option (a rating that should barely change, like
+  Throw/Kick Power, now lives in Physical instead).
+
+### Fixed
+- The Rating Categories page's "modified" indicator dot never lit up for a
+  *global* reclassification (per-position overrides were unaffected).
+
 ## [0.2.0] - 2026-07-08
 
 Merges in the draft-simulation half of [cfb2madden](https://github.com/seanpdwyer7/cfb2madden)

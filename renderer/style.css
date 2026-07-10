@@ -366,6 +366,20 @@ input[type="number"] { width: 90px; text-align: right; font-family: var(--mono);
 .default-ref { color: var(--text-faint); font-size: 11.5px; font-family: var(--mono); margin-left: 8px; }
 .modified-dot { color: var(--amber); margin-left: 6px; font-size: 10px; }
 
+/* category curve cell: "Elite (college 99) keeps [88] % -> lands at 87" */
+.anchor-cell { white-space: nowrap; }
+.anchor-cell .pct-row { display: flex; align-items: center; gap: 6px; margin-bottom: 3px; }
+.anchor-cell input[type="number"] { width: 58px; }
+#strengthTable input[type="number"] { width: 64px; }
+#categoryTable td:first-child { max-width: 340px; }
+.curve-preview { display: block; color: var(--text-faint); font-size: 11.5px; font-style: italic; margin-top: 4px; }
+
+/* category-group header rows in the Rating Categories table */
+.group-row td { background: #171a22; padding-top: 10px; padding-bottom: 6px; }
+.group-row:hover td { background: #171a22; }
+.group-label { font-size: 11px; text-transform: uppercase; letter-spacing: 0.06em; color: var(--text-dim); font-weight: 700; }
+#ratingCatTable select { min-width: 168px; }
+
 /* ---------- knob grid ---------- */
 .knob-grid {
   display: grid;

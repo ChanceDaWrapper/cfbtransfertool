@@ -18,6 +18,12 @@ const HIDDEN_WHEN_TOGGLED = new Set([
 let hideStats = localStorage.getItem('hideAdjustedStats') === 'true';
 let showCareerStats = localStorage.getItem('showCareerStats') === 'true';
 
+// Rating Categories page (Phase 4c): which scope the Bucket column currently
+// edits. 'ALL' writes the global cfg.powerCurve.ratingCategory; a position
+// code writes cfg.powerCurve.categoryOverrides[pos] instead. Purely a view
+// mode -- not persisted, not part of the generation config itself.
+let ratingCatViewPosition = 'ALL';
+
 const $ = (id) => document.getElementById(id);
 const el = (tag, cls, text) => {
   const n = document.createElement(tag);
@@ -82,10 +88,34 @@ function markResultsStale() {
 // beyond the section boundaries the app already treats as one unit.
 function countSectionDiffs() {
   const d = META.defaults;
-  let weights = 0, physical = 0, advanced = 0;
+  let weights = 0, physical = 0, advanced = 0, translation = 0;
+
+  // Rating Translation (power-curve engine): engine choice, per-position
+  // strength dials, category anchors, and global clamp/jitter.
+  if ((cfg.translation?.strategy || 'powercurve') !== (d.translation?.strategy || 'powercurve')) translation++;
+  if (cfg.positionStrength && d.positionStrength) {
+    for (const pos of META.positions) {
+      const s = cfg.positionStrength[pos] || {}, ds = d.positionStrength[pos] || {};
+      for (const k of ['tech', 'mental', 'physical']) if (s[k] !== ds[k]) translation++;
+    }
+  }
+  // Extra Drop lives in its own config section (positionExtraDrop, not
+  // positionStrength) but its control sits on this same Rating Translation
+  // page now (Phase 3), so it counts toward this page's modified total too.
+  for (const pos of META.positions) {
+    if (cfg.positionExtraDrop[pos] !== d.positionExtraDrop[pos]) translation++;
+  }
+  if (cfg.powerCurve && d.powerCurve) {
+    for (const cat of Object.keys(d.powerCurve.anchors)) {
+      const a = cfg.powerCurve.anchors[cat] || {}, da = d.powerCurve.anchors[cat] || {};
+      for (const k of ['x1', 'y1', 'x2', 'y2']) if (a[k] !== da[k]) translation++;
+    }
+    for (const k of ['globalStrength', 'jitter', 'clampFloor', 'clampCeiling']) {
+      if (cfg.powerCurve[k] !== d.powerCurve[k]) translation++;
+    }
+  }
 
   for (const pos of META.positions) {
-    if (cfg.positionExtraDrop[pos] !== d.positionExtraDrop[pos]) weights++;
     if (cfg.positionValue[pos] !== d.positionValue[pos]) weights++;
   }
   const capKeys = new Set([...Object.keys(cfg.positionCaps || {}), ...Object.keys(d.positionCaps || {})]);
@@ -93,22 +123,19 @@ function countSectionDiffs() {
     if ((cfg.positionCaps[pos] ?? null) !== (d.positionCaps[pos] ?? null)) weights++;
   }
 
-  for (const key of ['dropLeniency', 'defaultDrop', 'calibrationJitter', 'quantileJitter']) {
-    if (cfg.general[key] !== d.general[key]) physical++;
-  }
-  for (const rating of META.physicalRatings) {
-    const a = cfg.ratingAdjustments[rating], b = d.ratingAdjustments[rating];
-    if (a.extraDrop !== b.extraDrop) physical++;
-    if ((a.jitter ?? null) !== (b.jitter ?? null)) physical++;
-    if ((a.maxDrop ?? null) !== (b.maxDrop ?? null)) physical++;
-  }
+  // Rating Categories page (the 'physical' section key is retained; the page
+  // was repurposed in Phase 4a/4b/4c): every global rating reclassification,
+  // every per-rating Extra/Max Drop tweak, and every per-position exception
+  // counts.
+  const rc = (cfg.powerCurve && cfg.powerCurve.ratingCategory) || {};
+  physical += Object.keys(rc).length;
+  const rt = (cfg.powerCurve && cfg.powerCurve.ratingTweaks) || {};
+  physical += Object.keys(rt).length;
+  const co = (cfg.powerCurve && cfg.powerCurve.categoryOverrides) || {};
+  for (const pos of Object.keys(co)) physical += Object.keys(co[pos] || {}).length;
 
   if (cfg.general.classSize !== d.general.classSize) advanced++;
   if ((cfg.general.seed || '') !== (d.general.seed || '')) advanced++;
-  if (cfg.kpAwarenessCap !== d.kpAwarenessCap) advanced++;
-  for (const key of ['peakPercentile', 'peakExtraDrop', 'spreadBelow', 'spreadAbove']) {
-    if (cfg.bell[key] !== d.bell[key]) advanced++;
-  }
   for (const key of ['xfactorPercentTarget', 'superstarPercentTarget', 'starPercentTarget']) {
     if (cfg.devTraits[key] !== d.devTraits[key]) advanced++;
   }
@@ -116,22 +143,23 @@ function countSectionDiffs() {
     if (cfg.draftValue[key] !== d.draftValue[key]) advanced++;
   }
 
-  return { weights, physical, advanced };
+  return { weights, physical, advanced, translation };
 }
 
 function renderConfigSummary() {
   const body = $('configSummaryBody');
   if (!body || !META) return;
   body.innerHTML = '';
-  const { weights, physical, advanced } = countSectionDiffs();
-  if (!weights && !physical && !advanced) {
+  const { weights, physical, advanced, translation } = countSectionDiffs();
+  if (!weights && !physical && !advanced && !translation) {
     body.appendChild(el('p', 'config-summary-default', 'Using Default Settings'));
     return;
   }
   const list = el('div', 'config-summary-list');
   for (const [page, label, count] of [
+    ['translation', 'Rating Translation', translation],
     ['weights', 'Position Weights', weights],
-    ['physical', 'Physical Attributes', physical],
+    ['physical', 'Rating Categories', physical],
     ['advanced', 'Advanced', advanced],
   ]) {
     if (!count) continue;
@@ -150,25 +178,21 @@ function renderConfigSummary() {
 // triggering value moves back into a normal range.
 function computeWarnings() {
   const msgs = [];
-  const g = cfg.general, b = cfg.bell, dt = cfg.devTraits;
+  const g = cfg.general, dt = cfg.devTraits;
 
-  if (g.dropLeniency >= 1.1) {
-    msgs.push('This configuration is likely to generate an unusually weak draft class.');
-  } else if (g.dropLeniency <= 0.03) {
-    msgs.push('Ratings are staying almost identical to college numbers — this will generate an unusually strong draft class.');
+  const gs = cfg.powerCurve && Number(cfg.powerCurve.globalStrength);
+  if (Number.isFinite(gs)) {
+    if (gs >= 1.6) msgs.push('Overall Class Strength is very high — the whole class will come in unusually weak.');
+    else if (gs <= 0.4) msgs.push('Overall Class Strength is very low — ratings will stay close to college numbers (unusually strong class).');
   }
-
-  if (g.calibrationJitter >= 10) {
-    msgs.push('Very high Physical Jitter can create extremely inconsistent athletic ratings.');
-  }
-  if (g.quantileJitter >= 10) {
-    msgs.push('Very high Skill Jitter can create extremely inconsistent skill ratings.');
+  if (cfg.powerCurve && Number(cfg.powerCurve.jitter) >= 10) {
+    msgs.push('Very high Rating Scatter can create extremely inconsistent ratings.');
   }
 
   const extremePositions = META.positions.filter((p) => Math.abs(cfg.positionExtraDrop[p]) >= 15);
   if (extremePositions.length) {
     const names = extremePositions.map((p) => META.positionLabels[p] || p).join(', ');
-    msgs.push(`Position Weights for ${names} are set to an extreme value and may produce unrealistic ratings.`);
+    msgs.push(`Extra Drop for ${names} is set to an extreme value and may produce unrealistic ratings.`);
   }
 
   const extremeValue = META.positions.filter((p) => Math.abs(cfg.positionValue[p]) >= 12);
@@ -189,10 +213,6 @@ function computeWarnings() {
   }
   if (dt.superstarPercentTarget >= 15) {
     msgs.push('A Superstar Target % this high will hand out the trait far more often than a real draft class would.');
-  }
-
-  if (b.peakExtraDrop >= 28) {
-    msgs.push('A very high Peak Extra Drop can crush the middle tier of your draft class.');
   }
 
   return msgs;
@@ -257,6 +277,33 @@ function knob(labelText, desc, input) {
   return k;
 }
 
+function selectInput(value, options, onChange) {
+  const sel = el('select');
+  for (const [val, label] of options) {
+    const o = el('option', null, label);
+    o.value = val;
+    if (val === value) o.selected = true;
+    sel.appendChild(o);
+  }
+  sel.addEventListener('change', () => { onChange(sel.value); scheduleSave(); });
+  return sel;
+}
+
+/* ---------------- power-curve preview math ---------------- */
+// Tiny reimplementation of lib/rosetta/translation/powerCurve.js's
+// deriveCurve/curveBase for the Rating Translation page's live "a 90 becomes
+// ~82" readout. The renderer runs in a contextIsolation sandbox with no
+// require() access to that module (see preload.js), and piping every
+// keystroke through IPC to the main process just to preview a curve would be
+// worse than duplicating ~4 lines of algebra. This is PREVIEW ONLY -- it never
+// feeds into an actual generated class; the real conversion always runs
+// through the real module in the main process.
+function previewCurveBase(x, x1, y1, x2, y2) {
+  const p = Math.log(y1 / y2) / Math.log(x1 / x2);
+  const a = y1 / Math.pow(x1, p);
+  return a * Math.pow(x, p);
+}
+
 /* ---------------- page builders ---------------- */
 function buildWeightsPage() {
   const tbody = $('weightsTable').querySelector('tbody');
@@ -266,20 +313,6 @@ function buildWeightsPage() {
 
     const tdCode = el('td'); tdCode.appendChild(el('span', 'pos-code', pos)); tr.appendChild(tdCode);
     tr.appendChild(el('td', 'pos-label', META.positionLabels[pos] || pos));
-
-    const tdDrop = el('td');
-    const dropInput = numberInput(cfg.positionExtraDrop[pos], { step: 0.5, min: -20, max: 30 }, (v) => {
-      cfg.positionExtraDrop[pos] = v;
-      dot.style.visibility = v !== META.defaults.positionExtraDrop[pos] ? 'visible' : 'hidden';
-    });
-    dropInput.title = META.descriptions.positionExtraDrop;
-    tdDrop.appendChild(dropInput);
-    tdDrop.appendChild(el('span', 'default-ref', `default ${META.defaults.positionExtraDrop[pos]}`));
-    const dot = el('span', 'modified-dot', '●');
-    dot.title = 'Modified from default';
-    dot.style.visibility = cfg.positionExtraDrop[pos] !== META.defaults.positionExtraDrop[pos] ? 'visible' : 'hidden';
-    tdDrop.appendChild(dot);
-    tr.appendChild(tdDrop);
 
     const tdCap = el('td');
     const capInput = numberInput(cfg.positionCaps[pos] ?? '', { step: 1, min: 0, max: 99, blankable: true }, (v) => {
@@ -311,55 +344,357 @@ function buildWeightsPage() {
   }
 }
 
-function buildPhysicalPage() {
-  const g = $('physicalGlobals');
-  g.innerHTML = '';
+function buildTranslationPage() {
   const D = META.descriptions;
-  g.appendChild(knob('Drop Leniency', D['general.dropLeniency'],
-    numberInput(cfg.general.dropLeniency, { step: 0.05, min: 0, max: 2 }, (v) => { cfg.general.dropLeniency = v; })));
-  g.appendChild(knob('Default Drop', D['general.defaultDrop'],
-    numberInput(cfg.general.defaultDrop, { step: 1, min: 0, max: 40 }, (v) => { cfg.general.defaultDrop = v; })));
-  g.appendChild(knob('Physical Jitter', D['general.calibrationJitter'],
-    numberInput(cfg.general.calibrationJitter, { step: 0.5, min: 0, max: 15 }, (v) => { cfg.general.calibrationJitter = v; })));
-  g.appendChild(knob('Skill Jitter', D['general.quantileJitter'],
-    numberInput(cfg.general.quantileJitter, { step: 0.5, min: 0, max: 15 }, (v) => { cfg.general.quantileJitter = v; })));
 
-  const tbody = $('ratingsTable').querySelector('tbody');
-  tbody.innerHTML = '';
-  for (const rating of META.physicalRatings) {
-    const adj = cfg.ratingAdjustments[rating];
-    const def = META.defaults.ratingAdjustments[rating];
+  // Ensure the config has the power-curve sections even if it was saved before
+  // they existed (mergeConfig on load supplies them, but guard defensively).
+  if (!cfg.powerCurve) cfg.powerCurve = JSON.parse(JSON.stringify(META.defaults.powerCurve));
+  if (!cfg.positionStrength) cfg.positionStrength = JSON.parse(JSON.stringify(META.defaults.positionStrength));
+  if (!cfg.translation) cfg.translation = JSON.parse(JSON.stringify(META.defaults.translation));
+
+  /* --- engine selector --- */
+  // Power Curve is the only supported live engine right now -- the dropdown
+  // stays (rather than being removed outright) so a future engine has
+  // somewhere to slot in without another round of UI surgery. Sanitize any
+  // stale saved strategy (from before this cleanup, or a hand-edited config)
+  // back to the one real option rather than silently rendering a value the
+  // dropdown doesn't offer.
+  if (cfg.translation.strategy !== 'powercurve') { cfg.translation.strategy = 'powercurve'; scheduleSave(); }
+  const eng = $('translationEngine');
+  eng.innerHTML = '';
+  eng.appendChild(knob('Conversion Engine', D['translation.strategy'],
+    selectInput(cfg.translation.strategy, [
+      ['powercurve', 'Power Curve'],
+    ], (v) => { cfg.translation.strategy = v; })));
+
+  /* --- global class strength (Level 1) --- */
+  const gs = $('globalStrengthControl');
+  gs.innerHTML = '';
+  gs.appendChild(knob('Overall Class Strength', D['powerCurve.globalStrength'],
+    numberInput(cfg.powerCurve.globalStrength, { step: 0.05, min: 0.1, max: 3 }, (v) => { cfg.powerCurve.globalStrength = v; })));
+
+  /* --- category curves table (percentage-based, Phase 2) --- */
+  // The two anchors' COLLEGE values (x1, x2 -- e.g. 99/80, or 97/86 for
+  // Mental) are fixed, shown as read-only reference points; only how much of
+  // that rating SURVIVES (as a %) is editable. This is a strict subset of the
+  // old raw-point editor (x is no longer user-editable at all), which also
+  // closes off a real bug the old editor had: setting Elite's and Good's
+  // college value to the same number made deriveCurve() throw (division by
+  // log(1) = 0) and silently failed class generation.
+  const catBody = $('categoryTable').querySelector('tbody');
+  catBody.innerHTML = '';
+  const catMeta = META.powerCurveCategoryMeta || {};
+  // Iterate the CANONICAL category set (the defaults'), not cfg's own keys.
+  // A config saved before a category was removed (e.g. the retired ARMLEG)
+  // still carries that stale anchor after mergeConfig's shallow merge -- and
+  // rendering a row for it would read META.defaults.powerCurve.anchors[stale]
+  // === undefined and throw, aborting the rest of this page (and every page
+  // built after it). Prune any such stale key so it also stops persisting.
+  for (const stale of Object.keys(cfg.powerCurve.anchors)) {
+    if (!(stale in META.defaults.powerCurve.anchors)) { delete cfg.powerCurve.anchors[stale]; scheduleSave(); }
+  }
+  for (const cat of Object.keys(META.defaults.powerCurve.anchors)) {
+    const a = cfg.powerCurve.anchors[cat];
+    const def = META.defaults.powerCurve.anchors[cat];
+    const meta = catMeta[cat] || { label: cat, blurb: '' };
     const tr = el('tr');
 
     const tdName = el('td');
-    tdName.appendChild(el('span', 'pos-code', META.ratingLabels[rating] || rating));
+    tdName.appendChild(el('span', 'pos-code', meta.label));
+    if (meta.blurb) { const bl = el('span', 'pos-label'); bl.textContent = meta.blurb; bl.style.display = 'block'; tdName.appendChild(bl); }
+    const previewSpan = el('span', 'curve-preview');
+    tdName.appendChild(previewSpan);
     tr.appendChild(tdName);
 
+    const refreshPreview = () => {
+      const sample = 90;
+      const base = previewCurveBase(sample, a.x1, a.y1, a.x2, a.y2);
+      previewSpan.textContent = `A ${sample} college rating becomes ~${Math.max(1, Math.min(99, Math.round(base)))}`;
+    };
+
+    const keepPctCell = (xKey, yKey, tierLabel) => {
+      const td = el('td', 'anchor-cell');
+      const xVal = a[xKey]; // fixed reference point, never edited here
+      const pctOf = (yVal) => Math.round((yVal / xVal) * 1000) / 10;
+
+      const row1 = el('div', 'pct-row');
+      row1.appendChild(el('span', 'pos-label', `${tierLabel} (college ${xVal}) keeps`));
+      const pctIn = numberInput(pctOf(a[yKey]), { step: 0.5, min: 1, max: 100 }, (v) => {
+        a[yKey] = Math.max(1, Math.min(99, Math.round(xVal * (v / 100))));
+        landsAtSpan.textContent = `→ lands at ${a[yKey]}`;
+        dot.style.visibility = a[yKey] !== def[yKey] ? 'visible' : 'hidden';
+        refreshPreview();
+        markResultsStale();
+      });
+      pctIn.title = D['powerCurve.anchors'];
+      row1.appendChild(pctIn);
+      row1.appendChild(el('span', null, '%'));
+      td.appendChild(row1);
+
+      const landsAtSpan = el('span', 'default-ref', `→ lands at ${a[yKey]}`);
+      td.appendChild(landsAtSpan);
+      const defPct = pctOf(def[yKey]);
+      td.appendChild(el('span', 'default-ref', ` · default ${defPct}%`));
+      const dot = el('span', 'modified-dot', '●');
+      dot.title = 'Modified from default';
+      dot.style.visibility = a[yKey] !== def[yKey] ? 'visible' : 'hidden';
+      td.appendChild(dot);
+      return td;
+    };
+
+    tr.appendChild(keepPctCell('x1', 'y1', 'Elite'));
+    tr.appendChild(keepPctCell('x2', 'y2', 'Good'));
+    catBody.appendChild(tr);
+    refreshPreview();
+  }
+
+  /* --- per-position strength table --- */
+  const strBody = $('strengthTable').querySelector('tbody');
+  strBody.innerHTML = '';
+  for (const pos of META.positions) {
+    const s = cfg.positionStrength[pos] || { physical: 1, tech: 1, mental: 1 };
+    cfg.positionStrength[pos] = s;
+    const def = META.defaults.positionStrength[pos] || { physical: 1, tech: 1, mental: 1 };
+    const tr = el('tr');
+
+    const tdCode = el('td'); tdCode.appendChild(el('span', 'pos-code', pos)); tr.appendChild(tdCode);
+    tr.appendChild(el('td', 'pos-label', META.positionLabels[pos] || pos));
+
+    const dial = (key, descKey) => {
+      const td = el('td');
+      const inp = numberInput(s[key], { step: 0.01, min: 0, max: 2 }, (v) => {
+        s[key] = v;
+        dot.style.visibility = v !== def[key] ? 'visible' : 'hidden';
+      });
+      inp.title = D[descKey];
+      td.appendChild(inp);
+      td.appendChild(el('span', 'default-ref', `default ${def[key]}`));
+      const dot = el('span', 'modified-dot', '●');
+      dot.title = 'Modified from default';
+      dot.style.visibility = s[key] !== def[key] ? 'visible' : 'hidden';
+      td.appendChild(dot);
+      return td;
+    };
+    tr.appendChild(dial('tech', 'positionStrength.tech'));
+    tr.appendChild(dial('mental', 'positionStrength.mental'));
+    tr.appendChild(dial('physical', 'positionStrength.physical'));
+
+    // Extra Drop -- flat points off every rating for this position (all four
+    // categories, applied post-curve in makePowerCurveAdjuster), unlike the
+    // three proportional Strength dials above. Lives in cfg.positionExtraDrop,
+    // not cfg.positionStrength -- a separate config section, same table.
     const tdDrop = el('td');
-    const dropIn = numberInput(adj.extraDrop, { step: 0.5, min: -20, max: 30 }, (v) => { adj.extraDrop = v; });
-    dropIn.title = META.descriptions['ratingAdjustments.extraDrop'];
-    tdDrop.appendChild(dropIn);
-    tdDrop.appendChild(el('span', 'default-ref', `default ${def.extraDrop}`));
+    const dropInput = numberInput(cfg.positionExtraDrop[pos], { step: 0.5, min: -20, max: 30 }, (v) => {
+      cfg.positionExtraDrop[pos] = v;
+      dropDot.style.visibility = v !== META.defaults.positionExtraDrop[pos] ? 'visible' : 'hidden';
+    });
+    dropInput.title = D.positionExtraDrop;
+    tdDrop.appendChild(dropInput);
+    tdDrop.appendChild(el('span', 'default-ref', `default ${META.defaults.positionExtraDrop[pos]}`));
+    const dropDot = el('span', 'modified-dot', '●');
+    dropDot.title = 'Modified from default';
+    dropDot.style.visibility = cfg.positionExtraDrop[pos] !== META.defaults.positionExtraDrop[pos] ? 'visible' : 'hidden';
+    tdDrop.appendChild(dropDot);
     tr.appendChild(tdDrop);
 
-    const tdJit = el('td');
-    const jitIn = numberInput(adj.jitter, { step: 0.5, min: 0, max: 15, blankable: true }, (v) => { adj.jitter = v; });
-    jitIn.placeholder = 'global';
-    jitIn.title = META.descriptions['ratingAdjustments.jitter'];
-    tdJit.appendChild(jitIn);
-    if (def.jitter !== null) tdJit.appendChild(el('span', 'default-ref', `default ${def.jitter}`));
-    tr.appendChild(tdJit);
-
-    const tdMax = el('td');
-    const maxIn = numberInput(adj.maxDrop, { step: 1, min: 0, max: 50, blankable: true }, (v) => { adj.maxDrop = v; });
-    maxIn.placeholder = 'none';
-    maxIn.title = META.descriptions['ratingAdjustments.maxDrop'];
-    tdMax.appendChild(maxIn);
-    if (def.maxDrop !== null) tdMax.appendChild(el('span', 'default-ref', `default ${def.maxDrop}`));
-    tr.appendChild(tdMax);
-
-    tbody.appendChild(tr);
+    strBody.appendChild(tr);
   }
+
+  /* --- global knobs --- */
+  const g = $('translationGlobals');
+  g.innerHTML = '';
+  g.appendChild(knob('Rating Scatter (Jitter)', D['powerCurve.jitter'],
+    numberInput(cfg.powerCurve.jitter, { step: 0.5, min: 0, max: 15 }, (v) => { cfg.powerCurve.jitter = v; })));
+  g.appendChild(knob('Rating Floor', D['powerCurve.clampFloor'],
+    numberInput(cfg.powerCurve.clampFloor, { step: 1, min: 1, max: 99 }, (v) => { cfg.powerCurve.clampFloor = v; })));
+  g.appendChild(knob('Rating Ceiling', D['powerCurve.clampCeiling'],
+    numberInput(cfg.powerCurve.clampCeiling, { step: 1, min: 1, max: 99 }, (v) => { cfg.powerCurve.clampCeiling = v; })));
+}
+
+// The four buckets a rating can be assigned to, in compression order. Labels
+// pull from the shared category metadata. Order also drives how the table is
+// grouped. There is no "leave untouched" option -- every rating always
+// converts through one of these four.
+function categoryBucketOptions() {
+  const m = META.powerCurveCategoryMeta || {};
+  const opts = [];
+  for (const k of ['physical', 'techmod', 'techhvy', 'mental']) {
+    opts.push([k, (m[k] && m[k].label) || k]);
+  }
+  return opts;
+}
+
+// The Rating Categories page. Bucket dropdowns write EITHER the global
+// reclassification map (roadmap Phase 4a, cfg.powerCurve.ratingCategory) OR a
+// single position's exception (Phase 4c, cfg.powerCurve.categoryOverrides[pos])
+// depending on the "Editing" selector at the top of the page. Extra Drop / Max
+// Drop (Phase 4b) always stay global regardless of that selector -- per-
+// position numeric tweaks aren't in scope (categoryOverrides is category-only).
+// Only non-default entries are ever stored, at whichever scope is active.
+function buildPhysicalPage() {
+  const catDefaults = META.ratingCategoryDefaults || {}; // { [Rating]: category } from CATEGORY_OF
+  const bucketOptions = categoryBucketOptions();
+  const bucketLabel = Object.fromEntries(bucketOptions);
+  const ratingCategory = cfg.powerCurve.ratingCategory || (cfg.powerCurve.ratingCategory = {});
+  const categoryOverrides = cfg.powerCurve.categoryOverrides || (cfg.powerCurve.categoryOverrides = {});
+
+  /* --- "Editing: All positions / QB / WR / ..." selector --- */
+  const posContainer = $('ratingCatPositionSelect');
+  posContainer.innerHTML = '';
+  const posOptions = [['ALL', 'All positions']].concat(
+    (META.positions || []).map((p) => [p, `${p} — ${META.positionLabels[p] || p}`])
+  );
+  // Guard against a position vanishing from META between builds (shouldn't
+  // happen, but keeps this from silently pinning to a dead value).
+  if (ratingCatViewPosition !== 'ALL' && !(META.positions || []).includes(ratingCatViewPosition)) {
+    ratingCatViewPosition = 'ALL';
+  }
+  const posSel = selectInput(ratingCatViewPosition, posOptions, (v) => {
+    ratingCatViewPosition = v; // view-only -- not a config change, no scheduleSave
+    buildPhysicalPage();
+  });
+  posContainer.appendChild(posSel);
+
+  const viewingAll = ratingCatViewPosition === 'ALL';
+  $('categoryLegend').innerHTML =
+    '<strong>Physical</strong> barely changes · '
+    + '<strong>Technical (Light)</strong> mild · <strong>Technical (Heavy)</strong> moderate · '
+    + '<strong>Mental</strong> hardest. '
+    + 'A rating’s bucket also decides which Per-Position Strength dial governs it '
+    + '(Technical buckets → Technical dial, Mental → Mental, Physical → Physical).'
+    + (viewingAll ? '' : ` Showing <strong>${ratingCatViewPosition}</strong>'s effective bucket for each rating -- `
+      + `changing one here only affects ${ratingCatViewPosition}, on top of the global choice above.`);
+
+  const tbody = $('ratingCatTable').querySelector('tbody');
+  tbody.innerHTML = '';
+
+  const ratingTweaks = cfg.powerCurve.ratingTweaks || (cfg.powerCurve.ratingTweaks = {});
+  // Drop a rating's tweaks entry entirely once both fields are back at
+  // default, mirroring the category maps' delete-on-default pattern below.
+  const pruneTweak = (rating) => {
+    const t = ratingTweaks[rating];
+    if (t && (t.extraDrop || 0) === 0 && (t.maxDrop ?? null) === null) delete ratingTweaks[rating];
+  };
+
+  // parentCat: what a rating resolves to WITHOUT a position-specific
+  // exception -- the global override if set, else the structural default.
+  // This is what "All positions" edits directly, and what a per-position
+  // exception falls back to (and is compared/pruned against).
+  const parentCatOf = (rating) => ratingCategory[rating] || catDefaults[rating] || 'techmod';
+  // curCat: the EFFECTIVE bucket for the current view -- parentCat, unless
+  // viewing one position AND that position has its own exception.
+  const curCatOf = (rating) => {
+    if (viewingAll) return parentCatOf(rating);
+    const posOv = categoryOverrides[ratingCatViewPosition];
+    return (posOv && posOv[rating]) || parentCatOf(rating);
+  };
+
+  const allRatings = (META.allRatingColumns || []).map((c) => c.key.replace(/^Madden_/, ''));
+  // Group by the CURRENT VIEW's effective bucket (not always the structural
+  // default) so a position-specific exception visibly moves a rating's row
+  // into its new group when you're looking at that position.
+  const ratingsOf = (bucket) => allRatings.filter((r) => curCatOf(r) === bucket);
+
+  for (const [bucketKey, bucketName] of bucketOptions) {
+    const ratings = ratingsOf(bucketKey);
+    if (!ratings.length) continue;
+
+    const headTr = el('tr', 'group-row');
+    const headTd = el('td'); headTd.colSpan = 5;
+    headTd.appendChild(el('span', 'group-label', bucketName));
+    headTr.appendChild(headTd);
+    tbody.appendChild(headTr);
+
+    for (const rating of ratings) {
+      const parentCat = parentCatOf(rating);
+      const curCat = curCatOf(rating);
+      const structuralDefault = catDefaults[rating] || 'techmod';
+      const label = ratingLabelFor(rating);
+      const tr = el('tr');
+
+      const tdName = el('td');
+      tdName.appendChild(el('span', 'pos-label', label));
+      tr.appendChild(tdName);
+
+      const tdSel = el('td');
+      const sel = selectInput(curCat, bucketOptions, (v) => {
+        if (viewingAll) {
+          if (v === structuralDefault) delete ratingCategory[rating];
+          else ratingCategory[rating] = v;
+        } else {
+          if (v === parentCat) {
+            if (categoryOverrides[ratingCatViewPosition]) {
+              delete categoryOverrides[ratingCatViewPosition][rating];
+              if (!Object.keys(categoryOverrides[ratingCatViewPosition]).length) delete categoryOverrides[ratingCatViewPosition];
+            }
+          } else {
+            (categoryOverrides[ratingCatViewPosition] || (categoryOverrides[ratingCatViewPosition] = {}))[rating] = v;
+          }
+        }
+        markResultsStale();
+        buildPhysicalPage(); // rebuild -- regroups by new bucket, syncs Extra/Max Drop enable-state
+      });
+      sel.title = META.descriptions['powerCurve.ratingCategory'];
+      tdSel.appendChild(sel);
+      tr.appendChild(tdSel);
+
+      const tdDefault = el('td');
+      tdDefault.appendChild(el('span', 'default-ref',
+        viewingAll ? `default ${bucketLabel[structuralDefault]}` : `default ${bucketLabel[parentCat] || parentCat}`));
+      const dot = el('span', 'modified-dot', '●');
+      dot.title = viewingAll ? 'Changed from default' : `Overridden for ${ratingCatViewPosition}`;
+      // In All-positions view, curCat === parentCat by construction (curCatOf
+      // just returns parentCatOf when viewingAll) -- comparing them here would
+      // never light the dot. Compare against the STRUCTURAL default instead,
+      // which is what "All positions" actually edits (ratingCategory[rating]).
+      // In a single-position view, parentCat IS the right comparison (it's
+      // what this position falls back to without its own exception).
+      const isModified = viewingAll ? curCat !== structuralDefault : curCat !== parentCat;
+      dot.style.visibility = isModified ? 'visible' : 'hidden';
+      tdDefault.appendChild(dot);
+      tr.appendChild(tdDefault);
+
+      // Extra Drop / Max Drop (Phase 4b) -- always global, and always active:
+      // every rating converts through a real curve now, so there's no
+      // copy-raw state left that would make these silently do nothing.
+      const tweak = ratingTweaks[rating] || { extraDrop: 0, maxDrop: null };
+
+      const tdDrop = el('td');
+      const dropIn = numberInput(tweak.extraDrop, { step: 0.5, min: -20, max: 30 }, (v) => {
+        const t = ratingTweaks[rating] || (ratingTweaks[rating] = { extraDrop: 0, maxDrop: null });
+        t.extraDrop = v;
+        pruneTweak(rating);
+        markResultsStale();
+      });
+      dropIn.title = META.descriptions['ratingTweaks.extraDrop'];
+      tdDrop.appendChild(dropIn);
+      tr.appendChild(tdDrop);
+
+      const tdMax = el('td');
+      const maxIn = numberInput(tweak.maxDrop, { step: 1, min: 0, max: 50, blankable: true }, (v) => {
+        const t = ratingTweaks[rating] || (ratingTweaks[rating] = { extraDrop: 0, maxDrop: null });
+        t.maxDrop = v;
+        pruneTweak(rating);
+        markResultsStale();
+      });
+      maxIn.placeholder = 'none';
+      maxIn.title = META.descriptions['ratingTweaks.maxDrop'];
+      tdMax.appendChild(maxIn);
+      tr.appendChild(tdMax);
+
+      tbody.appendChild(tr);
+    }
+  }
+}
+
+// Friendly label for a rating key, preferring the Draft Class column labels
+// (cover all ~57 ratings) and falling back to the physical-only RATING_LABELS
+// then a de-suffixed key.
+function ratingLabelFor(rating) {
+  const col = (META.allRatingColumns || []).find((c) => c.key === 'Madden_' + rating);
+  if (col) return col.label;
+  return (META.ratingLabels && META.ratingLabels[rating]) || rating.replace(/Rating$/, '');
 }
 
 function buildAdvancedPage() {
@@ -375,19 +710,6 @@ function buildAdvancedPage() {
   seedIn.value = cfg.general.seed || '';
   seedIn.addEventListener('input', () => { cfg.general.seed = seedIn.value.trim(); scheduleSave(); });
   g.appendChild(knob('Seed', D['general.seed'], seedIn));
-  g.appendChild(knob('K/P Awareness Cap', D.kpAwarenessCap,
-    numberInput(cfg.kpAwarenessCap, { step: 1, min: 0, max: 99 }, (v) => { cfg.kpAwarenessCap = v; })));
-
-  const b = $('advBell');
-  b.innerHTML = '';
-  b.appendChild(knob('Peak Percentile', D['bell.peakPercentile'],
-    numberInput(cfg.bell.peakPercentile, { step: 0.05, min: 0, max: 1 }, (v) => { cfg.bell.peakPercentile = v; })));
-  b.appendChild(knob('Peak Extra Drop', D['bell.peakExtraDrop'],
-    numberInput(cfg.bell.peakExtraDrop, { step: 1, min: 0, max: 40 }, (v) => { cfg.bell.peakExtraDrop = v; })));
-  b.appendChild(knob('Spread Below Peak', D['bell.spreadBelow'],
-    numberInput(cfg.bell.spreadBelow, { step: 0.01, min: 0.01, max: 1 }, (v) => { cfg.bell.spreadBelow = v; })));
-  b.appendChild(knob('Spread Above Peak', D['bell.spreadAbove'],
-    numberInput(cfg.bell.spreadAbove, { step: 0.01, min: 0.01, max: 1 }, (v) => { cfg.bell.spreadAbove = v; })));
 
   const d = $('advDev');
   d.innerHTML = '';
@@ -418,6 +740,7 @@ function buildAdvancedPage() {
 
 function rebuildAllPages() {
   buildWeightsPage();
+  buildTranslationPage();
   buildPhysicalPage();
   buildAdvancedPage();
 }
@@ -432,24 +755,30 @@ async function resetSection(mutate) {
   toast('Reset to defaults');
 }
 $('resetWeights').addEventListener('click', () => resetSection(() => {
-  cfg.positionExtraDrop = JSON.parse(JSON.stringify(META.defaults.positionExtraDrop));
   cfg.positionCaps = JSON.parse(JSON.stringify(META.defaults.positionCaps));
   cfg.positionValue = JSON.parse(JSON.stringify(META.defaults.positionValue));
 }));
+$('resetTranslation').addEventListener('click', () => resetSection(() => {
+  cfg.powerCurve = JSON.parse(JSON.stringify(META.defaults.powerCurve));
+  cfg.positionStrength = JSON.parse(JSON.stringify(META.defaults.positionStrength));
+  cfg.positionExtraDrop = JSON.parse(JSON.stringify(META.defaults.positionExtraDrop));
+  cfg.translation = JSON.parse(JSON.stringify(META.defaults.translation));
+}));
 $('resetPhysical').addEventListener('click', () => resetSection(() => {
-  cfg.ratingAdjustments = JSON.parse(JSON.stringify(META.defaults.ratingAdjustments));
-  cfg.general.dropLeniency = META.defaults.general.dropLeniency;
-  cfg.general.defaultDrop = META.defaults.general.defaultDrop;
-  cfg.general.calibrationJitter = META.defaults.general.calibrationJitter;
-  cfg.general.quantileJitter = META.defaults.general.quantileJitter;
+  // Rating Categories page: clears every global reclassification, every
+  // per-rating Extra/Max Drop tweak, and every per-position exception back to
+  // defaults. (Reset button id kept as resetPhysical -- the page it drives
+  // was repurposed from Physical Attributes in Phase 4a/4b/4c.)
+  cfg.powerCurve.ratingCategory = {};
+  cfg.powerCurve.ratingTweaks = {};
+  cfg.powerCurve.categoryOverrides = {};
+  ratingCatViewPosition = 'ALL';
 }));
 $('resetAdvanced').addEventListener('click', () => resetSection(() => {
-  cfg.bell = JSON.parse(JSON.stringify(META.defaults.bell));
   cfg.devTraits = JSON.parse(JSON.stringify(META.defaults.devTraits));
   cfg.draftValue = JSON.parse(JSON.stringify(META.defaults.draftValue));
   cfg.general.classSize = META.defaults.general.classSize;
   cfg.general.seed = META.defaults.general.seed;
-  cfg.kpAwarenessCap = META.defaults.kpAwarenessCap;
 }));
 
 /* ---------------- presets ---------------- */
@@ -610,7 +939,8 @@ const BASE_COLUMNS = [
   { key: 'ProjectRound', label: 'Rd', num: true },
   { key: 'DraftPick', label: 'Pick', num: true },
   { key: 'CFB_Overall', label: 'CFB OVR', num: true },
-  { key: 'EstMaddenOverall', label: 'Est. Madden OVR', num: true },
+  { key: 'EstMaddenOverall', label: 'Est. Madden OVR', num: true,
+    title: 'A rough preview only -- has no effect on dev traits, draft order, or any other converted rating. Madden recalculates the real Overall itself once you open the player in-game.' },
   { key: 'DevTrait', label: 'Dev' },
   { key: 'Profile', label: 'Profile' },
   { key: 'ProdScore', label: 'Prod', num: true },
@@ -672,6 +1002,7 @@ function buildResultsHeader() {
   for (const col of visibleColumns()) {
     const th = el('th');
     th.textContent = col.label;
+    if (col.title) th.title = col.title;
     if (sortKey === col.key) {
       const arrow = el('span', 'sort-arrow', sortDir === 1 ? '▲' : '▼');
       th.appendChild(arrow);

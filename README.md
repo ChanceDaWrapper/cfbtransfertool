@@ -25,16 +25,19 @@ use against your own local save files.
    market realism (a hard cap on how many QBs/RBs/etc. go in round 1). This
    **only decides draft order, never ratings** -- see
    [Draft projection vs. rating conversion](#draft-projection-vs-rating-conversion).
-3. **Calibrates every rating to Madden's scale.** Physical ratings (Speed,
-   Strength, etc.) get a light, per-position calibrated drop; skill ratings
-   (Awareness, coverage, blocking, route running, ...) are quantile-mapped
-   onto real Madden rating distributions, so a top prospect lands near the
-   top of Madden's real rookie range instead of just getting a flat
-   percentage knocked off.
-4. **Estimates what Madden's own Overall Rating would be** for the
-   calibrated ratings, fit per-archetype from real Madden player data (see
-   [Data & calibration](#data--calibration) below) -- shown next to the CFB
-   overall so you can sanity-check the class before writing it.
+3. **Calibrates every rating to Madden's scale using the Power Curve model.**
+   Every rating belongs to one of four compression buckets -- Physical
+   (barely changes; elite athletes stay elite), Technical Light, Technical
+   Heavy, or Mental (compresses hardest -- rookies rarely process at NFL
+   speed) -- each its own closed-form curve. Fully deterministic and needs no
+   external calibration data: every category curve, per-position strength,
+   per-rating bucket, and per-rating fine-tune (flat drop / hard cap) is
+   editable right in the app (Rating Translation, Rating Categories).
+4. **Shows an estimated Madden Overall Rating** next to the CFB overall as a
+   rough preview -- fit per-archetype from real Madden player data (see
+   [Data & calibration](#data--calibration) below). It's display-only: it has
+   zero effect on dev traits, draft order, or any converted rating. Madden
+   recomputes the real Overall itself once you open the player in-game.
 5. **Assigns dev traits** (Normal/Star/Superstar/X-Factor) with configurable
    target shares of the whole class, weighted by converted overall, draft
    round, production, athletic upside, age, and awards -- so the best
@@ -48,9 +51,10 @@ use against your own local save files.
    and the `DraftPlayer` scouting record (rank, grade, combine/pro-day
    numbers, scouting-stage flags) the draft-class UI reads from.
 
-Every setting above is tunable from the app (Position Weights, Physical
-Attributes, Advanced) -- generate once, look at the Draft Class table, tweak,
-regenerate, and only write to your franchise once you're happy with it.
+Every setting above is tunable from the app (Position Weights, Rating
+Translation, Rating Categories, Advanced) -- generate once, look at the Draft
+Class table, tweak, regenerate, and only write to your franchise once you're
+happy with it.
 
 ### Draft projection vs. rating conversion
 
@@ -111,15 +115,19 @@ vendor/             Vendored madden-franchise 4.3.0 tarball (see NOTICE.md)
 
 ## Data & calibration
 
-`data/position_calibration.json`, `data/quantile_calibration.json`, and
-`data/overall_formula.json` are built from real Madden player data (not
-included in this repo -- see `.gitignore`), so ratings and Overall estimates
-are calibrated against how the actual game rates real players rather than a
-guessed formula. `data/overall_formula.json` in particular is a set of
-per-archetype linear formulas (ridge regression, validated by held-out
-cross-validation against real players) approximating Madden's own Overall
-calculation -- Madden's true formula is proprietary, so this is a fitted
-approximation, not a decompiled original.
+The default rating-conversion engine (Power Curve) needs **no external
+calibration data at all** -- every curve, strength dial, and per-rating
+override lives in editable app settings, not a data file.
+
+`data/overall_formula.json` is the one calibration file still in play: it
+drives the **display-only** Est. Madden Overall preview (per-archetype linear
+formulas, ridge regression, validated by held-out cross-validation against
+real Madden player data). It has no effect on generation logic -- see item 4
+above.
+
+`data/position_calibration.json` and `data/quantile_calibration.json` are
+used only by the legacy `v1` conversion engine (selectable but not exposed in
+the UI; see `POWERCURVE_ROADMAP.md`), kept as a dormant fallback/reference.
 
 `data/schemas/CFB27_809_0.gz` is the full CFB 27 save schema used to read
 the dynasty save (Team/SeasonStats/CareerStats tables, needed for school

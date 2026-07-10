@@ -11,8 +11,12 @@ const {
   DEFAULT_CONFIG, DESCRIPTIONS, POSITIONS, POSITION_LABELS,
   PHYSICAL_RATINGS, RATING_LABELS, ALL_RATING_COLUMNS,
   PHYSICAL_HIGHLIGHT_ATTRIBUTES, PHYSICAL_HIGHLIGHT_EXTRA_BY_POSITION,
-  POSITION_KEY_ATTRIBUTES, mergeConfig,
+  POSITION_KEY_ATTRIBUTES, POWER_CURVE_CATEGORY_META, mergeConfig,
 } = require('./lib/defaults');
+// Built-in rating -> category defaults (the structural map the per-rating
+// category dropdowns show as each rating's baseline). Sourced from the engine's
+// own category module so the UI and the converter can never disagree.
+const { CATEGORY_OF } = require('./lib/rosetta/translation/powerCurveCategories');
 
 let mainWindow;
 let configStore;
@@ -96,6 +100,8 @@ ipcMain.handle('config-get', () => ({
   physicalHighlightAttributes: PHYSICAL_HIGHLIGHT_ATTRIBUTES,
   physicalHighlightExtraByPosition: PHYSICAL_HIGHLIGHT_EXTRA_BY_POSITION,
   positionKeyAttributes: POSITION_KEY_ATTRIBUTES,
+  powerCurveCategoryMeta: POWER_CURVE_CATEGORY_META,
+  ratingCategoryDefaults: CATEGORY_OF, // { [Rating]: category } -- every convertible rating has an entry
 }));
 
 ipcMain.handle('config-set', (_e, config) => configStore.save(config));
