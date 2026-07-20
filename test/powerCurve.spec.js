@@ -30,7 +30,7 @@ const assert = require('assert');
 const { deriveCurve, transform } = require('../lib/rosetta/translation/powerCurve');
 const { categoryFor } = require('../lib/rosetta/translation/powerCurveCategories');
 const { defaultPowerCurveAnchors, defaultPositionStrength, mergeConfig } = require('../lib/defaults');
-const { calibratePlayers, generateClass } = require('../lib/pipeline');
+const { calibratePlayers, generateClass, GLOBAL_STRENGTH_BASELINE } = require('../lib/pipeline');
 
 let passed = 0;
 function check(label, got, want) {
@@ -129,7 +129,12 @@ const specConfig = {
   // ratingCategory (Phase 4a) and ratingTweaks (Phase 4b) -- pin both so
   // future defaults in either can't break the engine-fidelity proof.
   positionExtraDrop: { WR: 0, QB: 0 },
-  powerCurve: { ratingCategory: {}, ratingTweaks: {} },
+  // globalStrength set so its EFFECTIVE value (after pipeline.js's hidden
+  // GLOBAL_STRENGTH_BASELINE multiplier) is a true 1.0 no-op -- this section
+  // proves engine fidelity against the ORIGINAL spec's numbers, independent
+  // of both lib/defaults.js's shipped default AND the baseline stacked on
+  // top of the dial at calculation time.
+  powerCurve: { globalStrength: 1 / GLOBAL_STRENGTH_BASELINE, ratingCategory: {}, ratingTweaks: {} },
 };
 const out = calibratePlayers([porter, bentley], { config: specConfig, log: () => {} });
 const byPos = Object.fromEntries(out.map((p) => [p.CFB_Position, p]));
@@ -141,18 +146,24 @@ for (const [pos, rating, , want] of SPEC_EXAMPLES) {
 const again = calibratePlayers([porter], { config: specConfig, log: () => {} });
 check('deterministic WR Awareness', again[0].Madden_AwarenessRating, byPos.WR.Madden_AwarenessRating);
 
-// globalStrength=1.0 (roadmap Phase 1) must be a true no-op: identical output
-// whether it's explicitly set to 1.0 or omitted entirely (falling back to the
-// shipped default of 1.0).
-const explicit1 = calibratePlayers([porter, bentley], {
-  config: { ...specConfig, powerCurve: { ...specConfig.powerCurve, globalStrength: 1.0 } }, log: () => {},
+// globalStrength omitted from a config must be a true no-op vs explicitly
+// passing whatever lib/defaults.js currently ships (read dynamically via
+// mergeConfig rather than hardcoded, so this doesn't break every time the
+// shipped default is retuned -- only the omitted-falls-back-correctly wiring
+// is being proven here, not any particular number). specConfig itself pins
+// globalStrength:1.0 (for the spec-fidelity section above), so build this
+// section's base config WITHOUT that pin -- otherwise "omitted" wouldn't be.
+const { globalStrength: _pinnedGS, ...powerCurveNoGS } = specConfig.powerCurve;
+const shippedGlobalStrength = mergeConfig(null).powerCurve.globalStrength;
+const explicitShipped = calibratePlayers([porter, bentley], {
+  config: { ...specConfig, powerCurve: { ...powerCurveNoGS, globalStrength: shippedGlobalStrength } }, log: () => {},
 });
-const omitted = calibratePlayers([porter, bentley], { config: specConfig, log: () => {} });
-check('globalStrength=1.0 (explicit) matches omitted (default) -- WR Awareness',
-  explicit1.find((p) => p.CFB_Position === 'WR').Madden_AwarenessRating,
+const omitted = calibratePlayers([porter, bentley], { config: { ...specConfig, powerCurve: powerCurveNoGS }, log: () => {} });
+check('globalStrength omitted matches explicit shipped default -- WR Awareness',
+  explicitShipped.find((p) => p.CFB_Position === 'WR').Madden_AwarenessRating,
   omitted.find((p) => p.CFB_Position === 'WR').Madden_AwarenessRating);
-check('globalStrength=1.0 (explicit) matches omitted (default) -- QB ThrowAccuracyShort',
-  explicit1.find((p) => p.CFB_Position === 'QB').Madden_ThrowAccuracyShortRating,
+check('globalStrength omitted matches explicit shipped default -- QB ThrowAccuracyShort',
+  explicitShipped.find((p) => p.CFB_Position === 'QB').Madden_ThrowAccuracyShortRating,
   omitted.find((p) => p.CFB_Position === 'QB').Madden_ThrowAccuracyShortRating);
 
 // ===========================================================================
@@ -285,7 +296,7 @@ check('WR-only exception leaves QB completely untouched', exceptionQB.Madden_Thr
 // intentionally diverge from SPEC_STRENGTH above for several positions.
 const SHIPPED = defaultPositionStrength();
 const SHIPPED_EXPECTED = {
-  QB: { tech: 0.6, mental: 0.75 },
+  QB: { tech: 0.75, mental: 1 },
   HB: { tech: 0.5, mental: 0.6 },
   WR: { tech: 1.0, mental: 1.0 },
   TE: { tech: 0.9, mental: 0.75 },

@@ -721,6 +721,11 @@ function buildAdvancedPage() {
   seedIn.addEventListener('input', () => { cfg.general.seed = seedIn.value.trim(); scheduleSave(); });
   g.appendChild(knob('Seed', D['general.seed'], seedIn));
 
+  const rl = $('advRealism');
+  rl.innerHTML = '';
+  rl.appendChild(knob('Big WR/CB Agility + COD Fix', D['realism.agilityCodSizePenalty'],
+    checkboxInput(cfg.realism.agilityCodSizePenalty, (v) => { cfg.realism.agilityCodSizePenalty = v; })));
+
   const d = $('advDev');
   d.innerHTML = '';
   d.appendChild(knob('X-Factor Target %', D['devTraits.xfactorPercentTarget'],
@@ -787,6 +792,7 @@ $('resetPhysical').addEventListener('click', () => resetSection(() => {
 $('resetAdvanced').addEventListener('click', () => resetSection(() => {
   cfg.devTraits = JSON.parse(JSON.stringify(META.defaults.devTraits));
   cfg.draftValue = JSON.parse(JSON.stringify(META.defaults.draftValue));
+  cfg.realism = JSON.parse(JSON.stringify(META.defaults.realism));
   cfg.general.classSize = META.defaults.general.classSize;
   cfg.general.seed = META.defaults.general.seed;
 }));

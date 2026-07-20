@@ -108,15 +108,15 @@
 
         <div class="card">
           <h2>2 · Generate Class</h2>
-          <p class="hint">Applies every setting from Position Weights, Physical Attributes, and Advanced to the loaded pool.</p>
+          <p class="hint">Applies every setting from Position Weights, Rating Translation, Rating Categories, and Advanced to the loaded pool.</p>
           <div class="warning-box subtle">
             <strong>Recommended: generate once, then move on.</strong>
             Each run adds a little randomness on top of your settings (that's
             intentional — real draft classes have that same natural variance), so
             re-running produces a slightly different class every time. Only
             regenerate repeatedly if you're specifically testing how a Position
-            Weight or Physical Attribute change affects the output on the Draft
-            Class page — otherwise, generate once and write it into your franchise.
+            Weight or rating change affects the output on the Draft Class page —
+            otherwise, generate once and write it into your franchise.
           </div>
           <div id="settingsWarnings" class="warnings-stack"></div>
           <div class="btn-row">
@@ -269,7 +269,7 @@
           route running, coverage, blocking, pass rush, catching, and throw
           accuracy; <strong>Mental</strong> is Awareness &amp; Play Recognition;
           <strong>Physical</strong> is athleticism, including Throw/Kick Power --
-          all three are <em>proportional</em> (1.0 = full model compression, lower = stronger,
+          all three are <em>proportional</em> (1.0 = the standard amount of drop, lower = stronger,
           higher = weaker; keep Mental ≥ Technical for realistic rookies).
           <strong>Extra Drop</strong> is different: a <em>flat</em> number of points
           off every rating for that position (all four categories), stacking on top
@@ -341,6 +341,12 @@
       <div class="card">
         <h2>Class Construction</h2>
         <div class="knob-grid" id="advGeneral"></div>
+      </div>
+
+      <div class="card">
+        <h2>Rating Realism <span class="badge-info">opt-in</span></h2>
+        <p class="hint compact">Optional post-translation corrections, off by default. Only turn these on if you aren't already handling the same thing with an external tool.</p>
+        <div class="knob-grid" id="advRealism"></div>
       </div>
 
       <div class="card">
