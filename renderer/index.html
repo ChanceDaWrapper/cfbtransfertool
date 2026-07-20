@@ -128,8 +128,25 @@
       </div>
 
       <div class="card">
-        <h2>3 · Write to Madden Franchise</h2>
-        <p class="hint">Overwrites the incoming rookie class in your Madden 26 franchise save with your generated class.</p>
+        <h2>3 · Export Draft Class File <span class="badge-recommended">recommended</span></h2>
+        <p class="hint">Builds a Madden <em>Import Draft Class</em> file from your generated class — no franchise save needed.
+          In Madden: <strong>Franchise → Manage Roster → Import Draft Class</strong> and pick this file. It replaces the
+          whole rookie class (no duplicates), with correct faces, positions, sizes, ratings, archetypes, and dev traits.</p>
+        <div class="warning-box">
+          Madden's draft-class files are a fixed <strong>402 players</strong>. Your generated class must have at least
+          402 (the top 402 by projection are used) — if it's smaller, raise <em>Class Size</em> on the Generate step and
+          regenerate. The saved file's name always starts with <code>CAREERDRAFT-</code> so Madden's importer lists it.
+        </div>
+        <div class="btn-row">
+          <button id="exportDraftFileBtn" class="primary" disabled>Export Draft Class File…</button>
+          <span id="exportDraftFileStatus" class="inline-status"></span>
+        </div>
+      </div>
+
+      <div class="card">
+        <h2>4 · Write to Madden Franchise <span class="badge-alt">alternative</span></h2>
+        <p class="hint">Overwrites the incoming rookie class in your Madden 26 franchise save with your generated class,
+          writing directly into the save file (no in-game import step). The draft-class file above is usually cleaner.</p>
         <div class="warning-box">
           <strong>Your Madden save CANNOT be in Preseason.</strong>
           The incoming rookie draft class doesn't exist yet during preseason, so

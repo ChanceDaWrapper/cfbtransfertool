@@ -178,7 +178,7 @@ function renderConfigSummary() {
 // triggering value moves back into a normal range.
 function computeWarnings() {
   const msgs = [];
-  const g = cfg.general, dt = cfg.devTraits;
+  const dt = cfg.devTraits;
 
   const gs = cfg.powerCurve && Number(cfg.powerCurve.globalStrength);
   if (Number.isFinite(gs)) {
@@ -199,10 +199,6 @@ function computeWarnings() {
   if (extremeValue.length) {
     const names = extremeValue.map((p) => META.positionLabels[p] || p).join(', ');
     msgs.push(`Draft Value for ${names} is set to an extreme value and may push them far outside where their overall would normally land.`);
-  }
-
-  if (g.classSize < 32) {
-    msgs.push('A Class Size this small may leave some draft rounds without enough prospects to fill every pick.');
   }
 
   if (dt.starPercentTarget >= 60) {
@@ -255,6 +251,20 @@ function numberInput(value, { step = 1, min, max, blankable = false } = {}, onCh
     if (!Number.isFinite(v)) return;
     onChange(v);
     scheduleSave();
+  });
+  // Snap out-of-range values back to min/max once the user finishes editing
+  // (not on every keystroke, so they can still type "4" -> "40" -> "402").
+  inp.addEventListener('change', () => {
+    if (inp.value === '') return;
+    let v = Number(inp.value);
+    if (!Number.isFinite(v)) return;
+    if (min !== undefined && v < min) v = min;
+    if (max !== undefined && v > max) v = max;
+    if (v !== Number(inp.value)) {
+      inp.value = v;
+      onChange(v);
+      scheduleSave();
+    }
   });
   return inp;
 }
@@ -703,7 +713,7 @@ function buildAdvancedPage() {
   const g = $('advGeneral');
   g.innerHTML = '';
   g.appendChild(knob('Class Size', D['general.classSize'],
-    numberInput(cfg.general.classSize, { step: 10, min: 1, max: 1000 }, (v) => { cfg.general.classSize = v; })));
+    numberInput(cfg.general.classSize, { step: 10, min: 402, max: 1000 }, (v) => { cfg.general.classSize = v; })));
   const seedIn = el('input');
   seedIn.type = 'text';
   seedIn.placeholder = 'random';
@@ -862,6 +872,7 @@ async function generate() {
     $('exportCsvBtn').disabled = false;
     $('exportJsonBtn').disabled = false;
     $('writeBtn').disabled = !maddenPath || (outMode === 'copy' && !outputPath);
+    updateExportDraftEnabled();
     renderResults();
     toast(`Generated ${players.length}-player class`);
   } else {
@@ -907,6 +918,44 @@ $('pickOutput').addEventListener('click', async () => {
 function updateWriteEnabled() {
   $('writeBtn').disabled = !(players.length && maddenPath && (outMode === 'edit' ? true : !!outputPath));
 }
+
+const DRAFT_FILE_MIN = 402; // Madden draft-class files are a fixed 402 players
+function updateExportDraftEnabled() {
+  const btn = $('exportDraftFileBtn');
+  const st = $('exportDraftFileStatus');
+  if (!players.length) {
+    btn.disabled = true;
+    st.textContent = '';
+    st.className = 'inline-status';
+  } else if (players.length < DRAFT_FILE_MIN) {
+    btn.disabled = true;
+    st.textContent = `Need ${DRAFT_FILE_MIN}+ players (have ${players.length}). Raise Class Size and regenerate.`;
+    st.className = 'inline-status err';
+  } else {
+    btn.disabled = false;
+    st.textContent = `${players.length} players ready — top ${DRAFT_FILE_MIN} will be exported.`;
+    st.className = 'inline-status';
+  }
+}
+
+$('exportDraftFileBtn').addEventListener('click', async () => {
+  const st = $('exportDraftFileStatus');
+  st.textContent = 'Building…'; st.className = 'inline-status';
+  $('exportDraftFileBtn').disabled = true;
+  const res = await window.api.exportDraftClassFile();
+  if (res.ok) {
+    st.textContent = `Done — ${res.count} players → ${res.path}`;
+    st.className = 'inline-status ok';
+    toast('Draft class file exported');
+  } else if (res.cancelled) {
+    st.textContent = ''; st.className = 'inline-status';
+  } else {
+    st.textContent = res.error;
+    st.className = 'inline-status err';
+    toast(res.error, true);
+  }
+  updateExportDraftEnabled();
+});
 
 $('writeBtn').addEventListener('click', async () => {
   const st = $('writeStatus');

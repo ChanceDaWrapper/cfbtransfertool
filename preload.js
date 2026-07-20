@@ -16,6 +16,7 @@ contextBridge.exposeInMainWorld('api', {
   poolStatus: () => ipcRenderer.invoke('pool-status'),
   generateClass: (config) => ipcRenderer.invoke('generate-class', config),
   writeCareer: (opts) => ipcRenderer.invoke('write-career', opts),
+  exportDraftClassFile: () => ipcRenderer.invoke('export-draft-class-file'),
   exportResults: (opts) => ipcRenderer.invoke('export-results', opts),
   // log stream
   onLog: (cb) => ipcRenderer.on('app-log', (_e, msg) => cb(msg)),

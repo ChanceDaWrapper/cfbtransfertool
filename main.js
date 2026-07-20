@@ -6,12 +6,13 @@ const {
   loadDepartedCsv, toCsv,
   defaultCfbSavesDir, defaultMaddenSavesDir,
 } = require('./lib/pipeline');
+const { buildDraftClassFile, TEMPLATE_SLOT_COUNT } = require('./lib/draftClassExporter');
 const { ConfigStore } = require('./lib/configStore');
 const {
   DEFAULT_CONFIG, DESCRIPTIONS, POSITIONS, POSITION_LABELS,
   PHYSICAL_RATINGS, RATING_LABELS, ALL_RATING_COLUMNS,
   PHYSICAL_HIGHLIGHT_ATTRIBUTES, PHYSICAL_HIGHLIGHT_EXTRA_BY_POSITION,
-  POSITION_KEY_ATTRIBUTES, POWER_CURVE_CATEGORY_META, mergeConfig,
+  POSITION_KEY_ATTRIBUTES, POWER_CURVE_CATEGORY_META, mergeConfig, enforceMinClassSize,
 } = require('./lib/defaults');
 // Built-in rating -> category defaults (the structural map the per-rating
 // category dropdowns show as each rating's baseline). Sourced from the engine's
@@ -141,10 +142,15 @@ ipcMain.handle('extract-pool', async (_e, { sourcePath, sourceType, forceSource 
       cachedPool = loadDepartedCsv(sourcePath, sendLog);
     } else {
       sendLog('Reading CFB dynasty save (this can take a moment)...');
-      // populationMode isn't user-facing yet -- read from the persisted
-      // config so it's settable via an imported preset for validation, per
-      // the Rosetta migration's feature-flag rule (defaults to 'legacy').
-      const populationMode = configStore.load().population?.mode || 'legacy';
+      // Force EXIT population mode (Season Exit Population): all graduating
+      // seniors + real EarlyNFL declarers (~2,500), not just the ~224 officially
+      // drafted. Hardcoded rather than read from config on purpose -- a stale
+      // 'legacy' left in a persisted config from before the default was flipped
+      // was silently pinning users to 224 (the value can also get clobbered back
+      // by the renderer's autosave), and legacy mode can't even fill a 402-player
+      // draft-class file. Legacy has no UI. When the population/UFL source toggle
+      // lands, read the chosen mode here instead of hardcoding.
+      const populationMode = 'exit';
       cachedPool = await extractLeavingPlayers(sourcePath, sendLog, { forceSource: forceSource || null, populationMode });
     }
     cachedPoolSource = sourcePath;
@@ -166,7 +172,7 @@ ipcMain.handle('pool-status', () => ({
 ipcMain.handle('generate-class', async (_e, config) => {
   if (!cachedPool) return { ok: false, error: 'No player pool loaded. Load a CFB save or CSV first.' };
   try {
-    const players = generateClass(cachedPool, config, sendLog);
+    const players = generateClass(cachedPool, enforceMinClassSize(mergeConfig(config)), sendLog);
     lastGenerated = players;
     return { ok: true, players };
   } catch (e) {
@@ -182,6 +188,46 @@ ipcMain.handle('write-career', async (_e, { maddenPath, outputPath, config }) =>
   } catch (e) {
     return { ok: false, error: e.message || String(e) };
   }
+});
+
+// Draft-class file export (the "Import Draft Class" path). Builds a CAREERDRAFT-*
+// file from the generated class by patching the bundled template -- no franchise
+// save needed. Throws (surfaced as an error) if the class has fewer than 402
+// players, since Madden's draft-class file is fixed at that count.
+ipcMain.handle('export-draft-class-file', async () => {
+  if (!lastGenerated) return { ok: false, error: 'Generate a draft class first.' };
+  if (lastGenerated.length < TEMPLATE_SLOT_COUNT) {
+    return {
+      ok: false,
+      error: `Draft class has ${lastGenerated.length} players; a Madden draft-class file needs `
+        + `exactly ${TEMPLATE_SLOT_COUNT}. Raise Class Size on the Generate step and regenerate.`,
+    };
+  }
+  let buffer;
+  try {
+    // Build first so any error surfaces before we prompt for a save location.
+    buffer = buildDraftClassFile(lastGenerated, { log: sendLog });
+  } catch (e) {
+    return { ok: false, error: e.message || String(e) };
+  }
+  const defaultDir = defaultMaddenSavesDir();
+  const result = await dialog.showSaveDialog(mainWindow, {
+    title: 'Export Madden draft-class file',
+    defaultPath: path.join(defaultDir && fs.existsSync(defaultDir) ? defaultDir : '', 'CAREERDRAFT-CFBCLASS'),
+  });
+  if (result.canceled || !result.filePath) return { ok: false, cancelled: true };
+  // Madden's "Import Draft Class" browser only lists files whose name starts with
+  // CAREERDRAFT- -- enforce it so the exported file actually shows up in-game.
+  let outPath = result.filePath;
+  const base = path.basename(outPath);
+  if (!base.startsWith('CAREERDRAFT-')) outPath = path.join(path.dirname(outPath), `CAREERDRAFT-${base}`);
+  try {
+    fs.writeFileSync(outPath, buffer);
+  } catch (e) {
+    return { ok: false, error: `Could not write file: ${e.message}` };
+  }
+  sendLog(`Exported draft-class file: ${outPath}`);
+  return { ok: true, path: outPath, count: TEMPLATE_SLOT_COUNT };
 });
 
 ipcMain.handle('export-results', async (_e, { format }) => {

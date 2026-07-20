@@ -45,6 +45,15 @@ const {
   AGE_OFFSET,
   JERSEY_OFFSET,
   DEVTRAIT_OFFSET,
+  getDraftRound,
+  setDraftRound,
+  getDraftPick,
+  setDraftPick,
+  DRAFT_ROUND_OFFSET,
+  DRAFT_PICK_OFFSET,
+  UNDRAFTED_ROUND,
+  setBodyType,
+  BODY_TYPES,
   make5bTestEdit,
 } = require('../lib/draftClassFile');
 
@@ -104,6 +113,16 @@ const samplePlayers = [
   { firstName: 'Michael', lastName: 'Fasusi', visuals: { bodyType: 'Heavy', genericHeadName: 'gen_6_B_G_03', skinTone: 6 } },
   { firstName: 'David', lastName: 'Sanders', visuals: { bodyType: 'Thin', genericHeadName: 'gen_2_M_N_22', skinTone: 2, loadouts: [{ slotType: 'CharacterBodyType' }] } },
   { firstName: 'Colton', lastName: 'Vasek', visuals: { bodyType: 'Muscular', genericHeadName: 'gen_1_B_N_011', skinTone: 1 } },
+  // 4th player carries a realistic loadout item with an itemAssetName ("<X>_BodyType"),
+  // matching the real shape found in every sampled player -- needed to test setBodyType,
+  // which reads/rewrites that token (not the top-level "bodyType" key).
+  {
+    firstName: 'Ellis', lastName: 'Robinson',
+    visuals: {
+      bodyType: 'Standard', genericHeadName: 'gen_3_B_N_01', skinTone: 3,
+      loadouts: [{ loadoutCategory: 'Base', loadoutElements: [{ itemAssetName: 'Standard_BodyType', slotType: 'CharacterBodyType' }] }],
+    },
+  },
 ];
 
 // 1. Round-trip gate: parse then re-serialize must reproduce the input exactly.
@@ -112,7 +131,7 @@ const samplePlayers = [
   const { identical, model, originalLength, reemittedLength } = verifyRoundTrip(buf);
   check('round-trip: byte-identical', identical, true);
   check('round-trip: length preserved', reemittedLength, originalLength);
-  check('round-trip: player count parsed', model.header.playerCount, 3);
+  check('round-trip: player count parsed', model.header.playerCount, samplePlayers.length);
   check('round-trip: schema tag parsed', model.header.schemaTag, 'Madden-26-RL10-8802649');
 }
 
@@ -120,7 +139,7 @@ const samplePlayers = [
 {
   const buf = makeSyntheticFile(samplePlayers);
   const model = parseDraftClassFile(buf);
-  check('player count', model.players.length, 3);
+  check('player count', model.players.length, samplePlayers.length);
   for (let i = 0; i < samplePlayers.length; i++) {
     check(`player ${i} firstName`, model.players[i].binary.firstName, samplePlayers[i].firstName);
     check(`player ${i} lastName`, model.players[i].binary.lastName, samplePlayers[i].lastName);
@@ -143,7 +162,7 @@ const samplePlayers = [
   const p0BinaryStart = model.header.raw.length + model.players[0].json.raw.length + model.players[0].gap.raw.length;
   rebuilt[p0BinaryStart + 150] = 0x7b;
   const reparsed = parseDraftClassFile(rebuilt);
-  check('stray brace in binary struct: player count unaffected', reparsed.players.length, 3);
+  check('stray brace in binary struct: player count unaffected', reparsed.players.length, samplePlayers.length);
   check('stray brace in binary struct: player 1 still parses', reparsed.players[1].binary.firstName, 'David');
 }
 
@@ -348,8 +367,12 @@ const samplePlayers = [
   assert.throws(() => setDevTrait(p, 9), /unrecognized trait/, 'invalid dev trait should throw');
   passed++;
 
-  // archetype (raw PlayerType value, direct copy)
-  check('setArchetype/getArchetype round-trip', getArchetype(setArchetype(p, 27)), 27);
+  // archetype: raw PlayerType value (direct copy) or by name
+  check('setArchetype/getArchetype round-trip (by value)', getArchetype(setArchetype(p, 27)).value, 27);
+  check('setArchetype by name resolves to the right value', getArchetype(setArchetype(p, 'WR_DeepThreat')).value, 14);
+  check('getArchetype returns a display name', getArchetype(setArchetype(p, 32)).name, 'OT_Power');
+  assert.throws(() => setArchetype(p, 'NotARealArchetype'), /unrecognized PlayerType/, 'unknown archetype name should throw');
+  passed++;
 }
 
 // 13. Ratings table integrity + set/get. The table must cover the whole 82-138
@@ -378,6 +401,77 @@ const samplePlayers = [
   for (let i = 0; i < BINARY_RECORD_LEN; i++) if (edited.binary.raw[i] !== p.binary.raw[i]) changed++;
   check('setRatings only changed the 3 given ratings', changed, 3);
   assert.throws(() => setRatings(p, { SpeedRating: 150 }), /out of range/, 'rating > 99 should throw');
+  passed++;
+}
+
+// 14. Draft round/pick (offsets 80, 78-79): round/pick get/set, undrafted sentinel,
+//     range validation. Loop-confirmed offsets.
+{
+  const buf = makeSyntheticFile(samplePlayers);
+  const model = parseDraftClassFile(buf);
+  const p = model.players[0];
+
+  check('setDraftRound/getDraftRound round-trip', getDraftRound(setDraftRound(p, 3)), 3);
+  check('setDraftRound writes offset 80', setDraftRound(p, 5).binary.raw[DRAFT_ROUND_OFFSET], 5);
+  check('setDraftRound(null) writes the undrafted sentinel', getDraftRound(setDraftRound(p, null)), UNDRAFTED_ROUND);
+  check('setDraftRound(undefined) also means undrafted', getDraftRound(setDraftRound(p, undefined)), UNDRAFTED_ROUND);
+  assert.throws(() => setDraftRound(p, 8), /must be an integer 1-7/, 'round > 7 should throw');
+  passed++;
+  assert.throws(() => setDraftRound(p, 0), /must be an integer 1-7/, 'round < 1 should throw');
+  passed++;
+
+  check('setDraftPick/getDraftPick round-trip', getDraftPick(setDraftPick(p, 47)), 47);
+  const edited = setDraftPick(p, 300);
+  check('setDraftPick writes low byte', edited.binary.raw[DRAFT_PICK_OFFSET], 300 & 0xff);
+  check('setDraftPick writes high byte', edited.binary.raw[DRAFT_PICK_OFFSET + 1], (300 >> 8) & 0xff);
+  assert.throws(() => setDraftPick(p, -1), /must be an integer 0-65535/, 'negative pick should throw');
+  passed++;
+  assert.throws(() => setDraftPick(p, 70000), /must be an integer 0-65535/, 'pick > 65535 should throw');
+  passed++;
+}
+
+// 15. setBodyType (JSON, padding-compensated -- FACES_AND_DRAFT_ROADMAP.md 5d.0):
+//     writes the LOADOUT token (what Madden actually reads), applies the
+//     Freshman->Lean alias, keeps the top-level key in sync, and preserves the
+//     player's total [json+gap] length so every later player's file offset is
+//     unaffected.
+{
+  const buf = makeSyntheticFile(samplePlayers);
+  const model = parseDraftClassFile(buf);
+  const ellis = model.players[3]; // has a real "<X>_BodyType" loadout token
+  const originalTotalLen = ellis.json.raw.length + ellis.gap.raw.length;
+
+  const toMuscular = setBodyType(ellis, 'Muscular');
+  check('setBodyType updates visuals.bodyType', toMuscular.json.visuals.bodyType, 'Muscular');
+  check('setBodyType writes the loadout token', toMuscular.json.raw.toString('utf8').includes('"Muscular_BodyType"'), true);
+  check('setBodyType removes the old loadout token', toMuscular.json.raw.toString('utf8').includes('"Standard_BodyType"'), false);
+  check('setBodyType preserves [json+gap] total length', toMuscular.json.raw.length + toMuscular.gap.raw.length, originalTotalLen);
+
+  // Freshman uses the "Lean" alias in the loadout token specifically (ground-truthed:
+  // all 24 template outliers were exactly this alias, zero exceptions)
+  const toFreshman = setBodyType(ellis, 'Freshman');
+  check('setBodyType applies the Freshman->Lean loadout alias', toFreshman.json.raw.toString('utf8').includes('"Lean_BodyType"'), true);
+  check('setBodyType keeps the real name in the top-level key (not aliased)', toFreshman.json.visuals.bodyType, 'Freshman');
+  check('setBodyType preserves total length for the aliased case too', toFreshman.json.raw.length + toFreshman.gap.raw.length, originalTotalLen);
+
+  // full-file round-trip: total FILE length unchanged, and every OTHER player's
+  // bytes are untouched -- this is what "padding compensation" is actually for.
+  const players = model.players.slice();
+  players[3] = toMuscular;
+  const editedModel = { ...model, players };
+  const editedBuf = serializeDraftClassFile(editedModel);
+  check('setBodyType: full file length unchanged after re-serialize', editedBuf.length, buf.length);
+  for (const i of [0, 1, 2]) {
+    const before = Buffer.concat([model.players[i].json.raw, model.players[i].gap.raw, model.players[i].binary.raw]);
+    const reparsed = parseDraftClassFile(editedBuf);
+    const after = Buffer.concat([reparsed.players[i].json.raw, reparsed.players[i].gap.raw, reparsed.players[i].binary.raw]);
+    check(`setBodyType: player ${i}'s slot is untouched`, Buffer.compare(before, after), 0);
+  }
+
+  assert.throws(() => setBodyType(ellis, 'NotARealBodyType'), /unrecognized bodyType/, 'invalid bodyType should throw');
+  passed++;
+  // a player with no loadout token at all (sample player 0) should throw, not silently no-op
+  assert.throws(() => setBodyType(model.players[0], 'Heavy'), /could not find/, 'missing loadout token should throw');
   passed++;
 }
 

@@ -285,17 +285,18 @@ check('WR-only exception leaves QB completely untouched', exceptionQB.Madden_Thr
 // intentionally diverge from SPEC_STRENGTH above for several positions.
 const SHIPPED = defaultPositionStrength();
 const SHIPPED_EXPECTED = {
-  QB: { tech: 0.65, mental: 0.75 },
-  HB: { tech: 0.5, mental: 0.7 },
+  QB: { tech: 0.6, mental: 0.75 },
+  HB: { tech: 0.5, mental: 0.6 },
   WR: { tech: 1.0, mental: 1.0 },
   TE: { tech: 0.9, mental: 0.75 },
-  LT: { tech: 0.7, mental: 1.0 }, LG: { tech: 0.7, mental: 1.0 }, C: { tech: 0.7, mental: 1.0 },
-  RG: { tech: 0.7, mental: 1.0 }, RT: { tech: 0.7, mental: 1.0 },
-  LE: { tech: 0.95, mental: 1.0 }, RE: { tech: 0.95, mental: 1.0 }, DT: { tech: 0.8, mental: 1.0 },
+  LT: { tech: 1.0, mental: 1.0 }, LG: { tech: 1.0, mental: 1.0 }, C: { tech: 1.0, mental: 1.0 },
+  RG: { tech: 1.0, mental: 1.0 }, RT: { tech: 1.0, mental: 1.0 },
+  LE: { tech: 0.9, mental: 0.9 }, RE: { tech: 0.9, mental: 0.9 }, DT: { tech: 0.9, mental: 1.0 },
   LOLB: { tech: 0.8, mental: 1.0 }, MLB: { tech: 0.8, mental: 1.0 }, ROLB: { tech: 0.8, mental: 1.0 },
   CB: { tech: 0.95, mental: 1.0 },
   FS: { tech: 0.85, mental: 1.0 }, SS: { tech: 0.85, mental: 1.0 },
-  LS: { tech: 1.2, mental: 1.0 },
+  K: { tech: 1.0, mental: 1.25 }, P: { tech: 1.0, mental: 1.25 },
+  LS: { tech: 1.2, mental: 1.25 },
 };
 for (const [pos, { tech, mental }] of Object.entries(SHIPPED_EXPECTED)) {
   check(`shipped default ${pos} tech`, SHIPPED[pos].tech, tech);

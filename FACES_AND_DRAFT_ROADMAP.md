@@ -595,16 +595,172 @@ now 270 assertions, all green. **No more mapping probes needed — the struct is
 
 ### Remaining work, reprioritized (functionality first, UI later per user)
 - **5c-map — DONE.** Full offset→field table + setters landed and tested.
-- **5d — full-class emit.** Given the existing pipeline's generated CFB class, overwrite all
-  402 template slots: name, position, H/W, age, ratings, dev trait, face-ID (skin-tone match),
-  bodyType/head JSON. Handle count: template is fixed at 402 → take the top 402 by projection;
-  if the class has <402, decide leftover-slot policy (blank/duplicate-safe filler). Parse-back
-  test: re-read the emitted file, assert every field matches the source class, 0 dupes.
-- **5e — in-game validation.** Import a full real class; confirm names/positions/sizes/ratings/
-  dev traits/faces all correct, no corruption, 402 present.
-- **5f — integration + UI (later).** Make draft-class export the default action in the pipeline
-  (`lib/pipeline.js`), roster-write kept as an option; a transfer-target selector in the UI;
-  the UFL second-profile plugs in here (Phase 6). Output filename defaults to `CAREERDRAFT-*`.
+- **5d — full-class emit. ✅ DONE.** Built and validated both on a synthetic fixture and on a
+  REAL CFB save.
+  - **`lib/draftClassExporter.js`** → `buildDraftClassFile(generatedClass, options)`. Sorts by
+    `DraftRank`, takes the top 402, patches every one of the bundled template's slots using the
+    loop-confirmed setters (name, position, archetype, age, jersey, height/weight, dev trait,
+    draft round/pick, all 55 ratings, body type via the padding-compensated JSON writer, and a
+    face-ID drawn from the skin-tone catalog).
+  - **Class-size handling (locked by user):** fewer than 402 players → **throws immediately,
+    produces nothing** (`"Draft class has N players; a Madden draft-class file needs exactly
+    402..."`). No partial file, no leftover template players, no silent filler.
+  - **Draft round is set (locked by user):** `ProjectRound`/`DraftPick` write to offsets 80/78-79;
+    missing/undrafted → the observed 63 sentinel.
+  - **Archetype resolved cleanly:** added `PlayerType` to `CFB_BIO_FIELDS` (direct passthrough,
+    shared enum) and built `PLAYER_TYPE_NAME_TO_VALUE`/`PLAYER_TYPE_VALUE_TO_NAME` (69 real
+    archetypes + schema range-marker sentinels, extracted from the live schema — not the
+    ambiguous "first name at that value" guess, which briefly suggested a false DT-archetype
+    conflict; resolved by decoding real players' actual values instead of the raw member dump).
+  - **Body type (5d.0) landed WITHOUT needing another in-game test:** confirmed no binary
+    body-type byte exists (checked all 200 offsets against real franchise data — none), so it's
+    the planned JSON write. Turned up a real wrinkle: **Madden reads the body type from the
+    LOADOUT item's `itemAssetName` ("&lt;X&gt;_BodyType"), not the top-level `"bodyType"` key** —
+    proven because 148/402 template players have no top-level key at all yet still imported
+    with the correct `CharacterBodyType`, matching the loadout token with zero exceptions. One
+    alias found: `Freshman` writes as `Lean` in the loadout token (24/24 "mismatches" were
+    exactly this, zero real exceptions). `setBodyType` writes the loadout token (+ keeps the
+    top-level key in sync for cleanliness) and preserves total `[json+gap]` length via padding
+    compensation, so no gate 5d.0 import was needed — the mechanism was verified against data
+    already in hand from the mapping-loop import.
+  - **Live validation against a real CFB save** (`DYNASTY-DRAFTSTAGE`, exit-mode population: 2535
+    departed → 500 generated → top 402 written): **0 field mismatches** across name / position /
+    age / height / weight / archetype / dev trait / draft round / draft pick / all 21,306 rating
+    checks (55 ratings × 402 players). **100% face coverage** in the render band (every player
+    gets a visible, correct-skin-tone face). **0 warnings** (no name truncation, no body-type
+    failures). Output file is byte-identical in length to the bundled template. One duplicate
+    name found ("Trent Wilson") — confirmed a genuine real-data coincidence (two distinct players,
+    different teams/overalls), not an exporter bug.
+  - **Tests:** `test/draftClassExporter.spec.js` (16 assertions — synthetic fixture shaped like
+    real `calibratePlayers` output, so it runs without a real save; covers the `<402` error path,
+    truncation-to-402 on larger classes, a full parse-back match on all 402 players, 100%
+    render-band face coverage, determinism, and `extractRatings`). Suite: **318 assertions,
+    all green.**
+  - **`tools/phase5dBuildRealClass.js`** — one-command real-class builder for manual/in-game
+    testing (not shipped). Ran it against `DYNASTY-DRAFTSTAGE`; wrote a full real 402-player
+    `CAREERDRAFT-fullclass` to the Desktop.
+- **5e — in-game validation. Ready for the user.** `CAREERDRAFT-fullclass` (on the Desktop) is a
+  complete real generated class, all fields set. Import it and confirm: all 402 present, correct
+  names/positions/sizes/ratings/dev-traits/faces, no corruption, no duplicates (beyond genuine
+  real-name coincidences like the one found above).
+- **5f — in-app export. ✅ DONE (core).** Wired `buildDraftClassFile` into the Electron app so
+  the user can export from the UI ("the application push"):
+  - `main.js` IPC `export-draft-class-file` → builds from `lastGenerated`, hard-errors if <402,
+    save dialog, enforces the `CAREERDRAFT-` filename prefix, writes the file.
+  - `preload.js` exposes `exportDraftClassFile`; `renderer/index.html` adds a new **"3 · Export
+    Draft Class File (recommended)"** card (the roster write becomes "4 · … (alternative)"),
+    `renderer.js` enables it once a ≥402 class is generated (shows a "need 402+" hint otherwise).
+  - Suite still green (318 assertions); app files syntax-checked; element-id/IPC-name consistency
+    verified. Remaining 5f polish (later): a College fix — see below — and the UFL second profile
+    (Phase 6).
+
+### Post-import findings (2026-07-10, from the user's real full-class import)
+- **Overall inflation is real and position-skewed.** Reading the imported class back and comparing
+  Madden's computed `OverallRating` to our `EstMaddenOverall`: Madden runs **~+4 higher on average**,
+  and **offensive line + interior defense are worst** — C +8.2, LG +7.3, LT +6.3, RG +6.1, RT +4.4,
+  FS +7.5, LE +7.1, MLB +6.8, SS +6.7 — while skill positions are close (QB +0.8, WR +2.5). So our
+  estimate UNDER-predicts Madden's real formula, most for OL/interior. Two levers: (a) recalibrate
+  `data/overall_formula.json` per position so the app's shown overall matches Madden (accuracy);
+  (b) the user lowers OL via the Power-Curve position-strength dials (game-balance tuning). The
+  ratings we write are exactly what the user tuned — Madden just weights them into a higher OVR than
+  our estimate expects.
+- **College is NOT set → players appear under the wrong school.** We never write `College`, so
+  every imported player keeps the TEMPLATE slot's college, unrelated to their real CFB school.
+
+### College — EXHAUSTIVE INVESTIGATION (2026-07-11) — fully understood, fix path decided
+Root cause is now nailed down, and it is NOT a stage or data problem:
+- **College in the draft-class FILE is asset-token-derived, NOT a settable field.** Exhaustive
+  correlation (clean `PLYR_ASSETNAME` join, 399 slots) found **no numeric college field** in the
+  200-byte struct. Each record keeps the original template prospect's `PLYR_ASSETNAME`
+  (`LastFirst_id_id`), which `buildDraftClassFile` never overwrites; Madden reads it and assigns
+  THAT prospect's college. Proven by the user's examples: Zion Elee took slot 8 (originally Beau
+  Johnson, North Dakota State) → shows NDState.
+- **BUT the college DATA is 100% available and already solvable.** `data/college_lookup.json` (488
+  schools, every FBS/most FCS) maps a CFB school name → the exact Madden `College` reference, and
+  the **roster-write path already sets it correctly** (`slot.College = matchCollege(FormerTeam)` in
+  `writeCareerFile`). That is why the "224 worked before" — it was the roster-write path, not the
+  stage.
+- **Cross-referencing the two stages (`DATATESTNATTY` vs `DATATESTDRAFT`) proves the stage is
+  nearly irrelevant to college:**
+  - Row-index identity is **100% stable** across stages (16,412/16,412 same player at same row).
+  - NATTY has `LeavingPlayer: 0` (no declarations yet → must PREDICT); DRAFT has 270 official
+    EarlyNFL declarers.
+  - All 270 draft-stage declarers exist at NATTY at the same row with **100% identical college** —
+    a player's school never changes between stages.
+  - Our NATTY predictor would flag **260/270 (96%)** of the actual declarers — so pre-draft
+    estimation is quite accurate, just not perfect.
+  - Generated a full class from `DATATESTDRAFT`: **380/380 players (100%) have a resolvable
+    college — drafted (224/224) AND undrafted (156/156).** (Audit CSV written to the user's Desktop:
+    `draft-class-college-audit.csv`.)
+- **Conclusion — we do NOT need to "let UDFAs randomize."** We have correct colleges for the WHOLE
+  class at either stage. The only blocker is the draft-class file's write path.
+- **Recommended fix (decided): a POST-IMPORT college pass.** Keep the draft-class file for
+  everything it does well (names, positions, ratings, faces, dev traits), then after the user
+  imports + saves the franchise, run a small pass that opens the franchise, matches each imported
+  rookie by name to the generated class's `FormerTeam`, and sets `College` via the existing
+  `matchCollege` (the College field IS directly settable on a franchise Player row). Gets 100%
+  correct colleges for the whole class while keeping the draft-class-file benefits.
+  - Alternative: use the roster-write path (already does colleges in one step, 92%-accurate faces
+    vs the file path's 100% skin-correct faces).
+  - Draft stage vs natty: choose DRAFT for the official 270 declarers (100% accurate class), or
+    NATTY for a pre-draft build (~96% of declarers predicted). College correctness is unaffected
+    either way.
+
+### Revisited: can College be baked directly into the FILE via token reassignment? (2026-07-11)
+Reconsidered after the user asked. The idea: since name/position/ratings/face are already
+PROVEN to win over whatever the leftover asset token implies (we overwrite a different player
+into every slot every time and those fields always come through correctly), the token's only
+observed effect is College — so what if we REASSIGN which of the 402 template tokens each
+generated player gets (instead of leaving each with their own slot's original token), picking
+whichever token's real college matches that player's real school?
+- **Quantified against real data: hard-capped at 245/402 = 60.9%, and it's a structural ceiling,
+  not an ordering artifact** — computed the theoretical max (order-independent, per-college
+  capacity: `sum(min(templateSlotsForSchool, playersNeedingSchool))`) and it landed on the exact
+  same 245/402 as greedy-by-rank. No smarter assignment algorithm can beat it.
+- **Why:** the template's 402 prospects cover only **127 distinct real colleges**, capped at 13
+  duplicate slots for any one school. A real generated class clusters heavily on the same
+  premier programs, so demand blows past the template's supply — biggest shortfalls were
+  need-21/have-13, need-15/have-7, need-13/have-6. Every college_lookup.json entry resolved fine
+  (0 unresolvable schools) — the constraint is purely "not enough pre-baked identities for that
+  school in this one template," not a data gap.
+- **Decision: stick with the post-import two-step fix (100%, already built and validated) over
+  file-baked token reassignment (61% ceiling, would disproportionately fail the MOST common
+  schools — exactly the ones most visible to the user).** Noted for later, not pursued: pooling
+  MULTIPLE real template exports could raise the 127-school/13-slot ceiling, but face-IDs are
+  already known to be build-relative and unsafe to pool across schema tags (see the face-catalog
+  section above) — the same risk would likely apply to token-college mappings and would need its
+  own from-scratch validation before trusting it.
+
+### College fix — BUILT (2026-07-11)
+`applyImportedColleges(inputPath, outputPath, generatedClass, log)` in `lib/pipeline.js`, next to
+`writeCareerFile` (reuses its `buildCollegeMatcher`). Opens the post-import franchise save, matches
+each Player row against the generated class by a **name + position + age + jersey fingerprint**
+(not name alone — a franchise with several past test imports had 872 name collisions against a
+402-player class; the 4-field fingerprint avoids matching a stale row from an unrelated import),
+and sets `College` via the same lookup the roster-write path already uses in production.
+- **Validated against a real franchise** (a copy of the user's actual save with a real imported
+  380-player class): matched 320/380, **college set on all 320, 0 unresolved lookups**. Re-verified
+  by independently recomputing the expected college reference for every matched row and comparing
+  the raw bitstring against what's actually stored post-save: **320/320 (100%) exact match.** (An
+  earlier name-only verification pass showed only 67%/0% — traced to the verification script
+  itself grabbing a different, stale same-named row in a franchise with many past imports; the
+  fingerprint-exact check proved the underlying fix has zero errors.) Confirmed the user's own
+  Zion Elee example now resolves to the correct reference for Alabama.
+- **Wired into the app:** `main.js` IPC `fix-imported-colleges`, `preload.js` exposes
+  `fixImportedColleges`, and a new **"4 · Fix Draft Class Colleges (after import)"** card in
+  `renderer/index.html` (between Export and the roster-write alternative, since it's a follow-up
+  step for path 3) — franchise-save picker, edit-in-place/save-a-copy toggle (mirrors the write
+  card exactly), and a status line reporting matched/set counts. Existing cards renumbered 1-5.
+- **Tests:** `test/applyImportedColleges.spec.js` — following this codebase's own precedent
+  (`writeCareerFile` has no direct unit test either, since both need a real binary Madden save to
+  operate on), covers the export surface and the bad-path error message. The real-data validation
+  above is the actual proof of correctness, documented here rather than mocked.
+- Suite: 324 assertions, all green. All new element IDs / IPC channel names cross-checked against
+  their HTML/JS/preload/main counterparts — zero mismatches.
+- **User workflow:** Generate → Export Draft Class File → import in Madden → save the franchise →
+  Fix Draft Class Colleges (point at that same save, same generated class still in memory) → done.
+  Regenerating the class before running the fix will break the match (names/ratings change) — the
+  UI warns about this.
 
 ## 5d — full-class emit — DETAILED PLAN (2026-07-10; not yet coded)
 
@@ -1062,3 +1218,23 @@ profile)*; (2) exporter template source *(RESOLVED: bundled inside the app — n
 the user's build — folded into the 5b import test.
 **Spike gate inside Phase 1:** does `CharacterBodyType` alone drive the model? Its answer
 also raises/lowers Phase 5's priority.
+
+---
+
+## Appearance model (skin, face, build) — SOLVED
+
+Ground-truthed against the user's in-game imports and EA's own auto-draft files
+(`CAREERDRAFT-2028..2031`). A prospect's look is **three independent systems**;
+the exporter must set all three, and only the third was previously handled.
+
+| What renders | Driven by | Notes |
+|---|---|---|
+| 2D portrait (draft board) | `faceId` @ binary offset **146** (u16 LE) | Must be **render band 3347–4287** or it imports **blank** (15800s = blank; 8000–10000 = real-NFL scans). Each render-band faceId carries an **inherent skin**. |
+| 3D head + body skin | JSON `genericHeadName` (`gen_<skin>_<facialHair>_<hairstyle>_<variant>`) | The **leading digit is the rendered skin** — this, not the JSON `skinTone` field, colors the model. |
+| Visible build/frame | binary offset **141** | `Standard 0, Thin 1, Muscular 2, Heavy 3, Lean/Freshman 4`. The loadout `<X>_BodyType` token only sets the *readable attribute*; the model reads offset 141. |
+
+- **`skinTone` JSON field** = a *label* for the portrait's skin (EA sets it to match the faceId). It does **not** color the model. We set it for coherence.
+- **Coherence rule:** faceId-skin == head-digit == `skinTone` == the player's tone ⇒ portrait and body share one skin. EA itself does **not** always enforce this (it reuses a portrait across heads/skins), so our output is *more* skin-coherent than EA's.
+- **Hard ceiling:** the 2D portrait and 3D head are separate assets, so their exact **face/hair can differ** even at the same skin tone. No draft-file field links them (`PLYR_PORTRAIT` and `GenericHeadAssetName` are independent in the franchise; the huge-portrait "coherent" range is real-NFL scans). This is a Madden limitation EA shares.
+
+**Implementation:** `data/appearanceCatalog.json` (baked by `tools/bakeAppearanceCatalog.js` from EA's auto-drafts) holds skin-labelled portrait faceIds + `genericHeadName`s per tone; `lib/appearanceCatalog.js`'s `createAppearanceAssigner()` spreads picks; `lib/draftClassExporter.js` sets faceId + head + `skinTone` + offset-141 build per player. Setters: `setFaceId`/`setGenericHead`/`setSkinTone`/`setCharacterBuild` in `lib/draftClassFile.js`.
