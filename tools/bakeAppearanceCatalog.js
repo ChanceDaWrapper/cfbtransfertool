@@ -16,17 +16,20 @@
 // rather than baked in.
 //
 // Usage: node tools/bakeAppearanceCatalog.js "<dir with CAREERDRAFT-* files>"
-//   (defaults to the modding-saves folder these were captured from)
 
 const fs = require('fs');
 const path = require('path');
 const { parseDraftClassFile, getFaceId } = require('../lib/draftClassFile');
 
-const DIR = process.argv[2] || 'C:/Users/tripl/Desktop/Chance/Modding File Saves';
+const DIR = process.argv[2];
 const RENDER_MIN = 3347;   // render band = portraits that display (vs 15800s = blank)
 const RENDER_MAX = 4287;
 
 function main() {
+  if (!DIR) {
+    console.error('Usage: node tools/bakeAppearanceCatalog.js "<dir with CAREERDRAFT-* files>"');
+    process.exit(1);
+  }
   const files = fs.readdirSync(DIR).filter((f) => /^CAREERDRAFT-/i.test(f));
   if (!files.length) { console.error(`No CAREERDRAFT-* files in ${DIR}`); process.exit(1); }
 

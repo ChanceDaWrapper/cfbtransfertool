@@ -7,8 +7,7 @@
 // generated players -- name, position, archetype, age/jersey/H/W, dev trait,
 // draft round/pick, all 55 ratings, body type, and a real render-band face.
 //
-// Usage: node tools/phase5dBuildRealClass.js [path-to-a-real-CFB27-dynasty-save]
-//   Defaults to Modding File Saves/DYNASTY-DRAFTSTAGE if no path is given.
+// Usage: node tools/phase5dBuildRealClass.js <path-to-a-real-CFB27-dynasty-save>
 
 const fs = require('fs');
 const path = require('path');
@@ -17,7 +16,11 @@ const { extractLeavingPlayers, generateClass } = require('../lib/pipeline');
 const { buildDraftClassFile } = require('../lib/draftClassExporter');
 
 async function main() {
-  const cfbPath = process.argv[2] || 'C:/Users/tripl/Desktop/Chance/Modding File Saves/DYNASTY-DRAFTSTAGE';
+  const cfbPath = process.argv[2];
+  if (!cfbPath) {
+    console.error('Usage: node tools/phase5dBuildRealClass.js <path-to-a-real-CFB27-dynasty-save>');
+    process.exit(1);
+  }
   console.log(`Extracting departed players from: ${cfbPath}`);
   const departed = await extractLeavingPlayers(cfbPath, () => {}, { populationMode: 'exit' });
   console.log(`  ${departed.length} departed players found.`);
