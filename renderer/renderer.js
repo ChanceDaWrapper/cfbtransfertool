@@ -5,6 +5,7 @@
 let META = null;        // { config, defaults, descriptions, positions, ... } from main
 let cfg = null;         // live editable config
 let players = [];       // last generated class
+let generatedOrganization = 'cfbProjected'; // draftBoard.organization USED to produce `players` (not the live dropdown -- it may have changed since)
 let sortKey = 'Rank', sortDir = 1;
 
 // Columns hidden by the "Hide Adjusted Stats" toggle -- lets a user look at
@@ -885,6 +886,7 @@ async function generate() {
   const res = await window.api.generateClass(cfg);
   if (res.ok) {
     players = res.players;
+    generatedOrganization = cfg.draftBoard?.organization ?? 'cfbProjected';
     resultsStale = false;
     setGenStatus(`${players.length} players generated`, 'ok');
     $('viewResultsBtn').disabled = false;
@@ -1006,6 +1008,8 @@ const BASE_COLUMNS = [
   { key: 'CFB_Position', label: 'Pos' },
   { key: 'FormerTeam', label: 'College' },
   { key: 'ProjectRound', label: 'Rd', num: true },
+  { key: 'RoundDelta', label: 'Δ', num: true,
+    title: 'How far this player moved from the round "CFB Projected Rounds" would have given them. Positive = fell later (a steal); negative = went earlier than that baseline. Only meaningful under Realistic Draft Day.' },
   { key: 'DraftPick', label: 'Pick', num: true },
   { key: 'CFB_Overall', label: 'CFB OVR', num: true },
   { key: 'EstMaddenOverall', label: 'Est. Madden OVR', num: true,
@@ -1047,7 +1051,13 @@ function formatHeight(h) {
 }
 
 function currentColumns() {
-  return BASE_COLUMNS.concat(showCareerStats ? CAREER_STAT_COLUMNS : []).concat(ALL_RATING_COLUMNS);
+  // RoundDelta is always 0 under 'cfbProjected' (it IS the baseline) -- only
+  // worth a column when Realistic Draft Day actually produced the results
+  // being shown.
+  const base = generatedOrganization === 'realisticDraftDay'
+    ? BASE_COLUMNS
+    : BASE_COLUMNS.filter((c) => c.key !== 'RoundDelta');
+  return base.concat(showCareerStats ? CAREER_STAT_COLUMNS : []).concat(ALL_RATING_COLUMNS);
 }
 
 function visibleColumns() {
@@ -1059,8 +1069,24 @@ function visibleColumns() {
 // CareerStats rides on each row as a nested object (see lib/pipeline.js) --
 // this is the one place that knows how to reach into it, so both the cell
 // renderer and the sort comparator stay in sync automatically.
+// null = not comparable (both sides UDFA -- nothing to say). Otherwise the
+// number of rounds moved from the 'cfbProjected' baseline: positive = fell
+// later than that baseline (a steal), negative = went earlier (a reach), zero
+// = landed exactly where CFB's own projection would have put them.
+// Undrafted-to-drafted (or the reverse) is expressed relative to round 8, so a
+// player who fell OUT of the drafted 224 (or rose INTO it) still shows a real
+// delta instead of silently vanishing.
+const UDFA_ROUND = 8;
+function roundDeltaOf(p) {
+  const base = p.BaselineRound === '' || p.BaselineRound == null ? null : Number(p.BaselineRound);
+  const actual = p.ProjectRound === '' || p.ProjectRound == null ? null : Number(p.ProjectRound);
+  if (base === null && actual === null) return null;
+  return (actual ?? UDFA_ROUND) - (base ?? UDFA_ROUND);
+}
+
 function cellValue(p, key) {
   if (key.startsWith('career.')) return p.CareerStats ? p.CareerStats[key.slice(7)] : undefined;
+  if (key === 'RoundDelta') return roundDeltaOf(p);
   return p[key];
 }
 
@@ -1156,6 +1182,20 @@ function renderResults() {
         const r = roundOf(v);
         td.textContent = r === 8 ? 'UD' : r;
         if (r <= 3) td.classList.add(`round-${r}`);
+      } else if (c.key === 'RoundDelta') {
+        const d = v; // already computed by cellValue -> roundDeltaOf
+        if (d === null || d === 0) {
+          td.textContent = d === 0 ? '—' : '';
+        } else {
+          // STEAL threshold matches the roadmap's displacement tail (Phase 4):
+          // small moves are just board noise, not a story worth flagging.
+          const badge = el('span', `delta-badge ${d >= 2 ? 'delta-steal' : d <= -2 ? 'delta-reach' : 'delta-mild'}`,
+            d > 0 ? `+${d}` : String(d));
+          badge.title = d > 0
+            ? `Fell ${d} round${d === 1 ? '' : 's'} later than CFB's own projection had them -- a steal.`
+            : `Went ${-d} round${d === -1 ? '' : 's'} earlier than CFB's own projection had them -- a reach.`;
+          td.appendChild(badge);
+        }
       } else if (c.key === 'Height') {
         td.textContent = formatHeight(v);
       } else if (c.key === 'CFB_Position') {

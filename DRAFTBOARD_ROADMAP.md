@@ -1,6 +1,8 @@
 # Draft Board Organization -- Roadmap
 
-**Status: PROTOTYPE VALIDATED. No production code written yet.**
+**Status: Phases 0-4 SHIPPED.** `lib/draftBoard.js` + `test/draftBoard.spec.js`
+(32 assertions) + the Advanced dropdown + the Draft Class table's Δ column are
+all live. Phase 5 (trait-biased displacement) is next; see §4.
 
 Goal: let the user choose *how the selected class is organized into rounds and
 picks*, entirely separately from which players were selected. Answers the
@@ -224,7 +226,7 @@ the board stays reproducible under a seed and ratings remain untouched.
 
 ## 4. Phases
 
-### Phase 0 -- Re-prototype on a talent-only rank, then tune *(prototype only)*
+### Phase 0 -- SHIPPED *(re-prototype on a talent-only rank, then tune)*
 
 **First** rebuild the prototype on Engine B's talent-only score (§3a) rather
 than `DraftRank`, since the original measurements were taken on a
@@ -242,47 +244,85 @@ Levers: tail probability (currently 5%), tail magnitude (currently 2-8
 rounds), and the chaos scale factor. Cheapest phase, entirely in scratchpad,
 and it de-risks every phase after it.
 
-### Phase 1 -- Extract the `organizeBoard()` seam
+**Shipped:** re-measured on the corrected talent-only base (§3a) -- the
+original 1d numbers were on the contaminated ranking and are superseded here.
+Widened the tail from 5% to 12% (`lib/draftBoard.js`'s `drawFall`). Real-save
+result, chaos 0 -> 100: corr(slot, ovr) **-0.669 -> -0.555**, 70+ OVR in Rd4+
+**11 -> 12-15** across the range, **worst OVR in Rd1 held at 62 at every
+level**. The -0.55 target was hit; bust-immunity confirmed on the shipped
+constants, not just the prototype's.
 
-Move round/pick assignment out of `projectDraftClass()` into a pluggable
-`organizeBoard(selected, cfg, rng)` stage:
+### Phase 1 -- SHIPPED *(the `organizeBoard()` seam)*
 
-```
-projectDraftClass()      ->  organizeBoard()          ->  output
-(selection + talent rank)    (round/pick, pluggable)
-```
+`lib/draftBoard.js` exports `organizeBoard(selected, cfg, rng)`, dispatched by
+`cfg.draftBoard.organization` through an `ORGANIZATIONS` registry -- the same
+shape `Rosetta.translation.createTranslator` uses. `projectDraftClass()` in
+`lib/pipeline.js` now ends by handing its selected pool to `organizeBoard()`
+instead of stamping round/pick itself.
 
-Ship `cfbProjected` first as a faithful reproduction of current behavior,
-dispatched through the same registry pattern as `translation.strategy`.
+Acceptance verified: with the default mode, `organizeBoard`'s `cfbProjected`
+strategy is a pure pass-through (`test/draftBoard.spec.js` asserts this
+directly), and the full `npm test` suite -- unrelated specs included -- was
+green before and after the extraction.
 
-Acceptance: with the default mode, output is **byte-identical to today**. No
-user-facing change. This phase exists so the new mode has a clean seam and
-cannot destabilize the proven system.
+### Phase 2 -- SHIPPED *(config + dropdown)*
 
-### Phase 2 -- Config + dropdown
+`draftBoard: { organization: 'cfbProjected', chaos: 50 }` added to
+`lib/defaults.js` with tooltip copy. Advanced page has a **Board
+Organization** `<select>`; a **Draft Day Chaos** number input appears only
+when `realisticDraftDay` is selected (hidden otherwise -- no point showing a
+dial that does nothing under the default mode).
 
-Add `draftBoard.organization` to `lib/defaults.js` with a description, and a
-`<select>` on the Advanced page beside Draft Projection. At this point only
-`cfbProjected` exists -- the plumbing lands before the feature.
+### Phase 3 -- SHIPPED *(`realisticDraftDay` strategy)*
 
-### Phase 3 -- `realisticDraftDay` strategy
+Implemented per §3: `talentScoreOf()` (the draft-value formula minus the CFB
+round-projection term) ranks the selected pool, then `drawFall()` (Phase 0's
+tuned distribution) displaces it. Wired as the dropdown's second entry.
 
-Implement §3 using Phase 0's tuned constants, plus the chaos intensity dial.
-Wire it as the second dropdown entry.
+Verified against the real save: selection membership held at **402/402**
+across every chaos level (Decision 1), output is reproducible under a seed,
+and `talentScoreOf` was confirmed to ignore `ProjectRound` entirely (a
+round-1-projected and a round-7-projected player with identical other stats
+score identically).
 
-### Phase 4 -- Make it visible
+### Phase 4 -- SHIPPED *(make it visible)*
 
-`cfbProjected` reproduces exactly what today's system would produce, so it is
-a free always-available baseline to diff against. Surface on the Draft Class
-table:
+`projectDraftClass()` now stamps `_baselineRound` on every selected player --
+the round `cfbProjected` would have given them -- BEFORE handing off to
+`organizeBoard()`, using the pre-organize selection order (which IS
+`cfbProjected`'s ordering) rather than re-running that strategy. Exposed as
+`BaselineRound` on the generated row alongside the actual `ProjectRound`.
 
-- A **delta** column: final round vs. the round `cfbProjected` would have given.
-- Optional **Steal** / **Reach** tags past a displacement threshold.
+Draft Class table gains a **Δ** column (only shown when the currently
+displayed results were generated under `realisticDraftDay` --
+`generatedOrganization` is captured at generate time, not read live off the
+dropdown, so it can't mismatch if the user changes the setting without
+regenerating). Positive = fell later than the baseline (steal, green badge);
+negative = went earlier (reach, red badge); a UDFA<->drafted crossing is
+expressed relative to round 8 so falling out of the drafted 224 entirely still
+shows a real delta instead of silently disappearing.
 
-Turns *"why is this guy in round 6?"* into *"oh nice, he fell to round 6"* --
-same data, opposite reaction, and it screenshots well for release notes.
+Verified end to end against the real save: under `cfbProjected`,
+`BaselineRound === ProjectRound` for all 402 players (it's the same
+ordering). Under `realisticDraftDay`, each player's `BaselineRound` matches
+what `cfbProjected` independently gave that same player -- confirming the
+stamped baseline is correct, not just self-consistent. At chaos 60: 61 notable
+steals (delta >= 2 rounds) and 66 notable reaches, with the single largest
+example a round-1-baseline corner who fell out of the draft (UDFA) entirely
+and, symmetrically, undrafted-baseline QBs rising as high as round 2 once
+CFB's own round projection stops suppressing them.
 
-### Phase 5 -- Trait-biased displacement (believability)
+**One honest side effect worth flagging, not hiding:** reaches are not
+purely chaos-driven. Some come from Engine B's talent score genuinely
+disagreeing with CFB's round -- a QB CFB never projected to be drafted, but
+whom the talent formula (overall + production + athleticism + position value,
+no round term) rates well, will show as a big riser even at low chaos. That's
+expected per 1e (removing `roundBonus` rehabilitates unprojected players) and
+is a feature, not noise -- but it means "Δ" isn't purely a measure of random
+slide; part of it is the two engines legitimately disagreeing on a player's
+value.
+
+### Phase 5 -- Trait-biased displacement (believability) *(next up)*
 
 Bias *who* slides using signals already on the row, so steals have a reason:
 
@@ -334,8 +374,9 @@ a module plus one `<option>`.
 
 ## 7. Sequencing
 
-**Phase 0 -> 1 -> 2 -> 3 -> 4** is the shippable arc: tune on the cheap
-prototype, build the seam, add the dropdown, implement the mode, make it
-visible. Phase 5 (trait-biasing) meaningfully improves believability and
-should follow close behind rather than being deferred indefinitely. Phase 6 is
-refinement once the core is proven against real saves.
+**Phase 0 -> 1 -> 2 -> 3 -> 4 are shipped** (`lib/draftBoard.js`,
+`test/draftBoard.spec.js`, the Advanced dropdown, the Δ column). **Phase 5
+(trait-biasing) is next** -- it meaningfully improves believability and
+shouldn't be deferred indefinitely now that the mechanical core is proven
+against a real save. Phase 6 (open question 1's positional-cap decision, more
+modes, sub-dials) is refinement after that.
