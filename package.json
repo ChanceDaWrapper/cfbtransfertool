@@ -1,6 +1,6 @@
 {
   "name": "pipeline",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Pipeline -- converts an EA SPORTS College Football 27 dynasty's departing players into a calibrated, projected Madden NFL 26 rookie draft class -- ratings conversion, draft declaration prediction, draft projection, dev traits, combine generation, and franchise-save export.",
   "main": "main.js",
   "scripts": {

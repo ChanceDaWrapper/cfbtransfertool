@@ -5,6 +5,27 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.1.1] - 2026-07-21
+
+### Added
+- **Board Organization** setting (Advanced) with two modes:
+  - **CFB Projected Rounds** (default) -- unchanged behavior, where CFB 27's
+    own projected round carries significant weight.
+  - **Realistic Draft Day** -- re-ranks the same selected class on talent
+    alone (overall, position value, awards, production, athleticism -- no
+    input from CFB's own projected round), then lets players slide down the
+    board at random. Produces genuine late-round steals without the "steal"
+    having to come at the cost of a first-round bust: sliding is
+    one-directional, so a player falling pushes everyone below them up by a
+    single slot each rather than trading places with someone else. A **Draft
+    Day Chaos** dial controls how far players can fall.
+  - Which players make the class is identical either way -- only where they
+    land on the board changes.
+- **Δ column** on the Draft Class table (shown only under Realistic Draft
+  Day): how many rounds a player moved from where CFB Projected Rounds would
+  have placed them. Positive/green = fell later (a steal); negative/red =
+  went earlier.
+
 ## [0.1.0] - 2026-07-21
 
 First public release, as **Pipeline**.
