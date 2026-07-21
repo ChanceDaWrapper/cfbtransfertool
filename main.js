@@ -37,7 +37,12 @@ function createWindow() {
     minHeight: 640,
     backgroundColor: '#111318',
     autoHideMenuBar: true,
-    icon: path.join(__dirname, 'build', 'icon.ico'),
+    // Must live under renderer/ (which IS packaged). `build/` is
+    // electron-builder's buildResources dir and is deliberately excluded from
+    // app.asar, so pointing here at build/icon.ico resolved to a non-existent
+    // file in a packaged build -- the window then had no icon and the taskbar
+    // button rendered blank, even though the .exe's own embedded icon was fine.
+    icon: path.join(__dirname, 'renderer', 'assets', 'icon.ico'),
     webPreferences: {
       preload: path.join(__dirname, 'preload.js'),
       contextIsolation: true,
@@ -48,6 +53,11 @@ function createWindow() {
 }
 
 app.whenReady().then(() => {
+  // Windows groups taskbar buttons (and resolves their icon) by AppUserModelID.
+  // Without this it defaults to a generic Electron identity, so the running
+  // app doesn't match the installed shortcut and the taskbar icon can come out
+  // blank/wrong. Must match `build.appId` in package.json.
+  if (process.platform === 'win32') app.setAppUserModelId('com.chance.pipeline');
   configStore = new ConfigStore(app.getPath('userData'));
   createWindow();
 });
@@ -217,10 +227,12 @@ ipcMain.handle('export-draft-class-file', async () => {
   });
   if (result.canceled || !result.filePath) return { ok: false, cancelled: true };
   // Madden's "Import Draft Class" browser only lists files whose name starts with
-  // CAREERDRAFT- -- enforce it so the exported file actually shows up in-game.
+  // CAREERDRAFT- -- enforce it so the exported file actually shows up in-game, no
+  // matter what the user typed in the save dialog (case-insensitive, so a
+  // lowercase "careerdraft-" the user typed isn't double-prefixed).
   let outPath = result.filePath;
   const base = path.basename(outPath);
-  if (!base.startsWith('CAREERDRAFT-')) outPath = path.join(path.dirname(outPath), `CAREERDRAFT-${base}`);
+  if (!/^careerdraft-/i.test(base)) outPath = path.join(path.dirname(outPath), `CAREERDRAFT-${base}`);
   try {
     fs.writeFileSync(outPath, buffer);
   } catch (e) {

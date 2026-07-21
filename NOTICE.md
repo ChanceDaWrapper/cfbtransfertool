@@ -2,7 +2,7 @@
 
 This project's rating-conversion engine (position/quantile calibration,
 regression-based Overall estimation, the configuration UI) was originally
-built for **cfbtransfertool**. In 2026 it was merged with **cfb2madden**
+built for **Pipeline**. In 2026 it was merged with **cfb2madden**
 (https://github.com/seanpdwyer7/cfb2madden by Sean Dwyer, MIT License) to add
 draft declaration prediction, draft projection, combine generation, and
 export enrichment, without changing how ratings themselves are calculated.
@@ -37,7 +37,7 @@ codebase, credited here per both projects' MIT licenses.
 - **College name matching** (`normalizeSchool`/`buildCollegeMatcher` in
   `lib/pipeline.js`) -- the normalize-then-alias-then-containment matching
   strategy is adapted from cfb2madden; the underlying 488-entry
-  `data/college_lookup.json` binary-ID table is cfbtransfertool's own and was
+  `data/college_lookup.json` binary-ID table is Pipeline's own and was
   kept as-is (cfb2madden's equivalent CSV carried the same data and wasn't
   duplicated).
 - Tuning magnitudes for position draft value and the draft-order scoring
@@ -50,8 +50,8 @@ codebase, credited here per both projects' MIT licenses.
   transfer -- verified against real Madden save data that generated rookie
   slots don't carry a `skinTone` property at all (skin tone is baked into
   the equipped head asset's name instead), so this write is a no-op on
-  4.3.0. cfbtransfertool's existing head-asset-swap approach was kept.
-- cfb2madden's `Colleges.csv` -- identical data to cfbtransfertool's existing
+  4.3.0. Pipeline's existing head-asset-swap approach was kept.
+- cfb2madden's `Colleges.csv` -- identical data to Pipeline's existing
   `data/college_lookup.json` in a different format; not duplicated.
 
 See `MERGE_PLAN.md` for the full subsystem-by-subsystem comparison and

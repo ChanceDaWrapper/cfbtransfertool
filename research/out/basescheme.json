@@ -1,0 +1,806 @@
+{
+  "BaseScheme": {
+    "cfb": [
+      {
+        "i": 0,
+        "name": "OFF_WEST_COAST_ZONE_RUN",
+        "value": 0
+      },
+      {
+        "i": 1,
+        "name": "Offense_First_",
+        "value": 0
+      },
+      {
+        "i": 2,
+        "name": "OFF_MULTIPLE_OFFENSE",
+        "value": 1
+      },
+      {
+        "i": 3,
+        "name": "OFF_VEER_AND_SHOOT",
+        "value": 2
+      },
+      {
+        "i": 4,
+        "name": "OFF_POWER_SPREAD",
+        "value": 3
+      },
+      {
+        "i": 5,
+        "name": "OFF_SPREAD_OPTION",
+        "value": 4
+      },
+      {
+        "i": 6,
+        "name": "OFF_PRO_STYLE",
+        "value": 5
+      },
+      {
+        "i": 7,
+        "name": "OFF_SPREAD",
+        "value": 6
+      },
+      {
+        "i": 8,
+        "name": "OFF_RUN_AND_SHOOT",
+        "value": 7
+      },
+      {
+        "i": 9,
+        "name": "OFF_AIR_RAID",
+        "value": 8
+      },
+      {
+        "i": 10,
+        "name": "OFF_PISTOL",
+        "value": 9
+      },
+      {
+        "i": 11,
+        "name": "OFF_OPTION",
+        "value": 10
+      },
+      {
+        "i": 12,
+        "name": "Offensive_Last_",
+        "value": 10
+      },
+      {
+        "i": 13,
+        "name": "DEF_BASE4_3",
+        "value": 11
+      },
+      {
+        "i": 14,
+        "name": "Defense_First_",
+        "value": 11
+      },
+      {
+        "i": 15,
+        "name": "DEF_3_3_5",
+        "value": 12
+      },
+      {
+        "i": 16,
+        "name": "DEF_BASE3_4",
+        "value": 13
+      },
+      {
+        "i": 17,
+        "name": "DEF_4_2_5",
+        "value": 14
+      },
+      {
+        "i": 18,
+        "name": "DEF_MULTIPLE_DEFENSE",
+        "value": 15
+      },
+      {
+        "i": 19,
+        "name": "DEF_4_3_MULTIPLE",
+        "value": 16
+      },
+      {
+        "i": 20,
+        "name": "DEF_3_4_MULTIPLE",
+        "value": 17
+      },
+      {
+        "i": 21,
+        "name": "DEF_3_3_5_TITE",
+        "value": 18
+      },
+      {
+        "i": 22,
+        "name": "DEF_3_2_6",
+        "value": 19
+      },
+      {
+        "i": 23,
+        "name": "Count_",
+        "value": 20
+      },
+      {
+        "i": 24,
+        "name": "DEF_UNUSED",
+        "value": 20
+      },
+      {
+        "i": 25,
+        "name": "Defense_Last_",
+        "value": 20
+      },
+      {
+        "i": 26,
+        "name": "Locked",
+        "value": 21
+      }
+    ],
+    "madden": [
+      {
+        "i": 0,
+        "name": "Offense_First_",
+        "value": 0
+      },
+      {
+        "i": 1,
+        "name": "WestCoastZoneRun",
+        "value": 0
+      },
+      {
+        "i": 2,
+        "name": "WestCoastPowerRun",
+        "value": 1
+      },
+      {
+        "i": 3,
+        "name": "VerticalZoneRun",
+        "value": 2
+      },
+      {
+        "i": 4,
+        "name": "MultipleZoneRun",
+        "value": 3
+      },
+      {
+        "i": 5,
+        "name": "MultiplePowerRun",
+        "value": 4
+      },
+      {
+        "i": 6,
+        "name": "VerticalPowerRun",
+        "value": 5
+      },
+      {
+        "i": 7,
+        "name": "Spread",
+        "value": 6
+      },
+      {
+        "i": 8,
+        "name": "RunAndShoot",
+        "value": 7
+      },
+      {
+        "i": 9,
+        "name": "AirRaid",
+        "value": 8
+      },
+      {
+        "i": 10,
+        "name": "Pistol",
+        "value": 9
+      },
+      {
+        "i": 11,
+        "name": "Offensive_Last_",
+        "value": 10
+      },
+      {
+        "i": 12,
+        "name": "WestCoastSpread",
+        "value": 10
+      },
+      {
+        "i": 13,
+        "name": "Base4_3",
+        "value": 11
+      },
+      {
+        "i": 14,
+        "name": "Defense_First_",
+        "value": 11
+      },
+      {
+        "i": 15,
+        "name": "Under4_3",
+        "value": 12
+      },
+      {
+        "i": 16,
+        "name": "Base3_4",
+        "value": 13
+      },
+      {
+        "i": 17,
+        "name": "Under3_4",
+        "value": 14
+      },
+      {
+        "i": 18,
+        "name": "Tampa2",
+        "value": 15
+      },
+      {
+        "i": 19,
+        "name": "Quarters4_3",
+        "value": 16
+      },
+      {
+        "i": 20,
+        "name": "Disguise3_4",
+        "value": 17
+      },
+      {
+        "i": 21,
+        "name": "Storm3_4",
+        "value": 18
+      },
+      {
+        "i": 22,
+        "name": "Cover3_4_3",
+        "value": 19
+      },
+      {
+        "i": 23,
+        "name": "Count_",
+        "value": 20
+      },
+      {
+        "i": 24,
+        "name": "Defense_46",
+        "value": 20
+      },
+      {
+        "i": 25,
+        "name": "Defense_Last_",
+        "value": 20
+      },
+      {
+        "i": 26,
+        "name": "Locked",
+        "value": 21
+      }
+    ]
+  },
+  "SchemePreference": {
+    "cfb": [
+      {
+        "i": 0,
+        "name": "MustMatch",
+        "value": 0
+      },
+      {
+        "i": 1,
+        "name": "CanMatch",
+        "value": 1
+      },
+      {
+        "i": 2,
+        "name": "Any",
+        "value": 2
+      }
+    ],
+    "madden": null
+  },
+  "CoachTalentArcheType": {
+    "cfb": [
+      {
+        "i": 0,
+        "name": "First_",
+        "value": 0
+      },
+      {
+        "i": 1,
+        "name": "Motivator",
+        "value": 0
+      },
+      {
+        "i": 2,
+        "name": "Schemer",
+        "value": 1
+      },
+      {
+        "i": 3,
+        "name": "Recruiter",
+        "value": 2
+      },
+      {
+        "i": 4,
+        "name": "MasterMotivator",
+        "value": 3
+      },
+      {
+        "i": 5,
+        "name": "Architect",
+        "value": 4
+      },
+      {
+        "i": 6,
+        "name": "SchemeGuru",
+        "value": 5
+      },
+      {
+        "i": 7,
+        "name": "Strategist",
+        "value": 6
+      },
+      {
+        "i": 8,
+        "name": "EliteRecruiter",
+        "value": 7
+      },
+      {
+        "i": 9,
+        "name": "TalentDeveloper",
+        "value": 8
+      },
+      {
+        "i": 10,
+        "name": "Rainmaker",
+        "value": 9
+      },
+      {
+        "i": 11,
+        "name": "Visionary",
+        "value": 10
+      },
+      {
+        "i": 12,
+        "name": "ProgramBuilder",
+        "value": 11
+      },
+      {
+        "i": 13,
+        "name": "CEO",
+        "value": 12
+      },
+      {
+        "i": 14,
+        "name": "Last_",
+        "value": 12
+      },
+      {
+        "i": 15,
+        "name": "Count_",
+        "value": 13
+      },
+      {
+        "i": 16,
+        "name": "Invalid_",
+        "value": 255
+      }
+    ],
+    "madden": null
+  },
+  "StaffArchetypeEnum": {
+    "cfb": null,
+    "madden": [
+      {
+        "i": 0,
+        "name": "OffensiveGuru",
+        "value": 0
+      },
+      {
+        "i": 1,
+        "name": "DefensiveGenius",
+        "value": 1
+      },
+      {
+        "i": 2,
+        "name": "PersonnelCzar",
+        "value": 2
+      },
+      {
+        "i": 3,
+        "name": "DevelopmentWizard",
+        "value": 3
+      },
+      {
+        "i": 4,
+        "name": "HeadScout",
+        "value": 4
+      },
+      {
+        "i": 5,
+        "name": "HeadTrainer",
+        "value": 5
+      },
+      {
+        "i": 6,
+        "name": "MasterMotivator",
+        "value": 6
+      },
+      {
+        "i": 7,
+        "name": "MasterMotivator_JohnMadden",
+        "value": 7
+      },
+      {
+        "i": 8,
+        "name": "Count",
+        "value": 8
+      }
+    ]
+  },
+  "CoachSpecialty": {
+    "cfb": [
+      {
+        "i": 0,
+        "name": "First_",
+        "value": 0
+      },
+      {
+        "i": 1,
+        "name": "Quarterbacks",
+        "value": 0
+      },
+      {
+        "i": 2,
+        "name": "RunningBacks",
+        "value": 1
+      },
+      {
+        "i": 3,
+        "name": "Receivers",
+        "value": 2
+      },
+      {
+        "i": 4,
+        "name": "OffensiveLine",
+        "value": 3
+      },
+      {
+        "i": 5,
+        "name": "DefensiveLine",
+        "value": 4
+      },
+      {
+        "i": 6,
+        "name": "Linebackers",
+        "value": 5
+      },
+      {
+        "i": 7,
+        "name": "Secondary",
+        "value": 6
+      },
+      {
+        "i": 8,
+        "name": "SpecialTeams",
+        "value": 7
+      },
+      {
+        "i": 9,
+        "name": "Max_",
+        "value": 8
+      },
+      {
+        "i": 10,
+        "name": "Invalid_",
+        "value": 255
+      }
+    ],
+    "madden": [
+      {
+        "i": 0,
+        "name": "First_",
+        "value": 0
+      },
+      {
+        "i": 1,
+        "name": "Quarterbacks",
+        "value": 0
+      },
+      {
+        "i": 2,
+        "name": "RunningBacks",
+        "value": 1
+      },
+      {
+        "i": 3,
+        "name": "Receivers",
+        "value": 2
+      },
+      {
+        "i": 4,
+        "name": "OffensiveLine",
+        "value": 3
+      },
+      {
+        "i": 5,
+        "name": "DefensiveLine",
+        "value": 4
+      },
+      {
+        "i": 6,
+        "name": "Linebackers",
+        "value": 5
+      },
+      {
+        "i": 7,
+        "name": "Secondary",
+        "value": 6
+      },
+      {
+        "i": 8,
+        "name": "SpecialTeams",
+        "value": 7
+      },
+      {
+        "i": 9,
+        "name": "Max_",
+        "value": 8
+      },
+      {
+        "i": 10,
+        "name": "Invalid_",
+        "value": 255
+      }
+    ]
+  },
+  "CoachSpecialtyType": {
+    "cfb": [
+      {
+        "i": 0,
+        "name": "Offense",
+        "value": 0
+      },
+      {
+        "i": 1,
+        "name": "Defense",
+        "value": 1
+      },
+      {
+        "i": 2,
+        "name": "Any",
+        "value": 2
+      }
+    ],
+    "madden": null
+  },
+  "StaffPersonContractStatus": {
+    "cfb": [
+      {
+        "i": 0,
+        "name": "First_Active",
+        "value": 0
+      },
+      {
+        "i": 1,
+        "name": "Signed",
+        "value": 0
+      },
+      {
+        "i": 2,
+        "name": "Expiring",
+        "value": 1
+      },
+      {
+        "i": 3,
+        "name": "First_Pending",
+        "value": 2
+      },
+      {
+        "i": 4,
+        "name": "PendingFire",
+        "value": 2
+      },
+      {
+        "i": 5,
+        "name": "PendingNFL",
+        "value": 3
+      },
+      {
+        "i": 6,
+        "name": "PendingRenewal",
+        "value": 4
+      },
+      {
+        "i": 7,
+        "name": "Last_Active",
+        "value": 5
+      },
+      {
+        "i": 8,
+        "name": "PendingRetire",
+        "value": 5
+      },
+      {
+        "i": 9,
+        "name": "Last_Pending",
+        "value": 6
+      },
+      {
+        "i": 10,
+        "name": "PendingHire",
+        "value": 6
+      },
+      {
+        "i": 11,
+        "name": "FreeAgent",
+        "value": 7
+      },
+      {
+        "i": 12,
+        "name": "Retired",
+        "value": 8
+      },
+      {
+        "i": 13,
+        "name": "Deleted",
+        "value": 9
+      },
+      {
+        "i": 14,
+        "name": "None",
+        "value": 10
+      }
+    ],
+    "madden": [
+      {
+        "i": 0,
+        "name": "Signed",
+        "value": 0
+      },
+      {
+        "i": 1,
+        "name": "FreeAgent",
+        "value": 1
+      },
+      {
+        "i": 2,
+        "name": "Retired",
+        "value": 2
+      },
+      {
+        "i": 3,
+        "name": "Deleted",
+        "value": 3
+      },
+      {
+        "i": 4,
+        "name": "Expiring",
+        "value": 4
+      },
+      {
+        "i": 5,
+        "name": "None",
+        "value": 5
+      }
+    ]
+  },
+  "CoachBackstory": {
+    "cfb": [
+      {
+        "i": 0,
+        "name": "Motivator",
+        "value": 0
+      },
+      {
+        "i": 1,
+        "name": "Strategist",
+        "value": 1
+      },
+      {
+        "i": 2,
+        "name": "First_",
+        "value": 2
+      },
+      {
+        "i": 3,
+        "name": "TeamBuilder",
+        "value": 2
+      },
+      {
+        "i": 4,
+        "name": "StaffBuilder",
+        "value": 3
+      },
+      {
+        "i": 5,
+        "name": "HCMotivator",
+        "value": 4
+      },
+      {
+        "i": 6,
+        "name": "HCSchemer",
+        "value": 5
+      },
+      {
+        "i": 7,
+        "name": "HCSalesman",
+        "value": 6
+      },
+      {
+        "i": 8,
+        "name": "OCMotivator",
+        "value": 7
+      },
+      {
+        "i": 9,
+        "name": "OCSchemer",
+        "value": 8
+      },
+      {
+        "i": 10,
+        "name": "OCSalesman",
+        "value": 9
+      },
+      {
+        "i": 11,
+        "name": "DCMotivator",
+        "value": 10
+      },
+      {
+        "i": 12,
+        "name": "DCSchemer",
+        "value": 11
+      },
+      {
+        "i": 13,
+        "name": "DCSalesman",
+        "value": 12
+      },
+      {
+        "i": 14,
+        "name": "Count_",
+        "value": 13
+      },
+      {
+        "i": 15,
+        "name": "Invalid_",
+        "value": 14
+      }
+    ],
+    "madden": [
+      {
+        "i": 0,
+        "name": "Motivator",
+        "value": 0
+      },
+      {
+        "i": 1,
+        "name": "Strategist",
+        "value": 1
+      },
+      {
+        "i": 2,
+        "name": "First_",
+        "value": 2
+      },
+      {
+        "i": 3,
+        "name": "TeamBuilder",
+        "value": 2
+      },
+      {
+        "i": 4,
+        "name": "StaffBuilder",
+        "value": 3
+      },
+      {
+        "i": 5,
+        "name": "Count_",
+        "value": 4
+      },
+      {
+        "i": 6,
+        "name": "Invalid_",
+        "value": 5
+      }
+    ]
+  }
+}

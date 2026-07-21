@@ -1,0 +1,157 @@
+name|presence|type|cfbRange|madRange|cfbPop|madPop
+ActiveTalentTree|CFB|ActiveTalentTree|||00000000000000000000000000000000:19,00100000110101000000000110000001:2|
+Age|both|int|[0..127]|[0..127]|num p50=47 max=70 zeros=4/497|num p50=47 max=75 zeros=1/127
+AlmaMater|CFB|int|[1100..1300]||num p50=67 max=150 zeros=7/497|
+Archetype|MAD|StaffArchetypeEnum||||OffensiveGuru:65,DefensiveGenius:54
+AssetName|both|string||||
+AwardPoints|both|int|[0..127]|[0..127]|num p50=0 max=0 zeros=497/497|num p50=0 max=0 zeros=127/127
+COACH_ADAPTIVE_AI|both|CoachAdaptiveAI|||Balanced_1:84,Balanced:81|Conservative:61,Balanced_1:12
+COACH_CONSECTEAMCONTRACTS|both|int|[0..31]|[0..31]|num p50=0 max=0 zeros=497/497|num p50=0 max=0 zeros=127/127
+COACH_DB|both|int|[0..127]|[0..127]|num p50=0 max=0 zeros=497/497|num p50=55 max=94 zeros=1/127
+COACH_DEFENSE|both|int|[0..127]|[0..127]|num p50=0 max=0 zeros=497/497|num p50=50 max=99 zeros=1/127
+COACH_DEFENSETYPE|both|int|[0..127]|[0..127]||
+COACH_DEFTENDENCYAGGRESSCONSERV|both|int|[0..127]|[0..127]|num p50=47 max=99 zeros=5/497|num p50=50 max=60 zeros=1/127
+COACH_DEFTENDENCYRUNPASS|both|int|[0..127]|[0..127]|num p50=0 max=50 zeros=496/497|num p50=50 max=64 zeros=1/127
+COACH_DEMEANOR|both|CoachDemeanor|||Classic:356,Calm:84|Classic:105,Intense:16
+COACH_DL|both|int|[0..127]|[0..127]|num p50=0 max=0 zeros=497/497|num p50=55 max=95 zeros=1/127
+COACH_FIREREPORTED|both|bool||||
+COACH_K|both|int|[0..127]|[0..127]|num p50=0 max=0 zeros=497/497|num p50=50 max=93 zeros=1/127
+COACH_LASTCONTRACTTEAM|both|int|[0..1023]|[0..1023]|num p50=0 max=0 zeros=497/497|num p50=0 max=0 zeros=127/127
+COACH_LASTTEAMFIRED|both|int|[0..1023]|[0..1023]|num p50=0 max=0 zeros=497/497|num p50=1023 max=1023 zeros=5/127
+COACH_LASTTEAMRESIGNED|both|int|[0..1023]|[0..1023]|num p50=0 max=0 zeros=497/497|num p50=1023 max=1023 zeros=1/127
+COACH_LB|both|int|[0..127]|[0..127]|num p50=0 max=0 zeros=497/497|num p50=55 max=99 zeros=1/127
+COACH_NO_HUDDLE_TEMPO|CFB|CoachNoHuddleTempo|||Balanced:245,Conservative:143|
+COACH_OFFENSE|both|int|[0..127]|[0..127]|num p50=0 max=0 zeros=497/497|num p50=50 max=92 zeros=1/127
+COACH_OFFTENDENCYAGGRESSCONSERV|both|int|[0..127]|[0..127]|num p50=60 max=100 zeros=4/497|num p50=65 max=99 zeros=1/127
+COACH_OFFTENDENCYRUNPASS|both|int|[0..127]|[0..127]|num p50=55 max=72 zeros=68/497|num p50=60 max=71 zeros=1/127
+COACH_OL|both|int|[0..127]|[0..127]|num p50=0 max=0 zeros=497/497|num p50=55 max=93 zeros=1/127
+COACH_P|both|int|[0..127]|[0..127]|num p50=0 max=0 zeros=497/497|num p50=50 max=95 zeros=1/127
+COACH_PERFORMANCELEVEL|both|int|[0..255]|[0..255]|num p50=0 max=0 zeros=497/497|num p50=0 max=180 zeros=126/127
+COACH_QB|both|int|[0..127]|[0..127]|num p50=0 max=0 zeros=497/497|num p50=65 max=91 zeros=1/127
+COACH_RATING|both|int|[0..127]|[0..100]|num p50=0 max=0 zeros=497/497|num p50=50 max=100 zeros=2/127
+COACH_RB|both|int|[0..127]|[0..127]|num p50=0 max=0 zeros=497/497|num p50=55 max=93 zeros=1/127
+COACH_RBTENDENCY|both|int|[0..127]|[0..127]|num p50=50 max=50 zeros=226/497|num p50=50 max=95 zeros=1/127
+COACH_RESIGNREPORTED|both|bool||||
+COACH_RETIREYRSLEFT|both|int|[0..7]|[0..7]|num p50=0 max=0 zeros=497/497|num p50=0 max=0 zeros=127/127
+COACH_S|both|int|[0..127]|[0..127]||
+COACH_SPECIALTY|both|CoachSpecialty|||Quarterbacks:263,DefensiveLine:87|Quarterbacks:37,Linebackers:20
+COACH_STANCE|both|CoachStance|||Classic:404,PlaySheet:62|Classic:104,PlaySheet:18
+COACH_WASPLAYER|both|bool|||true:483,false:14|false:123,true:4
+COACH_WR|both|int|[0..127]|[0..127]|num p50=0 max=0 zeros=497/497|num p50=60 max=89 zeros=1/127
+CareerAssistant|MAD|bool||||false:106,true:21
+CareerBigLossMargin|both|int|[0..255]|[0..255]|num p50=0 max=0 zeros=497/497|num p50=0 max=0 zeros=127/127
+CareerBigWinMargin|both|int|[0..255]|[0..255]|num p50=0 max=0 zeros=497/497|num p50=0 max=0 zeros=127/127
+CareerLongWinStreak|both|int|[0..1023]|[0..1023]|num p50=0 max=15 zeros=350/497|num p50=4 max=10 zeros=23/127
+CareerLosses|MAD|int||[0..1023]||num p50=43 max=189 zeros=22/127
+CareerPlayoffLosses|MAD|int||[0..255]||num p50=2 max=18 zeros=42/127
+CareerPlayoffWins|MAD|int||[0..255]||num p50=1 max=29 zeros=54/127
+CareerPlayoffsMade|both|int|[0..63]|[0..63]|num p50=0 max=15 zeros=384/497|num p50=0 max=21 zeros=88/127
+CareerPointsAgainst|both|int|[0..65535]|[0..65535]|num p50=0 max=3967 zeros=350/497|num p50=1678 max=2160 zeros=23/127
+CareerPointsFor|both|int|[0..65535]|[0..65535]|num p50=0 max=5295 zeros=350/497|num p50=1671 max=2152 zeros=23/127
+CareerProBowlPlayers|MAD|int||[0..1023]||num p50=0 max=108 zeros=88/127
+CareerStats|CFB|CareerCoachStats||||
+CareerSuperbowlLosses|MAD|int||[0..100]||num p50=0 max=3 zeros=107/127
+CareerSuperbowlWins|MAD|int||[0..63]||num p50=0 max=3 zeros=104/127
+CareerTies|both|int|[0..1023]|[0..1023]|num p50=0 max=0 zeros=497/497|num p50=0 max=7 zeros=112/127
+CareerWinSeasons|both|int|[0..127]|[0..127]|num p50=0 max=25 zeros=386/497|num p50=0 max=22 zeros=84/127
+CareerWins|MAD|int||[0..1023]||num p50=45 max=464 zeros=22/127
+CharacterBodyType|both|CharacterBodyType|||Thin:234,Standard:193|Standard:104,Muscular:11
+CharacterVisuals|both|CharacterVisuals||||
+CoachBackstory|both|CoachBackstory|||Motivator:496,StaffBuilder:1|Strategist:59,Motivator:44
+CoachPoints|CFB|int|[0..4095]||num p50=3 max=28 zeros=174/497|
+CoachPrestige|CFB|LetterGrade|||F:154,Aplus:108|
+CoachPrestigeScore|CFB|int|[0..10000]||num p50=194 max=10000 zeros=114/497|
+ConfPlayoffWinStreak|both|int|[-32..31]|[-32..31]||
+ContractExpectationProgress|CFB|ContractExpectations||||
+ContractLength|both|int|[0..7]|[0..7]|num p50=3 max=5 zeros=68/497|num p50=3 max=6 zeros=23/127
+ContractSalary|both|int|[0..16383]|[0..16383]|num p50=0 max=500 zeros=496/497|num p50=300 max=4000 zeros=23/127
+ContractStatus|both|StaffPersonContractStatus|||First_Active:429,FreeAgent:68|Signed:96,FreeAgent:30
+ContractYearSummaries|CFB|ContractYearSummary[]||||
+ContractYearsRemaining|both|int|[0..31]|[0..31]|num p50=2 max=5 zeros=68/497|num p50=3 max=5 zeros=30/127
+CurrentContractExpectation|CFB|ContractExpectations|||Win5Games:98,Win4Games:90|
+CurrentJobSecurityPercentage|CFB|int|[0..100]||num p50=98 max=100 zeros=21/497|
+CurrentJobSecurityPercentageRank|CFB|int|[0..500]||num p50=236 max=500 zeros=4/497|
+CurrentJobSecurityStatus|CFB|JobSecurityStatus|||Safe:305,HotSeat:127|
+CurrentPurchasedTalentCosts|MAD|int||[0..8000]||num p50=0 max=0 zeros=127/127
+CurrentStatRankPosition|CFB|int|[0..500]||num p50=55 max=137 zeros=86/497|
+CurrentWinStreak|CFB|int|[-128..127]||num p50=0 max=7 zeros=442/497|
+DefaultTeamPhilosophy|both|TeamPhilosophy|||10000000011000111010000111100100:221,10000000100010100111001110100100:50|00000000000000000000000000000000:31,10000000000000000001010001010101:6
+DefenseAudibles|both|CoachAudibles|||00000000000000000000000000000000:497|00000000000000000000000000000000:127
+DefensivePlaybook|both|DefensivePlaybookDataType|||10000000011001000000110010010100:62,10000000011001000000110010010110:49|10000000000000011001100000101100:7,10000000000000011001100000011001:6
+DefensiveScheme|both|Scheme|||10000000011000111011001110001010:165,10000000011000111011001101111100:80|10000000000000011001100010000101:25,10000000000000011001100010001000:19
+DivPlayoffWinStreak|both|int|[-32..31]|[-32..31]||
+DominantArchetype|CFB|CoachTalentArcheType|||Schemer:86,Recruiter:86|
+EarnedContractPoints_LastYear|CFB|int|[-300..300]||num p50=74 max=341 zeros=110/497|
+EarnedContractPoints_ThisYear|CFB|int|[-300..300]||num p50=0 max=0 zeros=497/497|
+EarnedContractPoints_TwoYearsAgo|CFB|int|[-300..300]||num p50=69 max=306 zeros=130/497|
+ExperiencePoints|both|int|[0..1000000]|[0..1000000]|num p50=7050 max=44735 zeros=19/497|num p50=21646 max=109465 zeros=17/127
+FaceShape|MAD|CoachFace||||Invalid_:93,MustBeUnique:25
+FirstName|both|string||||
+GamedayTalents|MAD|Talent[]||||
+GenericHeadAssetName|both|string||||
+HasTrait|both|CoachingStaffPerson_HasTrait|||null:497|null:127
+HatType|CFB|CoachHatType|||None:337,Cap:142|
+Height|both|int|[0..255]|[0..255]|num p50=72 max=78 zeros=1/497|num p50=72 max=77 zeros=1/127
+HomeState|CFB|StateName|||Alabama:236,Texas:23|
+HomeTown|CFB|City||||
+IndexInUnlockList|MAD|int||[0..150]||num p50=8 max=42 zeros=25/127
+IsCreated|both|bool|||false:496,true:1|false:127
+IsLegend|both|bool|||false:497|false:127
+IsMaxLevel|MAD|bool||||false:124,true:3
+IsNIL|CFB|bool|||false:267,true:230|
+IsUserControlled|both|bool|||false:496,true:1|false:126,true:1
+LastName|both|string||||
+LegacyScore|both|int|[0..65535]|[0..100000]|num p50=0 max=0 zeros=497/497|num p50=395 max=20000 zeros=22/127
+Level|both|int|[0..100]|[1..50]|num p50=35 max=87 zeros=68/497|num p50=10 max=49 zeros=16/127
+Name|both|string||||
+NumContractOffers|CFB|int|[0..12]||num p50=0 max=0 zeros=497/497|
+OWNER_COMMENTID|both|int|[0..31]|[0..31]|num p50=0 max=0 zeros=497/497|num p50=0 max=0 zeros=127/127
+OWNER_COMMENTTYPE|both|int|[0..31]|[0..31]|num p50=0 max=0 zeros=497/497|num p50=0 max=0 zeros=127/127
+OffenseAudibles|both|CoachAudibles|||00000000000000000000000000000000:497|00000000000000000000000000000000:127
+OffensivePlaybook|both|OffensivePlaybookDataType|||10000000100100010101110011100001:9,10000000100100010101110100000110:9|10000000000000011001100000001011:7,10000000000000011001100000001010:6
+OffensiveScheme|both|Scheme|||10000000011000111011001110001000:166,10000000011000111011001110000100:82|10000000000000011001100001111110:45,10000000000000011101111001101111:17
+OriginalPosition|MAD|StaffPosition||||DefensiveCoordinator:45,OffensiveCoordinator:41
+Personality|both|Personality|||Unpredictable:318,Leader:83|Unpredictable:126,Leader:1
+PersuadeAttempts|CFB|int|[0..100]||num p50=0 max=0 zeros=497/497|
+PlaysheetTalents|MAD|Talent[]||||
+Portrait|both|int|[0..8191]|[0..8191]|num p50=167 max=7999 zeros=0/497|num p50=353 max=7999 zeros=0/127
+Portrait_Force_Silhouette|both|bool|||false:497|false:127
+Portrait_Swappable_Library_Path|both|SwappableLibraryPath||||
+Position|both|CoachPosition|||DefensiveCoordinator:191,OffensiveCoordinator:161|OffensiveCoordinator:46,DefensiveCoordinator:44
+PreOrderCurrentTitle|CFB|bool||||
+PreOrderPartnerTitle|CFB|bool||||
+PresentationId|both|int|[0..1023]|[0..65535]|num p50=375 max=935 zeros=225/497|num p50=394 max=751 zeros=1/127
+PrevPosition|CFB|CoachPosition|||DefensiveCoordinator:155,OffensiveCoordinator:135|
+PrevTeamIndex|both|int|[0..255]|[0..32]|num p50=255 max=255 zeros=1/497|num p50=0 max=30 zeros=85/127
+PrimaryPipeline|CFB|Pipeline|||Ohio:37,Alabama:29|
+Probation|both|bool|||false:497|false:127
+ProgramPointsBudgetAllocationPosture|CFB|ProgramPointsBudgetAllocationPosture|||10000000101000011101010000111001:271,10000000110001001110000100110101:88|
+RegularWinStreak|both|int|[-512..511]|[-512..511]|num p50=0 max=0 zeros=497/497|num p50=0 max=0 zeros=127/127
+SeasBigLossMargin|both|int|[0..255]|[0..255]||
+SeasBigWinMargin|both|int|[0..255]|[0..255]||
+SeasLongWinStreak|both|int|[0..31]|[0..31]||
+SeasLosses|MAD|int||[0..31]||num p50=1 max=15 zeros=41/127
+SeasPointsAgainst|both|int|[0..8191]|[0..8191]||
+SeasPointsFor|both|int|[0..8191]|[0..8191]||
+SeasTies|both|int|[0..31]|[0..31]||
+SeasWinStreak|both|int|[-32..31]|[-32..31]|num p50=0 max=0 zeros=497/497|num p50=0 max=2 zeros=78/127
+SeasWins|MAD|int||[0..31]||num p50=1 max=6 zeros=41/127
+SeasonStartJobSecurityStatus|CFB|JobSecurityStatus|||HotSeat:169,Safe:156|
+SeasonStats|CFB|SeasonCoachStats||||
+SeasonalGoal|CFB|CoachGoal||||
+SeasonsWithTeam|both|int|[0..127]|[0..127]|num p50=3 max=27 zeros=145/497|num p50=4 max=23 zeros=31/127
+SpecialtyType|CFB|CoachSpecialtyType|||Offense:225,Defense:189|
+SpeechId|both|int|[0..31]|[0..31]|num p50=0 max=31 zeros=276/497|num p50=31 max=31 zeros=1/127
+SuperbowlWinStreak|both|int|[-32..31]|[-32..31]||
+TeamBuilding|both|TeamBuilding|||Balanced:497|Balanced:101,ThroughDraft:22
+TeamIndex|both|int|[0..255]|[0..32]|num p50=82 max=255 zeros=3/497|num p50=20 max=32 zeros=5/127
+TeamPhilosophy|both|TeamPhilosophy|||10000000011000111010000111100100:221,10000000100010100111001110100100:50|00000000000000000000000000000000:30,10000000000000000001010001010101:6
+TradingTendency|both|TradingTendency|||DoesNotTrade:497|DoesNotTrade:82,TradesDown:38
+TraitExpertScout|both|bool|||false:497|false:127
+WCPlayoffWinStreak|both|int|[-32..31]|[-32..31]||
+WearAndTearTalents|MAD|Talent[]||||
+WeeklyGoals|CFB|CoachGoal[]||||
+Weight|both|int|[150..512]|[150..512]|num p50=45 max=151 zeros=0/497|num p50=10 max=10 zeros=0/127
+WinSeasStreak|both|int|[-32..31]|[-32..31]||
+YearlyAwardCount|both|int|[0..31]|[0..31]|num p50=0 max=0 zeros=497/497|num p50=0 max=2 zeros=113/127
+YearsCoaching|both|int|[0..127]|[0..63]|num p50=10 max=43 zeros=106/497|num p50=10 max=31 zeros=2/127

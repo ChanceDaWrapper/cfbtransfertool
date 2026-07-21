@@ -3,7 +3,7 @@
 Status: **PROPOSAL — no code changed yet.** Implementation begins only after approval.
 
 Analyzed:
-- `cfbtransfertool` (ChanceDaWrapper) — the app we build here (`CFB Transfer Application`).
+- `cfbtransfertool` (ChanceDaWrapper) — the app we build here (now released as **Pipeline**).
 - `cfb2madden` (seanpdwyer7) — cloned fresh from GitHub at v0.0.7 (`@RoamingAnalyst`).
 
 Neither is treated as the source of truth. Below is a subsystem-by-subsystem

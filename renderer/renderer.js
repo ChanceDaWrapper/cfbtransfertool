@@ -1,4 +1,4 @@
-/* Renderer for the CFB Transfer draft-class studio.
+/* Renderer for the Pipeline draft-class studio.
  * State lives here; all heavy lifting happens in the main process over IPC.
  * Config edits autosave (debounced) and regenerate marks results stale. */
 

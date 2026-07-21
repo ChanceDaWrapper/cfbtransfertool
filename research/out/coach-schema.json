@@ -1,0 +1,2828 @@
+{
+  "cfbSchemaMeta": {
+    "major": 809,
+    "minor": 0,
+    "gameYear": 26
+  },
+  "madSchemaMeta": {
+    "major": 682,
+    "minor": 1,
+    "gameYear": 26
+  },
+  "counts": {
+    "cfb": 137,
+    "madden": 121,
+    "shared": 102,
+    "cfbOnly": 35,
+    "maddenOnly": 19
+  },
+  "shared": [
+    "IsUserControlled",
+    "Age",
+    "FirstName",
+    "IsCreated",
+    "IsLegend",
+    "LastName",
+    "PresentationId",
+    "PrevTeamIndex",
+    "TeamIndex",
+    "ContractLength",
+    "ContractSalary",
+    "ContractStatus",
+    "ContractYearsRemaining",
+    "Level",
+    "Portrait",
+    "Portrait_Force_Silhouette",
+    "Portrait_Swappable_Library_Path",
+    "Position",
+    "Probation",
+    "SeasonsWithTeam",
+    "AssetName",
+    "AwardPoints",
+    "CareerBigLossMargin",
+    "CareerBigWinMargin",
+    "CareerLongWinStreak",
+    "CareerPlayoffsMade",
+    "CareerPointsAgainst",
+    "CareerPointsFor",
+    "CareerTies",
+    "CareerWinSeasons",
+    "CharacterBodyType",
+    "CharacterVisuals",
+    "ConfPlayoffWinStreak",
+    "DefaultTeamPhilosophy",
+    "DefenseAudibles",
+    "DefensivePlaybook",
+    "DefensiveScheme",
+    "DivPlayoffWinStreak",
+    "ExperiencePoints",
+    "GenericHeadAssetName",
+    "HasTrait",
+    "Height",
+    "LegacyScore",
+    "OffenseAudibles",
+    "OffensivePlaybook",
+    "OffensiveScheme",
+    "Personality",
+    "RegularWinStreak",
+    "SeasBigLossMargin",
+    "SeasBigWinMargin",
+    "SeasLongWinStreak",
+    "SeasPointsAgainst",
+    "SeasPointsFor",
+    "SeasTies",
+    "SeasWinStreak",
+    "SpeechId",
+    "SuperbowlWinStreak",
+    "TeamBuilding",
+    "TeamPhilosophy",
+    "TradingTendency",
+    "TraitExpertScout",
+    "WCPlayoffWinStreak",
+    "Weight",
+    "WinSeasStreak",
+    "YearlyAwardCount",
+    "COACH_ADAPTIVE_AI",
+    "COACH_CONSECTEAMCONTRACTS",
+    "COACH_DB",
+    "COACH_DEFENSE",
+    "COACH_DEFENSETYPE",
+    "COACH_DEFTENDENCYAGGRESSCONSERV",
+    "COACH_DEFTENDENCYRUNPASS",
+    "COACH_DEMEANOR",
+    "COACH_DL",
+    "COACH_FIREREPORTED",
+    "COACH_K",
+    "COACH_LASTCONTRACTTEAM",
+    "COACH_LASTTEAMFIRED",
+    "COACH_LASTTEAMRESIGNED",
+    "COACH_LB",
+    "COACH_OFFENSE",
+    "COACH_OFFTENDENCYAGGRESSCONSERV",
+    "COACH_OFFTENDENCYRUNPASS",
+    "COACH_OL",
+    "COACH_P",
+    "COACH_PERFORMANCELEVEL",
+    "COACH_QB",
+    "COACH_RATING",
+    "COACH_RB",
+    "COACH_RBTENDENCY",
+    "COACH_RESIGNREPORTED",
+    "COACH_RETIREYRSLEFT",
+    "COACH_S",
+    "COACH_SPECIALTY",
+    "COACH_STANCE",
+    "COACH_WASPLAYER",
+    "COACH_WR",
+    "CoachBackstory",
+    "Name",
+    "OWNER_COMMENTID",
+    "OWNER_COMMENTTYPE",
+    "YearsCoaching"
+  ],
+  "cfbOnly": [
+    "ActiveTalentTree",
+    "PrevPosition",
+    "AlmaMater",
+    "CareerStats",
+    "CurrentWinStreak",
+    "HatType",
+    "HomeState",
+    "HomeTown",
+    "PreOrderCurrentTitle",
+    "PreOrderPartnerTitle",
+    "PrimaryPipeline",
+    "SeasonalGoal",
+    "SeasonStats",
+    "WeeklyGoals",
+    "COACH_NO_HUDDLE_TEMPO",
+    "CoachPoints",
+    "CoachPrestige",
+    "CoachPrestigeScore",
+    "ContractExpectationProgress",
+    "ContractYearSummaries",
+    "CurrentContractExpectation",
+    "CurrentJobSecurityPercentage",
+    "CurrentJobSecurityPercentageRank",
+    "CurrentJobSecurityStatus",
+    "CurrentStatRankPosition",
+    "DominantArchetype",
+    "EarnedContractPoints_LastYear",
+    "EarnedContractPoints_ThisYear",
+    "EarnedContractPoints_TwoYearsAgo",
+    "IsNIL",
+    "NumContractOffers",
+    "PersuadeAttempts",
+    "ProgramPointsBudgetAllocationPosture",
+    "SeasonStartJobSecurityStatus",
+    "SpecialtyType"
+  ],
+  "maddenOnly": [
+    "Archetype",
+    "CurrentPurchasedTalentCosts",
+    "GamedayTalents",
+    "IndexInUnlockList",
+    "IsMaxLevel",
+    "OriginalPosition",
+    "PlaysheetTalents",
+    "WearAndTearTalents",
+    "CareerLosses",
+    "CareerPlayoffLosses",
+    "CareerPlayoffWins",
+    "CareerProBowlPlayers",
+    "CareerSuperbowlLosses",
+    "CareerSuperbowlWins",
+    "CareerWins",
+    "FaceShape",
+    "SeasLosses",
+    "SeasWins",
+    "CareerAssistant"
+  ],
+  "typeDiff": [
+    {
+      "field": "Position",
+      "cfb": "CoachPosition",
+      "mad": "StaffPosition"
+    }
+  ],
+  "enumDiff": [
+    {
+      "field": "ContractStatus",
+      "cfbEnum": "StaffPersonContractStatus",
+      "madEnum": "StaffPersonContractStatus",
+      "cfb": [
+        "0:First_Active=0",
+        "1:Signed=0",
+        "2:Expiring=1",
+        "3:First_Pending=2",
+        "4:PendingFire=2",
+        "5:PendingNFL=3",
+        "6:PendingRenewal=4",
+        "7:Last_Active=5",
+        "8:PendingRetire=5",
+        "9:Last_Pending=6",
+        "10:PendingHire=6",
+        "11:FreeAgent=7",
+        "12:Retired=8",
+        "13:Deleted=9",
+        "14:None=10"
+      ],
+      "mad": [
+        "0:Signed=0",
+        "1:FreeAgent=1",
+        "2:Retired=2",
+        "3:Deleted=3",
+        "4:Expiring=4",
+        "5:None=5"
+      ]
+    },
+    {
+      "field": "Position",
+      "cfbEnum": "CoachPosition",
+      "madEnum": "StaffPosition",
+      "cfb": [
+        "0:First_=0",
+        "1:HeadCoach=0",
+        "2:OffensiveCoordinator=1",
+        "3:DefensiveCoordinator=2",
+        "4:NumCollegeCoaches=3",
+        "5:SpecialTeams=3",
+        "6:Owner=4",
+        "7:Scout=5",
+        "8:Trainer=6",
+        "9:GeneralManager=7",
+        "10:PlayerPersonnel=8",
+        "11:Max_=9",
+        "12:Invalid_=255"
+      ],
+      "mad": [
+        "0:First_=0",
+        "1:HeadCoach=0",
+        "2:OffensiveCoordinator=1",
+        "3:DefensiveCoordinator=2",
+        "4:SpecialTeams=3",
+        "5:Owner=4",
+        "6:Scout=5",
+        "7:Trainer=6",
+        "8:GeneralManager=7",
+        "9:PlayerPersonnel=8",
+        "10:Max_=9",
+        "11:Invalid_=255"
+      ]
+    },
+    {
+      "field": "CoachBackstory",
+      "cfbEnum": "CoachBackstory",
+      "madEnum": "CoachBackstory",
+      "cfb": [
+        "0:Motivator=0",
+        "1:Strategist=1",
+        "2:First_=2",
+        "3:TeamBuilder=2",
+        "4:StaffBuilder=3",
+        "5:HCMotivator=4",
+        "6:HCSchemer=5",
+        "7:HCSalesman=6",
+        "8:OCMotivator=7",
+        "9:OCSchemer=8",
+        "10:OCSalesman=9",
+        "11:DCMotivator=10",
+        "12:DCSchemer=11",
+        "13:DCSalesman=12",
+        "14:Count_=13",
+        "15:Invalid_=14"
+      ],
+      "mad": [
+        "0:Motivator=0",
+        "1:Strategist=1",
+        "2:First_=2",
+        "3:TeamBuilder=2",
+        "4:StaffBuilder=3",
+        "5:Count_=4",
+        "6:Invalid_=5"
+      ]
+    }
+  ],
+  "cfbAttrs": {
+    "IsUserControlled": {
+      "type": "bool",
+      "default": "False",
+      "enum": null,
+      "enumMembers": null
+    },
+    "Age": {
+      "type": "int",
+      "minValue": "0",
+      "maxValue": "127",
+      "default": "0",
+      "enum": null,
+      "enumMembers": null
+    },
+    "FirstName": {
+      "type": "string",
+      "maxLength": "17",
+      "enum": null,
+      "enumMembers": null
+    },
+    "IsCreated": {
+      "type": "bool",
+      "default": "False",
+      "enum": null,
+      "enumMembers": null
+    },
+    "IsLegend": {
+      "type": "bool",
+      "default": "False",
+      "enum": null,
+      "enumMembers": null
+    },
+    "LastName": {
+      "type": "string",
+      "maxLength": "21",
+      "enum": null,
+      "enumMembers": null
+    },
+    "PresentationId": {
+      "type": "int",
+      "minValue": "0",
+      "maxValue": "1023",
+      "default": "0",
+      "enum": null,
+      "enumMembers": null
+    },
+    "PrevTeamIndex": {
+      "type": "int",
+      "minValue": "0",
+      "maxValue": "255",
+      "default": "255",
+      "enum": null,
+      "enumMembers": null
+    },
+    "TeamIndex": {
+      "type": "int",
+      "minValue": "0",
+      "maxValue": "255",
+      "default": "255",
+      "enum": null,
+      "enumMembers": null
+    },
+    "ActiveTalentTree": {
+      "type": "ActiveTalentTree",
+      "enum": null,
+      "enumMembers": null
+    },
+    "ContractLength": {
+      "type": "int",
+      "minValue": "0",
+      "maxValue": "7",
+      "default": "0",
+      "enum": null,
+      "enumMembers": null
+    },
+    "ContractSalary": {
+      "type": "int",
+      "minValue": "0",
+      "maxValue": "16383",
+      "default": "0",
+      "enum": null,
+      "enumMembers": null
+    },
+    "ContractStatus": {
+      "type": "StaffPersonContractStatus",
+      "default": "StaffPersonContractStatus:FreeAgent",
+      "enum": "StaffPersonContractStatus",
+      "enumMembers": [
+        "0:First_Active=0",
+        "1:Signed=0",
+        "2:Expiring=1",
+        "3:First_Pending=2",
+        "4:PendingFire=2",
+        "5:PendingNFL=3",
+        "6:PendingRenewal=4",
+        "7:Last_Active=5",
+        "8:PendingRetire=5",
+        "9:Last_Pending=6",
+        "10:PendingHire=6",
+        "11:FreeAgent=7",
+        "12:Retired=8",
+        "13:Deleted=9",
+        "14:None=10"
+      ]
+    },
+    "ContractYearsRemaining": {
+      "type": "int",
+      "minValue": "0",
+      "maxValue": "31",
+      "default": "0",
+      "enum": null,
+      "enumMembers": null
+    },
+    "Level": {
+      "type": "int",
+      "minValue": "0",
+      "maxValue": "100",
+      "default": "0",
+      "enum": null,
+      "enumMembers": null
+    },
+    "Portrait": {
+      "type": "int",
+      "minValue": "0",
+      "maxValue": "8191",
+      "default": "0",
+      "enum": null,
+      "enumMembers": null
+    },
+    "Portrait_Force_Silhouette": {
+      "type": "bool",
+      "default": "False",
+      "enum": null,
+      "enumMembers": null
+    },
+    "Portrait_Swappable_Library_Path": {
+      "type": "SwappableLibraryPath",
+      "default": "SwappableLibraryPath:library_icons_brt",
+      "enum": "SwappableLibraryPath",
+      "enumMembers": [
+        "0:First_=0",
+        "1:Last_=0",
+        "2:library_icons_brt=0",
+        "3:Max_=1",
+        "4:Invalid_=255"
+      ]
+    },
+    "Position": {
+      "type": "CoachPosition",
+      "default": "CoachPosition:HeadCoach",
+      "enum": "CoachPosition",
+      "enumMembers": [
+        "0:First_=0",
+        "1:HeadCoach=0",
+        "2:OffensiveCoordinator=1",
+        "3:DefensiveCoordinator=2",
+        "4:NumCollegeCoaches=3",
+        "5:SpecialTeams=3",
+        "6:Owner=4",
+        "7:Scout=5",
+        "8:Trainer=6",
+        "9:GeneralManager=7",
+        "10:PlayerPersonnel=8",
+        "11:Max_=9",
+        "12:Invalid_=255"
+      ]
+    },
+    "PrevPosition": {
+      "type": "CoachPosition",
+      "default": "CoachPosition:Invalid_",
+      "enum": "CoachPosition",
+      "enumMembers": [
+        "0:First_=0",
+        "1:HeadCoach=0",
+        "2:OffensiveCoordinator=1",
+        "3:DefensiveCoordinator=2",
+        "4:NumCollegeCoaches=3",
+        "5:SpecialTeams=3",
+        "6:Owner=4",
+        "7:Scout=5",
+        "8:Trainer=6",
+        "9:GeneralManager=7",
+        "10:PlayerPersonnel=8",
+        "11:Max_=9",
+        "12:Invalid_=255"
+      ]
+    },
+    "Probation": {
+      "type": "bool",
+      "default": "False",
+      "enum": null,
+      "enumMembers": null
+    },
+    "SeasonsWithTeam": {
+      "type": "int",
+      "minValue": "0",
+      "maxValue": "127",
+      "default": "0",
+      "enum": null,
+      "enumMembers": null
+    },
+    "AlmaMater": {
+      "type": "int",
+      "minValue": "1100",
+      "maxValue": "1300",
+      "default": "1100",
+      "enum": null,
+      "enumMembers": null
+    },
+    "AssetName": {
+      "type": "string",
+      "maxLength": "41",
+      "enum": null,
+      "enumMembers": null
+    },
+    "AwardPoints": {
+      "type": "int",
+      "minValue": "0",
+      "maxValue": "127",
+      "default": "0",
+      "enum": null,
+      "enumMembers": null
+    },
+    "CareerBigLossMargin": {
+      "type": "int",
+      "minValue": "0",
+      "maxValue": "255",
+      "default": "0",
+      "enum": null,
+      "enumMembers": null
+    },
+    "CareerBigWinMargin": {
+      "type": "int",
+      "minValue": "0",
+      "maxValue": "255",
+      "default": "0",
+      "enum": null,
+      "enumMembers": null
+    },
+    "CareerLongWinStreak": {
+      "type": "int",
+      "minValue": "0",
+      "maxValue": "1023",
+      "default": "0",
+      "enum": null,
+      "enumMembers": null
+    },
+    "CareerPlayoffsMade": {
+      "type": "int",
+      "minValue": "0",
+      "maxValue": "63",
+      "default": "0",
+      "enum": null,
+      "enumMembers": null
+    },
+    "CareerPointsAgainst": {
+      "type": "int",
+      "minValue": "0",
+      "maxValue": "65535",
+      "default": "0",
+      "enum": null,
+      "enumMembers": null
+    },
+    "CareerPointsFor": {
+      "type": "int",
+      "minValue": "0",
+      "maxValue": "65535",
+      "default": "0",
+      "enum": null,
+      "enumMembers": null
+    },
+    "CareerStats": {
+      "type": "CareerCoachStats",
+      "enum": null,
+      "enumMembers": null
+    },
+    "CareerTies": {
+      "type": "int",
+      "minValue": "0",
+      "maxValue": "1023",
+      "default": "0",
+      "enum": null,
+      "enumMembers": null
+    },
+    "CareerWinSeasons": {
+      "type": "int",
+      "minValue": "0",
+      "maxValue": "127",
+      "default": "0",
+      "enum": null,
+      "enumMembers": null
+    },
+    "CharacterBodyType": {
+      "type": "CharacterBodyType",
+      "default": "CharacterBodyType:Standard",
+      "enum": "CharacterBodyType",
+      "enumMembers": [
+        "0:First_=0",
+        "1:FirstMain_=0",
+        "2:Standard=0",
+        "3:Thin=1",
+        "4:Muscular=2",
+        "5:Heavy=3",
+        "6:Freshman=4",
+        "7:LastMain_=4",
+        "8:ReservedMain_1=5",
+        "9:ReservedMain_2=6",
+        "10:ReservedMain_3=7",
+        "11:FirstAlternate_=8",
+        "12:Standard_Alternate=8",
+        "13:LastAlternate_=9",
+        "14:Thin_Alternate=9",
+        "15:Max_=10",
+        "16:Invalid_=15"
+      ]
+    },
+    "CharacterVisuals": {
+      "type": "CharacterVisuals",
+      "enum": null,
+      "enumMembers": null
+    },
+    "ConfPlayoffWinStreak": {
+      "type": "int",
+      "minValue": "-32",
+      "maxValue": "31",
+      "default": "0",
+      "enum": null,
+      "enumMembers": null
+    },
+    "CurrentWinStreak": {
+      "type": "int",
+      "minValue": "-128",
+      "maxValue": "127",
+      "default": "0",
+      "enum": null,
+      "enumMembers": null
+    },
+    "DefaultTeamPhilosophy": {
+      "type": "TeamPhilosophy",
+      "enum": null,
+      "enumMembers": null
+    },
+    "DefenseAudibles": {
+      "type": "CoachAudibles",
+      "enum": null,
+      "enumMembers": null
+    },
+    "DefensivePlaybook": {
+      "type": "DefensivePlaybookDataType",
+      "enum": null,
+      "enumMembers": null
+    },
+    "DefensiveScheme": {
+      "type": "Scheme",
+      "enum": null,
+      "enumMembers": null
+    },
+    "DivPlayoffWinStreak": {
+      "type": "int",
+      "minValue": "-32",
+      "maxValue": "31",
+      "default": "0",
+      "enum": null,
+      "enumMembers": null
+    },
+    "ExperiencePoints": {
+      "type": "int",
+      "minValue": "0",
+      "maxValue": "1000000",
+      "default": "0",
+      "enum": null,
+      "enumMembers": null
+    },
+    "GenericHeadAssetName": {
+      "type": "string",
+      "maxLength": "33",
+      "enum": null,
+      "enumMembers": null
+    },
+    "HasTrait": {
+      "type": "CoachingStaffPerson_HasTrait",
+      "final": "true",
+      "enum": null,
+      "enumMembers": null
+    },
+    "HatType": {
+      "type": "CoachHatType",
+      "default": "CoachHatType:None",
+      "enum": "CoachHatType",
+      "enumMembers": [
+        "0:None=0",
+        "1:Cap=1",
+        "2:Visor=2",
+        "3:Future1=3",
+        "4:Future2=4",
+        "5:Future3=5"
+      ]
+    },
+    "Height": {
+      "type": "int",
+      "minValue": "0",
+      "maxValue": "255",
+      "default": "0",
+      "enum": null,
+      "enumMembers": null
+    },
+    "HomeState": {
+      "type": "StateName",
+      "default": "StateName:Alabama",
+      "enum": "StateName",
+      "enumMembers": [
+        "0:Alabama=0",
+        "1:Alaska=1",
+        "2:Arizona=2",
+        "3:Arkansas=3",
+        "4:California=4",
+        "5:Colorado=5",
+        "6:Connecticut=6",
+        "7:Delaware=7",
+        "8:Florida=8",
+        "9:Georgia=9",
+        "10:Hawaii=10",
+        "11:Idaho=11",
+        "12:Illinois=12",
+        "13:Indiana=13",
+        "14:Iowa=14",
+        "15:Kansas=15",
+        "16:Kentucky=16",
+        "17:Louisiana=17",
+        "18:Maine=18",
+        "19:Maryland=19",
+        "20:Massachusetts=20",
+        "21:Michigan=21",
+        "22:Minnesota=22",
+        "23:Mississippi=23",
+        "24:Missouri=24",
+        "25:Montana=25",
+        "26:Nebraska=26",
+        "27:Nevada=27",
+        "28:NewHampshire=28",
+        "29:NewJersey=29",
+        "30:NewMexico=30",
+        "31:NewYork=31",
+        "32:NorthCarolina=32",
+        "33:NorthDakota=33",
+        "34:Ohio=34",
+        "35:Oklahoma=35",
+        "36:Oregon=36",
+        "37:Pennsylvania=37",
+        "38:RhodeIsland=38",
+        "39:SouthCarolina=39",
+        "40:SouthDakota=40",
+        "41:Tennessee=41",
+        "42:Texas=42",
+        "43:Utah=43",
+        "44:Vermont=44",
+        "45:Virginia=45",
+        "46:Washington=46",
+        "47:WestVirginia=47",
+        "48:Wisconsin=48",
+        "49:Wyoming=49",
+        "50:NonUS=50",
+        "51:INVALID=51"
+      ]
+    },
+    "HomeTown": {
+      "type": "City",
+      "enum": null,
+      "enumMembers": null
+    },
+    "LegacyScore": {
+      "type": "int",
+      "minValue": "0",
+      "maxValue": "65535",
+      "default": "0",
+      "enum": null,
+      "enumMembers": null
+    },
+    "OffenseAudibles": {
+      "type": "CoachAudibles",
+      "enum": null,
+      "enumMembers": null
+    },
+    "OffensivePlaybook": {
+      "type": "OffensivePlaybookDataType",
+      "enum": null,
+      "enumMembers": null
+    },
+    "OffensiveScheme": {
+      "type": "Scheme",
+      "enum": null,
+      "enumMembers": null
+    },
+    "Personality": {
+      "type": "Personality",
+      "default": "Personality:Unpredictable",
+      "enum": "Personality",
+      "enumMembers": [
+        "0:First_=0",
+        "1:Leader=0",
+        "2:Intense=1",
+        "3:Entertainer=2",
+        "4:TeamPlayer=3",
+        "5:Unpredictable=4",
+        "6:UserAvailableCount_=4",
+        "7:NPCAvailableCount_=5",
+        "8:Invalid_=15"
+      ]
+    },
+    "PreOrderCurrentTitle": {
+      "type": "bool",
+      "default": "False",
+      "enum": null,
+      "enumMembers": null
+    },
+    "PreOrderPartnerTitle": {
+      "type": "bool",
+      "default": "False",
+      "enum": null,
+      "enumMembers": null
+    },
+    "PrimaryPipeline": {
+      "type": "Pipeline",
+      "default": "Pipeline:First_",
+      "enum": "Pipeline",
+      "enumMembers": [
+        "0:Alabama=0",
+        "1:First_=0",
+        "2:Arizona=1",
+        "3:Arkansas=2",
+        "4:BigApple=3",
+        "5:BigSky=4",
+        "6:CentralFlorida=5",
+        "7:Colorado=6",
+        "8:EastTexas=7",
+        "9:Hawaii=8",
+        "10:Illinois=9",
+        "11:Indiana=10",
+        "12:Iowa=11",
+        "13:Kansas=12",
+        "14:Kentucky=13",
+        "15:Louisiana=14",
+        "16:MetroAtlanta=15",
+        "17:Michigan=16",
+        "18:Minnesota=17",
+        "19:Mississippi=18",
+        "20:Missouri=19",
+        "21:Nebraska=20",
+        "22:Nevada=21",
+        "23:NewEngland=22",
+        "24:NewMexico=23",
+        "25:NorthCarolina=24",
+        "26:NorthFlorida=25",
+        "27:NorthTexas=26",
+        "28:NorthernCalifornia=27",
+        "29:Ohio=28",
+        "30:Oklahoma=29",
+        "31:PacificNorthwest=30",
+        "32:Pennsylvania=31",
+        "33:SouthCarolina=32",
+        "34:SouthFlorida=33",
+        "35:SouthGeorgia=34",
+        "36:SouthernCalifornia=35",
+        "37:SouthwestTexas=36",
+        "38:Tennessee=37",
+        "39:Tidewater=38",
+        "40:Utah=39",
+        "41:WestVirginia=40",
+        "42:Wisconsin=41",
+        "43:International=42",
+        "44:Last_=42",
+        "45:Count_=43",
+        "46:Invalid=44"
+      ]
+    },
+    "RegularWinStreak": {
+      "type": "int",
+      "minValue": "-512",
+      "maxValue": "511",
+      "default": "0",
+      "enum": null,
+      "enumMembers": null
+    },
+    "SeasBigLossMargin": {
+      "type": "int",
+      "minValue": "0",
+      "maxValue": "255",
+      "default": "0",
+      "enum": null,
+      "enumMembers": null
+    },
+    "SeasBigWinMargin": {
+      "type": "int",
+      "minValue": "0",
+      "maxValue": "255",
+      "default": "0",
+      "enum": null,
+      "enumMembers": null
+    },
+    "SeasLongWinStreak": {
+      "type": "int",
+      "minValue": "0",
+      "maxValue": "31",
+      "default": "0",
+      "enum": null,
+      "enumMembers": null
+    },
+    "SeasonalGoal": {
+      "type": "CoachGoal",
+      "enum": null,
+      "enumMembers": null
+    },
+    "SeasonStats": {
+      "type": "SeasonCoachStats",
+      "enum": null,
+      "enumMembers": null
+    },
+    "SeasPointsAgainst": {
+      "type": "int",
+      "minValue": "0",
+      "maxValue": "8191",
+      "default": "0",
+      "enum": null,
+      "enumMembers": null
+    },
+    "SeasPointsFor": {
+      "type": "int",
+      "minValue": "0",
+      "maxValue": "8191",
+      "default": "0",
+      "enum": null,
+      "enumMembers": null
+    },
+    "SeasTies": {
+      "type": "int",
+      "minValue": "0",
+      "maxValue": "31",
+      "default": "0",
+      "enum": null,
+      "enumMembers": null
+    },
+    "SeasWinStreak": {
+      "type": "int",
+      "minValue": "-32",
+      "maxValue": "31",
+      "default": "0",
+      "enum": null,
+      "enumMembers": null
+    },
+    "SpeechId": {
+      "type": "int",
+      "minValue": "0",
+      "maxValue": "31",
+      "default": "0",
+      "enum": null,
+      "enumMembers": null
+    },
+    "SuperbowlWinStreak": {
+      "type": "int",
+      "minValue": "-32",
+      "maxValue": "31",
+      "default": "0",
+      "enum": null,
+      "enumMembers": null
+    },
+    "TeamBuilding": {
+      "type": "TeamBuilding",
+      "default": "TeamBuilding:Balanced",
+      "enum": "TeamBuilding",
+      "enumMembers": [
+        "0:Balanced=0",
+        "1:ThroughDraft=1",
+        "2:ThroughFreeAgency=2"
+      ]
+    },
+    "TeamPhilosophy": {
+      "type": "TeamPhilosophy",
+      "enum": null,
+      "enumMembers": null
+    },
+    "TradingTendency": {
+      "type": "TradingTendency",
+      "default": "TradingTendency:DoesNotTrade",
+      "enum": "TradingTendency",
+      "enumMembers": [
+        "0:DoesNotTrade=0",
+        "1:TradesUp=1",
+        "2:TradesDown=2"
+      ]
+    },
+    "TraitExpertScout": {
+      "type": "bool",
+      "default": "False",
+      "enum": null,
+      "enumMembers": null
+    },
+    "WCPlayoffWinStreak": {
+      "type": "int",
+      "minValue": "-32",
+      "maxValue": "31",
+      "default": "0",
+      "enum": null,
+      "enumMembers": null
+    },
+    "WeeklyGoals": {
+      "type": "CoachGoal[]",
+      "enum": null,
+      "enumMembers": null
+    },
+    "Weight": {
+      "type": "int",
+      "minValue": "150",
+      "maxValue": "512",
+      "default": "160",
+      "enum": null,
+      "enumMembers": null
+    },
+    "WinSeasStreak": {
+      "type": "int",
+      "minValue": "-32",
+      "maxValue": "31",
+      "default": "0",
+      "enum": null,
+      "enumMembers": null
+    },
+    "YearlyAwardCount": {
+      "type": "int",
+      "minValue": "0",
+      "maxValue": "31",
+      "default": "0",
+      "enum": null,
+      "enumMembers": null
+    },
+    "COACH_ADAPTIVE_AI": {
+      "type": "CoachAdaptiveAI",
+      "default": "CoachAdaptiveAI:Balanced",
+      "enum": "CoachAdaptiveAI",
+      "enumMembers": [
+        "0:Conservative=0",
+        "1:First_=0",
+        "2:Balanced=1",
+        "3:Aggressive=2",
+        "4:Conservative_1=3",
+        "5:Balanced_1=4",
+        "6:Aggressive_1=5",
+        "7:Conservative_2=6",
+        "8:Balanced_2=7",
+        "9:Aggressive_2=8",
+        "10:Conservative_3=9",
+        "11:Balanced_3=10",
+        "12:Aggressive_3=11",
+        "13:Max_=12",
+        "14:Invalid_=13"
+      ]
+    },
+    "COACH_CONSECTEAMCONTRACTS": {
+      "type": "int",
+      "minValue": "0",
+      "maxValue": "31",
+      "default": "0",
+      "enum": null,
+      "enumMembers": null
+    },
+    "COACH_DB": {
+      "type": "int",
+      "minValue": "0",
+      "maxValue": "127",
+      "default": "0",
+      "enum": null,
+      "enumMembers": null
+    },
+    "COACH_DEFENSE": {
+      "type": "int",
+      "minValue": "0",
+      "maxValue": "127",
+      "default": "0",
+      "enum": null,
+      "enumMembers": null
+    },
+    "COACH_DEFENSETYPE": {
+      "type": "int",
+      "minValue": "0",
+      "maxValue": "127",
+      "default": "0",
+      "enum": null,
+      "enumMembers": null
+    },
+    "COACH_DEFTENDENCYAGGRESSCONSERV": {
+      "type": "int",
+      "minValue": "0",
+      "maxValue": "127",
+      "default": "0",
+      "enum": null,
+      "enumMembers": null
+    },
+    "COACH_DEFTENDENCYRUNPASS": {
+      "type": "int",
+      "minValue": "0",
+      "maxValue": "127",
+      "default": "0",
+      "enum": null,
+      "enumMembers": null
+    },
+    "COACH_DEMEANOR": {
+      "type": "CoachDemeanor",
+      "default": "CoachDemeanor:Classic",
+      "enum": "CoachDemeanor",
+      "enumMembers": [
+        "0:Classic=0",
+        "1:First_=0",
+        "2:Calm=1",
+        "3:Intense=2",
+        "4:Max=3",
+        "5:Invalid=15"
+      ]
+    },
+    "COACH_DL": {
+      "type": "int",
+      "minValue": "0",
+      "maxValue": "127",
+      "default": "0",
+      "enum": null,
+      "enumMembers": null
+    },
+    "COACH_FIREREPORTED": {
+      "type": "bool",
+      "default": "True",
+      "enum": null,
+      "enumMembers": null
+    },
+    "COACH_K": {
+      "type": "int",
+      "minValue": "0",
+      "maxValue": "127",
+      "default": "0",
+      "enum": null,
+      "enumMembers": null
+    },
+    "COACH_LASTCONTRACTTEAM": {
+      "type": "int",
+      "minValue": "0",
+      "maxValue": "1023",
+      "default": "0",
+      "enum": null,
+      "enumMembers": null
+    },
+    "COACH_LASTTEAMFIRED": {
+      "type": "int",
+      "minValue": "0",
+      "maxValue": "1023",
+      "default": "0",
+      "enum": null,
+      "enumMembers": null
+    },
+    "COACH_LASTTEAMRESIGNED": {
+      "type": "int",
+      "minValue": "0",
+      "maxValue": "1023",
+      "default": "0",
+      "enum": null,
+      "enumMembers": null
+    },
+    "COACH_LB": {
+      "type": "int",
+      "minValue": "0",
+      "maxValue": "127",
+      "default": "0",
+      "enum": null,
+      "enumMembers": null
+    },
+    "COACH_NO_HUDDLE_TEMPO": {
+      "type": "CoachNoHuddleTempo",
+      "default": "CoachNoHuddleTempo:Balanced",
+      "enum": "CoachNoHuddleTempo",
+      "enumMembers": [
+        "0:Conservative=0",
+        "1:First_=0",
+        "2:Balanced=1",
+        "3:Aggressive=2",
+        "4:Max_=3",
+        "5:Invalid_=4"
+      ]
+    },
+    "COACH_OFFENSE": {
+      "type": "int",
+      "minValue": "0",
+      "maxValue": "127",
+      "default": "0",
+      "enum": null,
+      "enumMembers": null
+    },
+    "COACH_OFFTENDENCYAGGRESSCONSERV": {
+      "type": "int",
+      "minValue": "0",
+      "maxValue": "127",
+      "default": "0",
+      "enum": null,
+      "enumMembers": null
+    },
+    "COACH_OFFTENDENCYRUNPASS": {
+      "type": "int",
+      "minValue": "0",
+      "maxValue": "127",
+      "default": "0",
+      "enum": null,
+      "enumMembers": null
+    },
+    "COACH_OL": {
+      "type": "int",
+      "minValue": "0",
+      "maxValue": "127",
+      "default": "0",
+      "enum": null,
+      "enumMembers": null
+    },
+    "COACH_P": {
+      "type": "int",
+      "minValue": "0",
+      "maxValue": "127",
+      "default": "0",
+      "enum": null,
+      "enumMembers": null
+    },
+    "COACH_PERFORMANCELEVEL": {
+      "type": "int",
+      "minValue": "0",
+      "maxValue": "255",
+      "default": "0",
+      "enum": null,
+      "enumMembers": null
+    },
+    "COACH_QB": {
+      "type": "int",
+      "minValue": "0",
+      "maxValue": "127",
+      "default": "0",
+      "enum": null,
+      "enumMembers": null
+    },
+    "COACH_RATING": {
+      "type": "int",
+      "minValue": "0",
+      "maxValue": "127",
+      "default": "0",
+      "enum": null,
+      "enumMembers": null
+    },
+    "COACH_RB": {
+      "type": "int",
+      "minValue": "0",
+      "maxValue": "127",
+      "default": "0",
+      "enum": null,
+      "enumMembers": null
+    },
+    "COACH_RBTENDENCY": {
+      "type": "int",
+      "minValue": "0",
+      "maxValue": "127",
+      "default": "0",
+      "enum": null,
+      "enumMembers": null
+    },
+    "COACH_RESIGNREPORTED": {
+      "type": "bool",
+      "default": "True",
+      "enum": null,
+      "enumMembers": null
+    },
+    "COACH_RETIREYRSLEFT": {
+      "type": "int",
+      "minValue": "0",
+      "maxValue": "7",
+      "default": "0",
+      "enum": null,
+      "enumMembers": null
+    },
+    "COACH_S": {
+      "type": "int",
+      "minValue": "0",
+      "maxValue": "127",
+      "default": "0",
+      "enum": null,
+      "enumMembers": null
+    },
+    "COACH_SPECIALTY": {
+      "type": "CoachSpecialty",
+      "default": "CoachSpecialty:Quarterbacks",
+      "enum": "CoachSpecialty",
+      "enumMembers": [
+        "0:First_=0",
+        "1:Quarterbacks=0",
+        "2:RunningBacks=1",
+        "3:Receivers=2",
+        "4:OffensiveLine=3",
+        "5:DefensiveLine=4",
+        "6:Linebackers=5",
+        "7:Secondary=6",
+        "8:SpecialTeams=7",
+        "9:Max_=8",
+        "10:Invalid_=255"
+      ]
+    },
+    "COACH_STANCE": {
+      "type": "CoachStance",
+      "default": "CoachStance:Classic",
+      "enum": "CoachStance",
+      "enumMembers": [
+        "0:Classic=0",
+        "1:First_=0",
+        "2:PlaySheet=1",
+        "3:HandsOnKnees=2",
+        "4:Max_=3",
+        "5:Invalid_=15"
+      ]
+    },
+    "COACH_WASPLAYER": {
+      "type": "bool",
+      "default": "True",
+      "enum": null,
+      "enumMembers": null
+    },
+    "COACH_WR": {
+      "type": "int",
+      "minValue": "0",
+      "maxValue": "127",
+      "default": "0",
+      "enum": null,
+      "enumMembers": null
+    },
+    "CoachBackstory": {
+      "type": "CoachBackstory",
+      "default": "CoachBackstory:Motivator",
+      "enum": "CoachBackstory",
+      "enumMembers": [
+        "0:Motivator=0",
+        "1:Strategist=1",
+        "2:First_=2",
+        "3:TeamBuilder=2",
+        "4:StaffBuilder=3",
+        "5:HCMotivator=4",
+        "6:HCSchemer=5",
+        "7:HCSalesman=6",
+        "8:OCMotivator=7",
+        "9:OCSchemer=8",
+        "10:OCSalesman=9",
+        "11:DCMotivator=10",
+        "12:DCSchemer=11",
+        "13:DCSalesman=12",
+        "14:Count_=13",
+        "15:Invalid_=14"
+      ]
+    },
+    "CoachPoints": {
+      "type": "int",
+      "minValue": "0",
+      "maxValue": "4095",
+      "default": "0",
+      "enum": null,
+      "enumMembers": null
+    },
+    "CoachPrestige": {
+      "type": "LetterGrade",
+      "default": "LetterGrade:Incomplete",
+      "enum": "LetterGrade",
+      "enumMembers": [
+        "0:Aplus=0",
+        "1:First_=0",
+        "2:A=1",
+        "3:Aminus=2",
+        "4:Bplus=3",
+        "5:B=4",
+        "6:Bminus=5",
+        "7:Cplus=6",
+        "8:C=7",
+        "9:Cminus=8",
+        "10:Dplus=9",
+        "11:D=10",
+        "12:Dminus=11",
+        "13:F=12",
+        "14:Last_=12",
+        "15:COUNT=13",
+        "16:Incomplete=13"
+      ]
+    },
+    "CoachPrestigeScore": {
+      "type": "int",
+      "minValue": "0",
+      "maxValue": "10000",
+      "default": "0",
+      "enum": null,
+      "enumMembers": null
+    },
+    "ContractExpectationProgress": {
+      "type": "ContractExpectations",
+      "default": "ContractExpectations:Invalid_",
+      "enum": "ContractExpectations",
+      "enumMembers": [
+        "0:First_=0",
+        "1:FirstWins_=0",
+        "2:Win4Games=0",
+        "3:Win5Games=1",
+        "4:Win6Games=2",
+        "5:Win7Games=3",
+        "6:Win8Games=4",
+        "7:LastWins_=5",
+        "8:Win9Games=5",
+        "9:WinConfChamp=6",
+        "10:Last_=7",
+        "11:WinNY6Bowl=7",
+        "12:Count_=8",
+        "13:Invalid_=8"
+      ]
+    },
+    "ContractYearSummaries": {
+      "type": "ContractYearSummary[]",
+      "enum": null,
+      "enumMembers": null
+    },
+    "CurrentContractExpectation": {
+      "type": "ContractExpectations",
+      "default": "ContractExpectations:Invalid_",
+      "enum": "ContractExpectations",
+      "enumMembers": [
+        "0:First_=0",
+        "1:FirstWins_=0",
+        "2:Win4Games=0",
+        "3:Win5Games=1",
+        "4:Win6Games=2",
+        "5:Win7Games=3",
+        "6:Win8Games=4",
+        "7:LastWins_=5",
+        "8:Win9Games=5",
+        "9:WinConfChamp=6",
+        "10:Last_=7",
+        "11:WinNY6Bowl=7",
+        "12:Count_=8",
+        "13:Invalid_=8"
+      ]
+    },
+    "CurrentJobSecurityPercentage": {
+      "type": "int",
+      "minValue": "0",
+      "maxValue": "100",
+      "default": "0",
+      "enum": null,
+      "enumMembers": null
+    },
+    "CurrentJobSecurityPercentageRank": {
+      "type": "int",
+      "minValue": "0",
+      "maxValue": "500",
+      "default": "0",
+      "enum": null,
+      "enumMembers": null
+    },
+    "CurrentJobSecurityStatus": {
+      "type": "JobSecurityStatus",
+      "default": "JobSecurityStatus:Invalid",
+      "enum": "JobSecurityStatus",
+      "enumMembers": [
+        "0:Safe=0",
+        "1:SafeForNow=1",
+        "2:Low=2",
+        "3:HotSeat=3",
+        "4:Invalid=4"
+      ]
+    },
+    "CurrentStatRankPosition": {
+      "type": "int",
+      "minValue": "0",
+      "maxValue": "500",
+      "default": "0",
+      "enum": null,
+      "enumMembers": null
+    },
+    "DominantArchetype": {
+      "type": "CoachTalentArcheType",
+      "default": "CoachTalentArcheType:Invalid_",
+      "enum": "CoachTalentArcheType",
+      "enumMembers": [
+        "0:First_=0",
+        "1:Motivator=0",
+        "2:Schemer=1",
+        "3:Recruiter=2",
+        "4:MasterMotivator=3",
+        "5:Architect=4",
+        "6:SchemeGuru=5",
+        "7:Strategist=6",
+        "8:EliteRecruiter=7",
+        "9:TalentDeveloper=8",
+        "10:Rainmaker=9",
+        "11:Visionary=10",
+        "12:ProgramBuilder=11",
+        "13:CEO=12",
+        "14:Last_=12",
+        "15:Count_=13",
+        "16:Invalid_=255"
+      ]
+    },
+    "EarnedContractPoints_LastYear": {
+      "type": "int",
+      "minValue": "-300",
+      "maxValue": "300",
+      "default": "0",
+      "enum": null,
+      "enumMembers": null
+    },
+    "EarnedContractPoints_ThisYear": {
+      "type": "int",
+      "minValue": "-300",
+      "maxValue": "300",
+      "default": "0",
+      "enum": null,
+      "enumMembers": null
+    },
+    "EarnedContractPoints_TwoYearsAgo": {
+      "type": "int",
+      "minValue": "-300",
+      "maxValue": "300",
+      "default": "0",
+      "enum": null,
+      "enumMembers": null
+    },
+    "IsNIL": {
+      "type": "bool",
+      "default": "False",
+      "enum": null,
+      "enumMembers": null
+    },
+    "Name": {
+      "type": "string",
+      "maxLength": "18",
+      "enum": null,
+      "enumMembers": null
+    },
+    "NumContractOffers": {
+      "type": "int",
+      "minValue": "0",
+      "maxValue": "12",
+      "default": "0",
+      "enum": null,
+      "enumMembers": null
+    },
+    "OWNER_COMMENTID": {
+      "type": "int",
+      "minValue": "0",
+      "maxValue": "31",
+      "default": "0",
+      "enum": null,
+      "enumMembers": null
+    },
+    "OWNER_COMMENTTYPE": {
+      "type": "int",
+      "minValue": "0",
+      "maxValue": "31",
+      "default": "0",
+      "enum": null,
+      "enumMembers": null
+    },
+    "PersuadeAttempts": {
+      "type": "int",
+      "minValue": "0",
+      "maxValue": "100",
+      "default": "0",
+      "enum": null,
+      "enumMembers": null
+    },
+    "ProgramPointsBudgetAllocationPosture": {
+      "type": "ProgramPointsBudgetAllocationPosture",
+      "enum": null,
+      "enumMembers": null
+    },
+    "SeasonStartJobSecurityStatus": {
+      "type": "JobSecurityStatus",
+      "default": "JobSecurityStatus:Invalid",
+      "enum": "JobSecurityStatus",
+      "enumMembers": [
+        "0:Safe=0",
+        "1:SafeForNow=1",
+        "2:Low=2",
+        "3:HotSeat=3",
+        "4:Invalid=4"
+      ]
+    },
+    "SpecialtyType": {
+      "type": "CoachSpecialtyType",
+      "default": "CoachSpecialtyType:Any",
+      "enum": "CoachSpecialtyType",
+      "enumMembers": [
+        "0:Offense=0",
+        "1:Defense=1",
+        "2:Any=2"
+      ]
+    },
+    "YearsCoaching": {
+      "type": "int",
+      "minValue": "0",
+      "maxValue": "127",
+      "default": "0",
+      "enum": null,
+      "enumMembers": null
+    }
+  },
+  "maddenAttrs": {
+    "IsUserControlled": {
+      "type": "bool",
+      "default": "False",
+      "enum": null,
+      "enumMembers": null
+    },
+    "Age": {
+      "type": "int",
+      "minValue": "0",
+      "maxValue": "127",
+      "default": "0",
+      "enum": null,
+      "enumMembers": null
+    },
+    "FirstName": {
+      "type": "string",
+      "maxLength": "17",
+      "enum": null,
+      "enumMembers": null
+    },
+    "IsCreated": {
+      "type": "bool",
+      "default": "False",
+      "enum": null,
+      "enumMembers": null
+    },
+    "IsLegend": {
+      "type": "bool",
+      "default": "False",
+      "enum": null,
+      "enumMembers": null
+    },
+    "LastName": {
+      "type": "string",
+      "maxLength": "18",
+      "enum": null,
+      "enumMembers": null
+    },
+    "PresentationId": {
+      "type": "int",
+      "minValue": "0",
+      "maxValue": "65535",
+      "default": "0",
+      "enum": null,
+      "enumMembers": null
+    },
+    "PrevTeamIndex": {
+      "type": "int",
+      "minValue": "0",
+      "maxValue": "32",
+      "default": "0",
+      "enum": null,
+      "enumMembers": null
+    },
+    "TeamIndex": {
+      "type": "int",
+      "minValue": "0",
+      "maxValue": "32",
+      "default": "0",
+      "enum": null,
+      "enumMembers": null
+    },
+    "Archetype": {
+      "type": "StaffArchetypeEnum",
+      "default": "StaffArchetypeEnum:DevelopmentWizard",
+      "enum": "StaffArchetypeEnum",
+      "enumMembers": [
+        "0:OffensiveGuru=0",
+        "1:DefensiveGenius=1",
+        "2:PersonnelCzar=2",
+        "3:DevelopmentWizard=3",
+        "4:HeadScout=4",
+        "5:HeadTrainer=5",
+        "6:MasterMotivator=6",
+        "7:MasterMotivator_JohnMadden=7",
+        "8:Count=8"
+      ]
+    },
+    "ContractLength": {
+      "type": "int",
+      "minValue": "0",
+      "maxValue": "7",
+      "default": "0",
+      "enum": null,
+      "enumMembers": null
+    },
+    "ContractSalary": {
+      "type": "int",
+      "minValue": "0",
+      "maxValue": "16383",
+      "default": "0",
+      "enum": null,
+      "enumMembers": null
+    },
+    "ContractStatus": {
+      "type": "StaffPersonContractStatus",
+      "default": "StaffPersonContractStatus:FreeAgent",
+      "enum": "StaffPersonContractStatus",
+      "enumMembers": [
+        "0:Signed=0",
+        "1:FreeAgent=1",
+        "2:Retired=2",
+        "3:Deleted=3",
+        "4:Expiring=4",
+        "5:None=5"
+      ]
+    },
+    "ContractYearsRemaining": {
+      "type": "int",
+      "minValue": "0",
+      "maxValue": "31",
+      "default": "0",
+      "enum": null,
+      "enumMembers": null
+    },
+    "CurrentPurchasedTalentCosts": {
+      "type": "int",
+      "minValue": "0",
+      "maxValue": "8000",
+      "default": "0",
+      "enum": null,
+      "enumMembers": null
+    },
+    "ExperiencePoints": {
+      "type": "int",
+      "minValue": "0",
+      "maxValue": "1000000",
+      "default": "0",
+      "enum": null,
+      "enumMembers": null
+    },
+    "GamedayTalents": {
+      "type": "Talent[]",
+      "enum": null,
+      "enumMembers": null
+    },
+    "IndexInUnlockList": {
+      "type": "int",
+      "minValue": "0",
+      "maxValue": "150",
+      "default": "0",
+      "enum": null,
+      "enumMembers": null
+    },
+    "IsMaxLevel": {
+      "type": "bool",
+      "default": "False",
+      "enum": null,
+      "enumMembers": null
+    },
+    "Level": {
+      "type": "int",
+      "minValue": "1",
+      "maxValue": "50",
+      "default": "1",
+      "enum": null,
+      "enumMembers": null
+    },
+    "OriginalPosition": {
+      "type": "StaffPosition",
+      "default": "StaffPosition:HeadCoach",
+      "enum": "StaffPosition",
+      "enumMembers": [
+        "0:First_=0",
+        "1:HeadCoach=0",
+        "2:OffensiveCoordinator=1",
+        "3:DefensiveCoordinator=2",
+        "4:SpecialTeams=3",
+        "5:Owner=4",
+        "6:Scout=5",
+        "7:Trainer=6",
+        "8:GeneralManager=7",
+        "9:PlayerPersonnel=8",
+        "10:Max_=9",
+        "11:Invalid_=255"
+      ]
+    },
+    "PlaysheetTalents": {
+      "type": "Talent[]",
+      "enum": null,
+      "enumMembers": null
+    },
+    "Portrait": {
+      "type": "int",
+      "minValue": "0",
+      "maxValue": "8191",
+      "default": "0",
+      "enum": null,
+      "enumMembers": null
+    },
+    "Portrait_Force_Silhouette": {
+      "type": "bool",
+      "default": "False",
+      "enum": null,
+      "enumMembers": null
+    },
+    "Portrait_Swappable_Library_Path": {
+      "type": "SwappableLibraryPath",
+      "default": "SwappableLibraryPath:library_icons_brt",
+      "enum": "SwappableLibraryPath",
+      "enumMembers": [
+        "0:First_=0",
+        "1:Last_=0",
+        "2:library_icons_brt=0",
+        "3:Max_=1",
+        "4:Invalid_=255"
+      ]
+    },
+    "Position": {
+      "type": "StaffPosition",
+      "default": "StaffPosition:HeadCoach",
+      "enum": "StaffPosition",
+      "enumMembers": [
+        "0:First_=0",
+        "1:HeadCoach=0",
+        "2:OffensiveCoordinator=1",
+        "3:DefensiveCoordinator=2",
+        "4:SpecialTeams=3",
+        "5:Owner=4",
+        "6:Scout=5",
+        "7:Trainer=6",
+        "8:GeneralManager=7",
+        "9:PlayerPersonnel=8",
+        "10:Max_=9",
+        "11:Invalid_=255"
+      ]
+    },
+    "Probation": {
+      "type": "bool",
+      "default": "False",
+      "enum": null,
+      "enumMembers": null
+    },
+    "SeasonsWithTeam": {
+      "type": "int",
+      "minValue": "0",
+      "maxValue": "127",
+      "default": "0",
+      "enum": null,
+      "enumMembers": null
+    },
+    "WearAndTearTalents": {
+      "type": "Talent[]",
+      "enum": null,
+      "enumMembers": null
+    },
+    "AssetName": {
+      "type": "string",
+      "maxLength": "41",
+      "enum": null,
+      "enumMembers": null
+    },
+    "AwardPoints": {
+      "type": "int",
+      "minValue": "0",
+      "maxValue": "127",
+      "default": "0",
+      "enum": null,
+      "enumMembers": null
+    },
+    "CareerBigLossMargin": {
+      "type": "int",
+      "minValue": "0",
+      "maxValue": "255",
+      "default": "0",
+      "enum": null,
+      "enumMembers": null
+    },
+    "CareerBigWinMargin": {
+      "type": "int",
+      "minValue": "0",
+      "maxValue": "255",
+      "default": "0",
+      "enum": null,
+      "enumMembers": null
+    },
+    "CareerLongWinStreak": {
+      "type": "int",
+      "minValue": "0",
+      "maxValue": "1023",
+      "default": "0",
+      "enum": null,
+      "enumMembers": null
+    },
+    "CareerLosses": {
+      "type": "int",
+      "minValue": "0",
+      "maxValue": "1023",
+      "default": "0",
+      "enum": null,
+      "enumMembers": null
+    },
+    "CareerPlayoffLosses": {
+      "type": "int",
+      "minValue": "0",
+      "maxValue": "255",
+      "default": "0",
+      "enum": null,
+      "enumMembers": null
+    },
+    "CareerPlayoffsMade": {
+      "type": "int",
+      "minValue": "0",
+      "maxValue": "63",
+      "default": "0",
+      "enum": null,
+      "enumMembers": null
+    },
+    "CareerPlayoffWins": {
+      "type": "int",
+      "minValue": "0",
+      "maxValue": "255",
+      "default": "0",
+      "enum": null,
+      "enumMembers": null
+    },
+    "CareerPointsAgainst": {
+      "type": "int",
+      "minValue": "0",
+      "maxValue": "65535",
+      "default": "0",
+      "enum": null,
+      "enumMembers": null
+    },
+    "CareerPointsFor": {
+      "type": "int",
+      "minValue": "0",
+      "maxValue": "65535",
+      "default": "0",
+      "enum": null,
+      "enumMembers": null
+    },
+    "CareerProBowlPlayers": {
+      "type": "int",
+      "minValue": "0",
+      "maxValue": "1023",
+      "default": "0",
+      "enum": null,
+      "enumMembers": null
+    },
+    "CareerSuperbowlLosses": {
+      "type": "int",
+      "minValue": "0",
+      "maxValue": "100",
+      "default": "0",
+      "enum": null,
+      "enumMembers": null
+    },
+    "CareerSuperbowlWins": {
+      "type": "int",
+      "minValue": "0",
+      "maxValue": "63",
+      "default": "0",
+      "enum": null,
+      "enumMembers": null
+    },
+    "CareerTies": {
+      "type": "int",
+      "minValue": "0",
+      "maxValue": "1023",
+      "default": "0",
+      "enum": null,
+      "enumMembers": null
+    },
+    "CareerWins": {
+      "type": "int",
+      "minValue": "0",
+      "maxValue": "1023",
+      "default": "0",
+      "enum": null,
+      "enumMembers": null
+    },
+    "CareerWinSeasons": {
+      "type": "int",
+      "minValue": "0",
+      "maxValue": "127",
+      "default": "0",
+      "enum": null,
+      "enumMembers": null
+    },
+    "CharacterBodyType": {
+      "type": "CharacterBodyType",
+      "default": "CharacterBodyType:Standard",
+      "enum": "CharacterBodyType",
+      "enumMembers": [
+        "0:First_=0",
+        "1:FirstMain_=0",
+        "2:Standard=0",
+        "3:Thin=1",
+        "4:Muscular=2",
+        "5:Heavy=3",
+        "6:Freshman=4",
+        "7:LastMain_=4",
+        "8:ReservedMain_1=5",
+        "9:ReservedMain_2=6",
+        "10:ReservedMain_3=7",
+        "11:FirstAlternate_=8",
+        "12:Standard_Alternate=8",
+        "13:LastAlternate_=9",
+        "14:Thin_Alternate=9",
+        "15:Max_=10",
+        "16:Invalid_=15"
+      ]
+    },
+    "CharacterVisuals": {
+      "type": "CharacterVisuals",
+      "enum": null,
+      "enumMembers": null
+    },
+    "ConfPlayoffWinStreak": {
+      "type": "int",
+      "minValue": "-32",
+      "maxValue": "31",
+      "default": "0",
+      "enum": null,
+      "enumMembers": null
+    },
+    "DefaultTeamPhilosophy": {
+      "type": "TeamPhilosophy",
+      "enum": null,
+      "enumMembers": null
+    },
+    "DefenseAudibles": {
+      "type": "CoachAudibles",
+      "enum": null,
+      "enumMembers": null
+    },
+    "DefensivePlaybook": {
+      "type": "DefensivePlaybookDataType",
+      "enum": null,
+      "enumMembers": null
+    },
+    "DefensiveScheme": {
+      "type": "Scheme",
+      "enum": null,
+      "enumMembers": null
+    },
+    "DivPlayoffWinStreak": {
+      "type": "int",
+      "minValue": "-32",
+      "maxValue": "31",
+      "default": "0",
+      "enum": null,
+      "enumMembers": null
+    },
+    "FaceShape": {
+      "type": "CoachFace",
+      "default": "CoachFace:BelichickBill",
+      "enum": "CoachFace",
+      "enumMembers": [
+        "0:BelichickBill=0",
+        "1:First_=0",
+        "2:FirstCustom_=0",
+        "3:CowherBill=1",
+        "4:KubiakGary=2",
+        "5:CoughlinTom=3",
+        "6:McAdooBen=4",
+        "7:KoetterDirk=5",
+        "8:DelRioJack=6",
+        "9:RevisDarrelle=7",
+        "10:JosephVance=8",
+        "11:FisherJeff=9",
+        "12:FoxJohn=10",
+        "13:GibbsJoe=11",
+        "14:ShanahanKyle=12",
+        "15:LynnAnthony=13",
+        "16:paytonSean=14",
+        "17:PedersonDoug=15",
+        "18:HolmgrenMike=16",
+        "19:LewisMarvin=17",
+        "20:GaseAdam=18",
+        "21:McDermottSean=19",
+        "22:McVaySean=20",
+        "23:ReidAndy=24",
+        "24:ShanahanMike=27",
+        "25:mcCarthyMike=28",
+        "26:SmithLovie=29",
+        "27:TomlinMike=34",
+        "28:WhisenhuntKen=39",
+        "29:RyanRex=41",
+        "30:Caldwelljim=43",
+        "31:SchwartzJim=46",
+        "32:PostLaunch1=47",
+        "33:PostLaunch2=48",
+        "34:smithMike=49",
+        "35:ZornJim=50",
+        "36:harbaughJohn=51",
+        "37:PostLaunch3=52",
+        "38:PostLaunch4=53",
+        "39:CarrollPete=54",
+        "40:FrazierLeslie=55",
+        "41:HarbaughJim=56",
+        "42:GarrettJason=57",
+        "43:JacksonHue=58",
+        "44:MunchakMike=59",
+        "45:PostLaunch5=60",
+        "46:RiveraRon=61",
+        "47:PaganoChuck=62",
+        "48:MularkeyMike=63",
+        "49:SchianoGreg=64",
+        "50:PhilbinJoe=65",
+        "51:AllenDennis=66",
+        "52:LandryTom=68",
+        "53:LombardiVince=69",
+        "54:MaddenJohn=70",
+        "55:NollChuck=71",
+        "56:VermeilDick=72",
+        "57:WalshBill=73",
+        "58:FloresTom=74",
+        "59:JohnsonJimmy=75",
+        "60:JonesJerry=77",
+        "61:DavisMark=78",
+        "62:GlazerBryan=79",
+        "63:YorkJed=80",
+        "64:SpanosAlex=81",
+        "65:JohnsonIVRobert=82",
+        "66:TischSteve=83",
+        "67:KraftRobert=84",
+        "68:WilfZygi=85",
+        "69:RossStephenM=86",
+        "70:HuntClark=87",
+        "71:McNairRobertC=88",
+        "72:MurphyMark=89",
+        "73:FordSrWilliam=90",
+        "74:BowlenPat=91",
+        "75:HaslamJimmy=92",
+        "76:PhillipsTed=93",
+        "77:BisciottiSteve=94",
+        "78:AdamsBud=95",
+        "79:AllenPaul=96",
+        "80:BensonTom=97",
+        "81:BidwillBill=98",
+        "82:BlankArthur=99",
+        "83:BrownMike=100",
+        "84:DeBarteloJrEddie=101",
+        "85:IrsayJim=102",
+        "86:KhanShad=103",
+        "87:KroenkeStan=104",
+        "88:LurieJeffrey=105",
+        "89:RichardsonJerry=106",
+        "90:RooneyArt=107",
+        "91:RooneyDan=108",
+        "92:SynderDan=109",
+        "93:WilsonRalph=110",
+        "94:MaraJohn=111",
+        "95:KellyChip=112",
+        "96:AriansBruce=113",
+        "97:TrestmanMarc=114",
+        "98:ChudzinskiRob=115",
+        "99:BradleyGus=116",
+        "100:McCoyMike=117",
+        "101:MarroneDoug=118",
+        "102:DitkaMike=119",
+        "103:GrudenJay=120",
+        "104:OBrienBill=121",
+        "105:ZimmerMike=122",
+        "106:PettineMike=123",
+        "107:BowlesTodd=124",
+        "108:QuinnDan=125",
+        "109:LastCustom_=126",
+        "110:TomsulaJim=126",
+        "111:FirstSpecial_=127",
+        "112:patriotsgeneric=127",
+        "113:saintsgeneric=128",
+        "114:InvisibleCoach=129",
+        "115:LastSpecial_=129",
+        "116:FirstStory_=130",
+        "117:JamisonHank=130",
+        "118:MarinoDan=131",
+        "119:McCarthyCaptain=132",
+        "120:FordJack=133",
+        "121:WadeCutter=134",
+        "122:HouslerDylan=135",
+        "123:AustinKen=136",
+        "124:YoungMike=137",
+        "125:LastStory_=138",
+        "126:MustBeUnique=138",
+        "127:coachhead_1_B_N_01=150",
+        "128:FirstGeneric_=150",
+        "129:FirstSkinTone1_=150",
+        "130:coachhead_1_B_N_20=151",
+        "131:coachhead_1_B_S_20=152",
+        "132:coachhead_1_H_B_009=153",
+        "133:coachhead_1_H_BD_01=154",
+        "134:coachhead_1_H_N_01=155",
+        "135:coachhead_1_H_N_03=156",
+        "136:coachhead_1_H_N_20=157",
+        "137:coachhead_1_M_BD_01=158",
+        "138:coachhead_1_M_N_30=159",
+        "139:coachhead_1_M_S_011=160",
+        "140:LastSkinTone1_=160",
+        "141:coachhead_2_B_M_20=161",
+        "142:FirstSkinTone2_=161",
+        "143:coachhead_2_B_N_20=162",
+        "144:coachhead_2_B_N_21=163",
+        "145:coachhead_2_H_M_11=164",
+        "146:coachhead_2_H_M_20=165",
+        "147:coachhead_2_H_N_03=166",
+        "148:coachhead_2_M_N_20=167",
+        "149:coachhead_2_M_N_21=168",
+        "150:coachhead_2_M_N_22=169",
+        "151:coachhead_2_M_N_30=170",
+        "152:LastSkinTone2_=170",
+        "153:coachhead_3_B_N_21=171",
+        "154:FirstSkinTone3_=171",
+        "155:coachhead_3_B_S_20=172",
+        "156:coachhead_3_H_B_20=173",
+        "157:coachhead_3_H_BD_01=174",
+        "158:coachhead_3_H_G_20=175",
+        "159:coachhead_3_H_N_20=176",
+        "160:coachhead_3_H_N_21=177",
+        "161:coachhead_3_H_S_001=178",
+        "162:coachhead_3_M_N_20=179",
+        "163:coachhead_3_M_N_21=180",
+        "164:coachhead_3_M_N_22=181",
+        "165:LastSkinTone3_=181",
+        "166:coachhead_4_B_G_01=182",
+        "167:FirstSkinTone4_=182",
+        "168:coachhead_4_B_MS_01=183",
+        "169:coachhead_4_H_BD_01=184",
+        "170:coachhead_4_H_G_01=185",
+        "171:coachhead_4_H_MS_01=186",
+        "172:coachhead_4_H_N_30=187",
+        "173:coachhead_4_M_B_30=188",
+        "174:coachhead_4_M_BD_01=189",
+        "175:coachhead_4_M_N_30=190",
+        "176:coachhead_4_T_N_006=191",
+        "177:LastSkinTone4_=191",
+        "178:coachhead_5_B_G_20=192",
+        "179:FirstSkinTone5_=192",
+        "180:coachhead_5_B_N_20=193",
+        "181:coachhead_5_B_N_21=194",
+        "182:coachhead_5_H_B_20=195",
+        "183:coachhead_5_H_N_20=196",
+        "184:coachhead_5_H_N_21=197",
+        "185:coachhead_5_M_M_30=198",
+        "186:coachhead_5_M_N_02=199",
+        "187:coachhead_5_M_N_20=200",
+        "188:LastSkinTone5_=200",
+        "189:coachhead_6_B_M_20=201",
+        "190:FirstSkinTone6_=201",
+        "191:coachhead_6_B_N_03=202",
+        "192:coachhead_6_B_N_20=203",
+        "193:coachhead_6_H_B_30=204",
+        "194:coachhead_6_H_G_20=205",
+        "195:coachhead_6_H_N_20=206",
+        "196:coachhead_6_H_N_21=207",
+        "197:coachhead_6_M_N_20=208",
+        "198:coachhead_6_M_N_21=209",
+        "199:coachhead_6_M_N_22=210",
+        "200:LastSkinTone6_=210",
+        "201:coachhead_7_B_B_20=211",
+        "202:FirstSkinTone7_=211",
+        "203:coachhead_7_B_BD_01=212",
+        "204:coachhead_7_B_G_20=213",
+        "205:coachhead_7_B_M_20=214",
+        "206:coachhead_7_B_N_01=215",
+        "207:coachhead_7_B_N_06=216",
+        "208:coachhead_7_B_N_20=217",
+        "209:coachhead_7_H_BD_01=218",
+        "210:coachhead_7_H_M_20=219",
+        "211:coachhead_7_H_M_21=220",
+        "212:coachhead_7_H_N_01=221",
+        "213:coachhead_7_H_N_30=222",
+        "214:coachhead_7_M_B_20=223",
+        "215:coachhead_7_M_BD_02=224",
+        "216:coachhead_7_M_M_30=225",
+        "217:coachhead_7_M_N_30=226",
+        "218:LastGeneric_=226",
+        "219:LastSkinTone7_=226",
+        "220:1_MorphCoachHead=227",
+        "221:MorphFirst_=227",
+        "222:2_MorphCoachHead=228",
+        "223:3_MorphCoachHead=229",
+        "224:4_MorphCoachHead=230",
+        "225:5_MorphCoachHead=231",
+        "226:6_MorphCoachHead=232",
+        "227:7_MorphCoachHead=233",
+        "228:MorphLast_=233",
+        "229:Max_=234",
+        "230:Invalid_=255"
+      ]
+    },
+    "GenericHeadAssetName": {
+      "type": "string",
+      "maxLength": "33",
+      "enum": null,
+      "enumMembers": null
+    },
+    "HasTrait": {
+      "type": "CoachingStaffPerson_HasTrait",
+      "final": "true",
+      "enum": null,
+      "enumMembers": null
+    },
+    "Height": {
+      "type": "int",
+      "minValue": "0",
+      "maxValue": "255",
+      "default": "0",
+      "enum": null,
+      "enumMembers": null
+    },
+    "LegacyScore": {
+      "type": "int",
+      "minValue": "0",
+      "maxValue": "100000",
+      "default": "0",
+      "enum": null,
+      "enumMembers": null
+    },
+    "OffenseAudibles": {
+      "type": "CoachAudibles",
+      "enum": null,
+      "enumMembers": null
+    },
+    "OffensivePlaybook": {
+      "type": "OffensivePlaybookDataType",
+      "enum": null,
+      "enumMembers": null
+    },
+    "OffensiveScheme": {
+      "type": "Scheme",
+      "enum": null,
+      "enumMembers": null
+    },
+    "Personality": {
+      "type": "Personality",
+      "default": "Personality:Unpredictable",
+      "enum": "Personality",
+      "enumMembers": [
+        "0:First_=0",
+        "1:Leader=0",
+        "2:Intense=1",
+        "3:Entertainer=2",
+        "4:TeamPlayer=3",
+        "5:Unpredictable=4",
+        "6:UserAvailableCount_=4",
+        "7:NPCAvailableCount_=5",
+        "8:Invalid_=15"
+      ]
+    },
+    "RegularWinStreak": {
+      "type": "int",
+      "minValue": "-512",
+      "maxValue": "511",
+      "default": "0",
+      "enum": null,
+      "enumMembers": null
+    },
+    "SeasBigLossMargin": {
+      "type": "int",
+      "minValue": "0",
+      "maxValue": "255",
+      "default": "0",
+      "enum": null,
+      "enumMembers": null
+    },
+    "SeasBigWinMargin": {
+      "type": "int",
+      "minValue": "0",
+      "maxValue": "255",
+      "default": "0",
+      "enum": null,
+      "enumMembers": null
+    },
+    "SeasLongWinStreak": {
+      "type": "int",
+      "minValue": "0",
+      "maxValue": "31",
+      "default": "0",
+      "enum": null,
+      "enumMembers": null
+    },
+    "SeasLosses": {
+      "type": "int",
+      "minValue": "0",
+      "maxValue": "31",
+      "default": "0",
+      "enum": null,
+      "enumMembers": null
+    },
+    "SeasPointsAgainst": {
+      "type": "int",
+      "minValue": "0",
+      "maxValue": "8191",
+      "default": "0",
+      "enum": null,
+      "enumMembers": null
+    },
+    "SeasPointsFor": {
+      "type": "int",
+      "minValue": "0",
+      "maxValue": "8191",
+      "default": "0",
+      "enum": null,
+      "enumMembers": null
+    },
+    "SeasTies": {
+      "type": "int",
+      "minValue": "0",
+      "maxValue": "31",
+      "default": "0",
+      "enum": null,
+      "enumMembers": null
+    },
+    "SeasWins": {
+      "type": "int",
+      "minValue": "0",
+      "maxValue": "31",
+      "default": "0",
+      "enum": null,
+      "enumMembers": null
+    },
+    "SeasWinStreak": {
+      "type": "int",
+      "minValue": "-32",
+      "maxValue": "31",
+      "default": "0",
+      "enum": null,
+      "enumMembers": null
+    },
+    "SpeechId": {
+      "type": "int",
+      "minValue": "0",
+      "maxValue": "31",
+      "default": "0",
+      "enum": null,
+      "enumMembers": null
+    },
+    "SuperbowlWinStreak": {
+      "type": "int",
+      "minValue": "-32",
+      "maxValue": "31",
+      "default": "0",
+      "enum": null,
+      "enumMembers": null
+    },
+    "TeamBuilding": {
+      "type": "TeamBuilding",
+      "default": "TeamBuilding:Balanced",
+      "enum": "TeamBuilding",
+      "enumMembers": [
+        "0:Balanced=0",
+        "1:ThroughDraft=1",
+        "2:ThroughFreeAgency=2"
+      ]
+    },
+    "TeamPhilosophy": {
+      "type": "TeamPhilosophy",
+      "enum": null,
+      "enumMembers": null
+    },
+    "TradingTendency": {
+      "type": "TradingTendency",
+      "default": "TradingTendency:DoesNotTrade",
+      "enum": "TradingTendency",
+      "enumMembers": [
+        "0:DoesNotTrade=0",
+        "1:TradesUp=1",
+        "2:TradesDown=2"
+      ]
+    },
+    "TraitExpertScout": {
+      "type": "bool",
+      "default": "False",
+      "enum": null,
+      "enumMembers": null
+    },
+    "WCPlayoffWinStreak": {
+      "type": "int",
+      "minValue": "-32",
+      "maxValue": "31",
+      "default": "0",
+      "enum": null,
+      "enumMembers": null
+    },
+    "Weight": {
+      "type": "int",
+      "minValue": "150",
+      "maxValue": "512",
+      "default": "160",
+      "enum": null,
+      "enumMembers": null
+    },
+    "WinSeasStreak": {
+      "type": "int",
+      "minValue": "-32",
+      "maxValue": "31",
+      "default": "0",
+      "enum": null,
+      "enumMembers": null
+    },
+    "YearlyAwardCount": {
+      "type": "int",
+      "minValue": "0",
+      "maxValue": "31",
+      "default": "0",
+      "enum": null,
+      "enumMembers": null
+    },
+    "CareerAssistant": {
+      "type": "bool",
+      "default": "False",
+      "enum": null,
+      "enumMembers": null
+    },
+    "COACH_ADAPTIVE_AI": {
+      "type": "CoachAdaptiveAI",
+      "default": "CoachAdaptiveAI:Conservative",
+      "enum": "CoachAdaptiveAI",
+      "enumMembers": [
+        "0:Conservative=0",
+        "1:First_=0",
+        "2:Balanced=1",
+        "3:Aggressive=2",
+        "4:Conservative_1=3",
+        "5:Balanced_1=4",
+        "6:Aggressive_1=5",
+        "7:Conservative_2=6",
+        "8:Balanced_2=7",
+        "9:Aggressive_2=8",
+        "10:Conservative_3=9",
+        "11:Balanced_3=10",
+        "12:Aggressive_3=11",
+        "13:Max_=12",
+        "14:Invalid_=13"
+      ]
+    },
+    "COACH_CONSECTEAMCONTRACTS": {
+      "type": "int",
+      "minValue": "0",
+      "maxValue": "31",
+      "default": "0",
+      "enum": null,
+      "enumMembers": null
+    },
+    "COACH_DB": {
+      "type": "int",
+      "minValue": "0",
+      "maxValue": "127",
+      "default": "0",
+      "enum": null,
+      "enumMembers": null
+    },
+    "COACH_DEFENSE": {
+      "type": "int",
+      "minValue": "0",
+      "maxValue": "127",
+      "default": "0",
+      "enum": null,
+      "enumMembers": null
+    },
+    "COACH_DEFENSETYPE": {
+      "type": "int",
+      "minValue": "0",
+      "maxValue": "127",
+      "default": "0",
+      "enum": null,
+      "enumMembers": null
+    },
+    "COACH_DEFTENDENCYAGGRESSCONSERV": {
+      "type": "int",
+      "minValue": "0",
+      "maxValue": "127",
+      "default": "0",
+      "enum": null,
+      "enumMembers": null
+    },
+    "COACH_DEFTENDENCYRUNPASS": {
+      "type": "int",
+      "minValue": "0",
+      "maxValue": "127",
+      "default": "0",
+      "enum": null,
+      "enumMembers": null
+    },
+    "COACH_DEMEANOR": {
+      "type": "CoachDemeanor",
+      "default": "CoachDemeanor:Classic",
+      "enum": "CoachDemeanor",
+      "enumMembers": [
+        "0:Classic=0",
+        "1:First_=0",
+        "2:Calm=1",
+        "3:Intense=2",
+        "4:Max=3",
+        "5:Invalid=15"
+      ]
+    },
+    "COACH_DL": {
+      "type": "int",
+      "minValue": "0",
+      "maxValue": "127",
+      "default": "0",
+      "enum": null,
+      "enumMembers": null
+    },
+    "COACH_FIREREPORTED": {
+      "type": "bool",
+      "default": "True",
+      "enum": null,
+      "enumMembers": null
+    },
+    "COACH_K": {
+      "type": "int",
+      "minValue": "0",
+      "maxValue": "127",
+      "default": "0",
+      "enum": null,
+      "enumMembers": null
+    },
+    "COACH_LASTCONTRACTTEAM": {
+      "type": "int",
+      "minValue": "0",
+      "maxValue": "1023",
+      "default": "0",
+      "enum": null,
+      "enumMembers": null
+    },
+    "COACH_LASTTEAMFIRED": {
+      "type": "int",
+      "minValue": "0",
+      "maxValue": "1023",
+      "default": "0",
+      "enum": null,
+      "enumMembers": null
+    },
+    "COACH_LASTTEAMRESIGNED": {
+      "type": "int",
+      "minValue": "0",
+      "maxValue": "1023",
+      "default": "0",
+      "enum": null,
+      "enumMembers": null
+    },
+    "COACH_LB": {
+      "type": "int",
+      "minValue": "0",
+      "maxValue": "127",
+      "default": "0",
+      "enum": null,
+      "enumMembers": null
+    },
+    "COACH_OFFENSE": {
+      "type": "int",
+      "minValue": "0",
+      "maxValue": "127",
+      "default": "0",
+      "enum": null,
+      "enumMembers": null
+    },
+    "COACH_OFFTENDENCYAGGRESSCONSERV": {
+      "type": "int",
+      "minValue": "0",
+      "maxValue": "127",
+      "default": "0",
+      "enum": null,
+      "enumMembers": null
+    },
+    "COACH_OFFTENDENCYRUNPASS": {
+      "type": "int",
+      "minValue": "0",
+      "maxValue": "127",
+      "default": "0",
+      "enum": null,
+      "enumMembers": null
+    },
+    "COACH_OL": {
+      "type": "int",
+      "minValue": "0",
+      "maxValue": "127",
+      "default": "0",
+      "enum": null,
+      "enumMembers": null
+    },
+    "COACH_P": {
+      "type": "int",
+      "minValue": "0",
+      "maxValue": "127",
+      "default": "0",
+      "enum": null,
+      "enumMembers": null
+    },
+    "COACH_PERFORMANCELEVEL": {
+      "type": "int",
+      "minValue": "0",
+      "maxValue": "255",
+      "default": "0",
+      "enum": null,
+      "enumMembers": null
+    },
+    "COACH_QB": {
+      "type": "int",
+      "minValue": "0",
+      "maxValue": "127",
+      "default": "0",
+      "enum": null,
+      "enumMembers": null
+    },
+    "COACH_RATING": {
+      "type": "int",
+      "minValue": "0",
+      "maxValue": "100",
+      "default": "50",
+      "enum": null,
+      "enumMembers": null
+    },
+    "COACH_RB": {
+      "type": "int",
+      "minValue": "0",
+      "maxValue": "127",
+      "default": "0",
+      "enum": null,
+      "enumMembers": null
+    },
+    "COACH_RBTENDENCY": {
+      "type": "int",
+      "minValue": "0",
+      "maxValue": "127",
+      "default": "0",
+      "enum": null,
+      "enumMembers": null
+    },
+    "COACH_RESIGNREPORTED": {
+      "type": "bool",
+      "default": "True",
+      "enum": null,
+      "enumMembers": null
+    },
+    "COACH_RETIREYRSLEFT": {
+      "type": "int",
+      "minValue": "0",
+      "maxValue": "7",
+      "default": "0",
+      "enum": null,
+      "enumMembers": null
+    },
+    "COACH_S": {
+      "type": "int",
+      "minValue": "0",
+      "maxValue": "127",
+      "default": "0",
+      "enum": null,
+      "enumMembers": null
+    },
+    "COACH_SPECIALTY": {
+      "type": "CoachSpecialty",
+      "default": "CoachSpecialty:Quarterbacks",
+      "enum": "CoachSpecialty",
+      "enumMembers": [
+        "0:First_=0",
+        "1:Quarterbacks=0",
+        "2:RunningBacks=1",
+        "3:Receivers=2",
+        "4:OffensiveLine=3",
+        "5:DefensiveLine=4",
+        "6:Linebackers=5",
+        "7:Secondary=6",
+        "8:SpecialTeams=7",
+        "9:Max_=8",
+        "10:Invalid_=255"
+      ]
+    },
+    "COACH_STANCE": {
+      "type": "CoachStance",
+      "default": "CoachStance:Classic",
+      "enum": "CoachStance",
+      "enumMembers": [
+        "0:Classic=0",
+        "1:First_=0",
+        "2:PlaySheet=1",
+        "3:HandsOnKnees=2",
+        "4:Max_=3",
+        "5:Invalid_=15"
+      ]
+    },
+    "COACH_WASPLAYER": {
+      "type": "bool",
+      "default": "True",
+      "enum": null,
+      "enumMembers": null
+    },
+    "COACH_WR": {
+      "type": "int",
+      "minValue": "0",
+      "maxValue": "127",
+      "default": "0",
+      "enum": null,
+      "enumMembers": null
+    },
+    "CoachBackstory": {
+      "type": "CoachBackstory",
+      "default": "CoachBackstory:Motivator",
+      "enum": "CoachBackstory",
+      "enumMembers": [
+        "0:Motivator=0",
+        "1:Strategist=1",
+        "2:First_=2",
+        "3:TeamBuilder=2",
+        "4:StaffBuilder=3",
+        "5:Count_=4",
+        "6:Invalid_=5"
+      ]
+    },
+    "Name": {
+      "type": "string",
+      "maxLength": "18",
+      "enum": null,
+      "enumMembers": null
+    },
+    "OWNER_COMMENTID": {
+      "type": "int",
+      "minValue": "0",
+      "maxValue": "31",
+      "default": "0",
+      "enum": null,
+      "enumMembers": null
+    },
+    "OWNER_COMMENTTYPE": {
+      "type": "int",
+      "minValue": "0",
+      "maxValue": "31",
+      "default": "0",
+      "enum": null,
+      "enumMembers": null
+    },
+    "YearsCoaching": {
+      "type": "int",
+      "minValue": "0",
+      "maxValue": "63",
+      "default": "0",
+      "enum": null,
+      "enumMembers": null
+    }
+  }
+}

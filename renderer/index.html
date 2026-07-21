@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<title>CFB Transfer</title>
+<title>Pipeline</title>
 <link rel="stylesheet" href="style.css">
 </head>
 <body>
@@ -10,9 +10,9 @@
 
   <nav class="sidebar" aria-label="Main navigation">
     <div class="brand">
-      <div class="brand-mark">🏈</div>
+      <img class="brand-mark" src="assets/logo-mark.png" alt="Pipeline">
       <div class="brand-text">
-        <span class="brand-name">CFB Transfer</span>
+        <span class="brand-name">Pipeline</span>
         <span class="brand-sub">Draft Class Studio</span>
       </div>
     </div>
@@ -135,7 +135,8 @@
         <div class="warning-box">
           Madden's draft-class files are a fixed <strong>402 players</strong>. Your generated class must have at least
           402 (the top 402 by projection are used) — if it's smaller, raise <em>Class Size</em> on the Generate step and
-          regenerate. The saved file's name always starts with <code>CAREERDRAFT-</code> so Madden's importer lists it.
+          regenerate. Name the file whatever you like when saving — the app automatically adds the
+          <code>CAREERDRAFT-</code> prefix Madden's importer requires, so you don't need to type it yourself.
         </div>
         <div class="btn-row">
           <button id="exportDraftFileBtn" class="primary" disabled>Export Draft Class File…</button>
@@ -143,7 +144,8 @@
         </div>
       </div>
 
-      <div class="card">
+      <div class="card locked-card">
+        <div class="locked-overlay"><span class="locked-badge">Coming Soon</span></div>
         <h2>4 · Write to Madden Franchise <span class="badge-alt">alternative</span></h2>
         <p class="hint">Overwrites the incoming rookie class in your Madden 26 franchise save with your generated class,
           writing directly into the save file (no in-game import step). The draft-class file above is usually cleaner.</p>
@@ -157,22 +159,22 @@
           <div class="field">
             <label for="maddenPathInput">Madden franchise save</label>
             <div class="input-btn">
-              <input type="text" id="maddenPathInput" placeholder="No file selected" readonly>
-              <button id="pickMadden">Browse…</button>
+              <input type="text" id="maddenPathInput" placeholder="No file selected" readonly tabindex="-1">
+              <button id="pickMadden" disabled tabindex="-1">Browse…</button>
             </div>
           </div>
           <div class="field">
             <label>Output</label>
             <div class="radio-row">
-              <label class="radio"><input type="radio" name="outMode" value="edit" checked> Edit in place</label>
-              <label class="radio"><input type="radio" name="outMode" value="copy"> Save a copy</label>
-              <button id="pickOutput" class="small" style="display:none">Choose location…</button>
+              <label class="radio"><input type="radio" name="outMode" value="edit" checked disabled tabindex="-1"> Edit in place</label>
+              <label class="radio"><input type="radio" name="outMode" value="copy" disabled tabindex="-1"> Save a copy</label>
+              <button id="pickOutput" class="small" disabled tabindex="-1" style="display:none">Choose location…</button>
             </div>
             <input type="text" id="outputPathInput" placeholder="" readonly style="display:none">
           </div>
         </div>
         <div class="btn-row">
-          <button id="writeBtn" class="primary danger-when-edit" disabled>Write to Franchise</button>
+          <button id="writeBtn" class="primary danger-when-edit" disabled tabindex="-1">Write to Franchise</button>
           <span id="writeStatus" class="inline-status"></span>
         </div>
       </div>
@@ -344,8 +346,8 @@
       </div>
 
       <div class="card">
-        <h2>Rating Realism <span class="badge-info">opt-in</span></h2>
-        <p class="hint compact">Optional post-translation corrections, off by default. Only turn these on if you aren't already handling the same thing with an external tool.</p>
+        <h2>Rating Realism <span class="badge-info">on by default</span></h2>
+        <p class="hint compact">Post-translation corrections, on by default. Turn one off if you're already handling the same thing with an external tool, so it isn't applied twice.</p>
         <div class="knob-grid" id="advRealism"></div>
       </div>
 

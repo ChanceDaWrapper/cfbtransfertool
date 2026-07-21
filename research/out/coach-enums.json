@@ -1,0 +1,3551 @@
+{
+  "cfb": {
+    "ContractStatus": {
+      "enumName": "StaffPersonContractStatus",
+      "members": [
+        {
+          "i": 0,
+          "name": "First_Active",
+          "value": 0
+        },
+        {
+          "i": 1,
+          "name": "Signed",
+          "value": 0
+        },
+        {
+          "i": 2,
+          "name": "Expiring",
+          "value": 1
+        },
+        {
+          "i": 3,
+          "name": "First_Pending",
+          "value": 2
+        },
+        {
+          "i": 4,
+          "name": "PendingFire",
+          "value": 2
+        },
+        {
+          "i": 5,
+          "name": "PendingNFL",
+          "value": 3
+        },
+        {
+          "i": 6,
+          "name": "PendingRenewal",
+          "value": 4
+        },
+        {
+          "i": 7,
+          "name": "Last_Active",
+          "value": 5
+        },
+        {
+          "i": 8,
+          "name": "PendingRetire",
+          "value": 5
+        },
+        {
+          "i": 9,
+          "name": "Last_Pending",
+          "value": 6
+        },
+        {
+          "i": 10,
+          "name": "PendingHire",
+          "value": 6
+        },
+        {
+          "i": 11,
+          "name": "FreeAgent",
+          "value": 7
+        },
+        {
+          "i": 12,
+          "name": "Retired",
+          "value": 8
+        },
+        {
+          "i": 13,
+          "name": "Deleted",
+          "value": 9
+        },
+        {
+          "i": 14,
+          "name": "None",
+          "value": 10
+        }
+      ]
+    },
+    "Portrait_Swappable_Library_Path": {
+      "enumName": "SwappableLibraryPath",
+      "members": [
+        {
+          "i": 0,
+          "name": "First_",
+          "value": 0
+        },
+        {
+          "i": 1,
+          "name": "Last_",
+          "value": 0
+        },
+        {
+          "i": 2,
+          "name": "library_icons_brt",
+          "value": 0
+        },
+        {
+          "i": 3,
+          "name": "Max_",
+          "value": 1
+        },
+        {
+          "i": 4,
+          "name": "Invalid_",
+          "value": 255
+        }
+      ]
+    },
+    "Position": {
+      "enumName": "CoachPosition",
+      "members": [
+        {
+          "i": 0,
+          "name": "First_",
+          "value": 0
+        },
+        {
+          "i": 1,
+          "name": "HeadCoach",
+          "value": 0
+        },
+        {
+          "i": 2,
+          "name": "OffensiveCoordinator",
+          "value": 1
+        },
+        {
+          "i": 3,
+          "name": "DefensiveCoordinator",
+          "value": 2
+        },
+        {
+          "i": 4,
+          "name": "NumCollegeCoaches",
+          "value": 3
+        },
+        {
+          "i": 5,
+          "name": "SpecialTeams",
+          "value": 3
+        },
+        {
+          "i": 6,
+          "name": "Owner",
+          "value": 4
+        },
+        {
+          "i": 7,
+          "name": "Scout",
+          "value": 5
+        },
+        {
+          "i": 8,
+          "name": "Trainer",
+          "value": 6
+        },
+        {
+          "i": 9,
+          "name": "GeneralManager",
+          "value": 7
+        },
+        {
+          "i": 10,
+          "name": "PlayerPersonnel",
+          "value": 8
+        },
+        {
+          "i": 11,
+          "name": "Max_",
+          "value": 9
+        },
+        {
+          "i": 12,
+          "name": "Invalid_",
+          "value": 255
+        }
+      ]
+    },
+    "PrevPosition": {
+      "enumName": "CoachPosition",
+      "members": [
+        {
+          "i": 0,
+          "name": "First_",
+          "value": 0
+        },
+        {
+          "i": 1,
+          "name": "HeadCoach",
+          "value": 0
+        },
+        {
+          "i": 2,
+          "name": "OffensiveCoordinator",
+          "value": 1
+        },
+        {
+          "i": 3,
+          "name": "DefensiveCoordinator",
+          "value": 2
+        },
+        {
+          "i": 4,
+          "name": "NumCollegeCoaches",
+          "value": 3
+        },
+        {
+          "i": 5,
+          "name": "SpecialTeams",
+          "value": 3
+        },
+        {
+          "i": 6,
+          "name": "Owner",
+          "value": 4
+        },
+        {
+          "i": 7,
+          "name": "Scout",
+          "value": 5
+        },
+        {
+          "i": 8,
+          "name": "Trainer",
+          "value": 6
+        },
+        {
+          "i": 9,
+          "name": "GeneralManager",
+          "value": 7
+        },
+        {
+          "i": 10,
+          "name": "PlayerPersonnel",
+          "value": 8
+        },
+        {
+          "i": 11,
+          "name": "Max_",
+          "value": 9
+        },
+        {
+          "i": 12,
+          "name": "Invalid_",
+          "value": 255
+        }
+      ]
+    },
+    "CharacterBodyType": {
+      "enumName": "CharacterBodyType",
+      "members": [
+        {
+          "i": 0,
+          "name": "First_",
+          "value": 0
+        },
+        {
+          "i": 1,
+          "name": "FirstMain_",
+          "value": 0
+        },
+        {
+          "i": 2,
+          "name": "Standard",
+          "value": 0
+        },
+        {
+          "i": 3,
+          "name": "Thin",
+          "value": 1
+        },
+        {
+          "i": 4,
+          "name": "Muscular",
+          "value": 2
+        },
+        {
+          "i": 5,
+          "name": "Heavy",
+          "value": 3
+        },
+        {
+          "i": 6,
+          "name": "Freshman",
+          "value": 4
+        },
+        {
+          "i": 7,
+          "name": "LastMain_",
+          "value": 4
+        },
+        {
+          "i": 8,
+          "name": "ReservedMain_1",
+          "value": 5
+        },
+        {
+          "i": 9,
+          "name": "ReservedMain_2",
+          "value": 6
+        },
+        {
+          "i": 10,
+          "name": "ReservedMain_3",
+          "value": 7
+        },
+        {
+          "i": 11,
+          "name": "FirstAlternate_",
+          "value": 8
+        },
+        {
+          "i": 12,
+          "name": "Standard_Alternate",
+          "value": 8
+        },
+        {
+          "i": 13,
+          "name": "LastAlternate_",
+          "value": 9
+        },
+        {
+          "i": 14,
+          "name": "Thin_Alternate",
+          "value": 9
+        },
+        {
+          "i": 15,
+          "name": "Max_",
+          "value": 10
+        },
+        {
+          "i": 16,
+          "name": "Invalid_",
+          "value": 15
+        }
+      ]
+    },
+    "HatType": {
+      "enumName": "CoachHatType",
+      "members": [
+        {
+          "i": 0,
+          "name": "None",
+          "value": 0
+        },
+        {
+          "i": 1,
+          "name": "Cap",
+          "value": 1
+        },
+        {
+          "i": 2,
+          "name": "Visor",
+          "value": 2
+        },
+        {
+          "i": 3,
+          "name": "Future1",
+          "value": 3
+        },
+        {
+          "i": 4,
+          "name": "Future2",
+          "value": 4
+        },
+        {
+          "i": 5,
+          "name": "Future3",
+          "value": 5
+        }
+      ]
+    },
+    "HomeState": {
+      "enumName": "StateName",
+      "members": [
+        {
+          "i": 0,
+          "name": "Alabama",
+          "value": 0
+        },
+        {
+          "i": 1,
+          "name": "Alaska",
+          "value": 1
+        },
+        {
+          "i": 2,
+          "name": "Arizona",
+          "value": 2
+        },
+        {
+          "i": 3,
+          "name": "Arkansas",
+          "value": 3
+        },
+        {
+          "i": 4,
+          "name": "California",
+          "value": 4
+        },
+        {
+          "i": 5,
+          "name": "Colorado",
+          "value": 5
+        },
+        {
+          "i": 6,
+          "name": "Connecticut",
+          "value": 6
+        },
+        {
+          "i": 7,
+          "name": "Delaware",
+          "value": 7
+        },
+        {
+          "i": 8,
+          "name": "Florida",
+          "value": 8
+        },
+        {
+          "i": 9,
+          "name": "Georgia",
+          "value": 9
+        },
+        {
+          "i": 10,
+          "name": "Hawaii",
+          "value": 10
+        },
+        {
+          "i": 11,
+          "name": "Idaho",
+          "value": 11
+        },
+        {
+          "i": 12,
+          "name": "Illinois",
+          "value": 12
+        },
+        {
+          "i": 13,
+          "name": "Indiana",
+          "value": 13
+        },
+        {
+          "i": 14,
+          "name": "Iowa",
+          "value": 14
+        },
+        {
+          "i": 15,
+          "name": "Kansas",
+          "value": 15
+        },
+        {
+          "i": 16,
+          "name": "Kentucky",
+          "value": 16
+        },
+        {
+          "i": 17,
+          "name": "Louisiana",
+          "value": 17
+        },
+        {
+          "i": 18,
+          "name": "Maine",
+          "value": 18
+        },
+        {
+          "i": 19,
+          "name": "Maryland",
+          "value": 19
+        },
+        {
+          "i": 20,
+          "name": "Massachusetts",
+          "value": 20
+        },
+        {
+          "i": 21,
+          "name": "Michigan",
+          "value": 21
+        },
+        {
+          "i": 22,
+          "name": "Minnesota",
+          "value": 22
+        },
+        {
+          "i": 23,
+          "name": "Mississippi",
+          "value": 23
+        },
+        {
+          "i": 24,
+          "name": "Missouri",
+          "value": 24
+        },
+        {
+          "i": 25,
+          "name": "Montana",
+          "value": 25
+        },
+        {
+          "i": 26,
+          "name": "Nebraska",
+          "value": 26
+        },
+        {
+          "i": 27,
+          "name": "Nevada",
+          "value": 27
+        },
+        {
+          "i": 28,
+          "name": "NewHampshire",
+          "value": 28
+        },
+        {
+          "i": 29,
+          "name": "NewJersey",
+          "value": 29
+        },
+        {
+          "i": 30,
+          "name": "NewMexico",
+          "value": 30
+        },
+        {
+          "i": 31,
+          "name": "NewYork",
+          "value": 31
+        },
+        {
+          "i": 32,
+          "name": "NorthCarolina",
+          "value": 32
+        },
+        {
+          "i": 33,
+          "name": "NorthDakota",
+          "value": 33
+        },
+        {
+          "i": 34,
+          "name": "Ohio",
+          "value": 34
+        },
+        {
+          "i": 35,
+          "name": "Oklahoma",
+          "value": 35
+        },
+        {
+          "i": 36,
+          "name": "Oregon",
+          "value": 36
+        },
+        {
+          "i": 37,
+          "name": "Pennsylvania",
+          "value": 37
+        },
+        {
+          "i": 38,
+          "name": "RhodeIsland",
+          "value": 38
+        },
+        {
+          "i": 39,
+          "name": "SouthCarolina",
+          "value": 39
+        },
+        {
+          "i": 40,
+          "name": "SouthDakota",
+          "value": 40
+        },
+        {
+          "i": 41,
+          "name": "Tennessee",
+          "value": 41
+        },
+        {
+          "i": 42,
+          "name": "Texas",
+          "value": 42
+        },
+        {
+          "i": 43,
+          "name": "Utah",
+          "value": 43
+        },
+        {
+          "i": 44,
+          "name": "Vermont",
+          "value": 44
+        },
+        {
+          "i": 45,
+          "name": "Virginia",
+          "value": 45
+        },
+        {
+          "i": 46,
+          "name": "Washington",
+          "value": 46
+        },
+        {
+          "i": 47,
+          "name": "WestVirginia",
+          "value": 47
+        },
+        {
+          "i": 48,
+          "name": "Wisconsin",
+          "value": 48
+        },
+        {
+          "i": 49,
+          "name": "Wyoming",
+          "value": 49
+        },
+        {
+          "i": 50,
+          "name": "NonUS",
+          "value": 50
+        },
+        {
+          "i": 51,
+          "name": "INVALID",
+          "value": 51
+        }
+      ]
+    },
+    "Personality": {
+      "enumName": "Personality",
+      "members": [
+        {
+          "i": 0,
+          "name": "First_",
+          "value": 0
+        },
+        {
+          "i": 1,
+          "name": "Leader",
+          "value": 0
+        },
+        {
+          "i": 2,
+          "name": "Intense",
+          "value": 1
+        },
+        {
+          "i": 3,
+          "name": "Entertainer",
+          "value": 2
+        },
+        {
+          "i": 4,
+          "name": "TeamPlayer",
+          "value": 3
+        },
+        {
+          "i": 5,
+          "name": "Unpredictable",
+          "value": 4
+        },
+        {
+          "i": 6,
+          "name": "UserAvailableCount_",
+          "value": 4
+        },
+        {
+          "i": 7,
+          "name": "NPCAvailableCount_",
+          "value": 5
+        },
+        {
+          "i": 8,
+          "name": "Invalid_",
+          "value": 15
+        }
+      ]
+    },
+    "PrimaryPipeline": {
+      "enumName": "Pipeline",
+      "members": [
+        {
+          "i": 0,
+          "name": "Alabama",
+          "value": 0
+        },
+        {
+          "i": 1,
+          "name": "First_",
+          "value": 0
+        },
+        {
+          "i": 2,
+          "name": "Arizona",
+          "value": 1
+        },
+        {
+          "i": 3,
+          "name": "Arkansas",
+          "value": 2
+        },
+        {
+          "i": 4,
+          "name": "BigApple",
+          "value": 3
+        },
+        {
+          "i": 5,
+          "name": "BigSky",
+          "value": 4
+        },
+        {
+          "i": 6,
+          "name": "CentralFlorida",
+          "value": 5
+        },
+        {
+          "i": 7,
+          "name": "Colorado",
+          "value": 6
+        },
+        {
+          "i": 8,
+          "name": "EastTexas",
+          "value": 7
+        },
+        {
+          "i": 9,
+          "name": "Hawaii",
+          "value": 8
+        },
+        {
+          "i": 10,
+          "name": "Illinois",
+          "value": 9
+        },
+        {
+          "i": 11,
+          "name": "Indiana",
+          "value": 10
+        },
+        {
+          "i": 12,
+          "name": "Iowa",
+          "value": 11
+        },
+        {
+          "i": 13,
+          "name": "Kansas",
+          "value": 12
+        },
+        {
+          "i": 14,
+          "name": "Kentucky",
+          "value": 13
+        },
+        {
+          "i": 15,
+          "name": "Louisiana",
+          "value": 14
+        },
+        {
+          "i": 16,
+          "name": "MetroAtlanta",
+          "value": 15
+        },
+        {
+          "i": 17,
+          "name": "Michigan",
+          "value": 16
+        },
+        {
+          "i": 18,
+          "name": "Minnesota",
+          "value": 17
+        },
+        {
+          "i": 19,
+          "name": "Mississippi",
+          "value": 18
+        },
+        {
+          "i": 20,
+          "name": "Missouri",
+          "value": 19
+        },
+        {
+          "i": 21,
+          "name": "Nebraska",
+          "value": 20
+        },
+        {
+          "i": 22,
+          "name": "Nevada",
+          "value": 21
+        },
+        {
+          "i": 23,
+          "name": "NewEngland",
+          "value": 22
+        },
+        {
+          "i": 24,
+          "name": "NewMexico",
+          "value": 23
+        },
+        {
+          "i": 25,
+          "name": "NorthCarolina",
+          "value": 24
+        },
+        {
+          "i": 26,
+          "name": "NorthFlorida",
+          "value": 25
+        },
+        {
+          "i": 27,
+          "name": "NorthTexas",
+          "value": 26
+        },
+        {
+          "i": 28,
+          "name": "NorthernCalifornia",
+          "value": 27
+        },
+        {
+          "i": 29,
+          "name": "Ohio",
+          "value": 28
+        },
+        {
+          "i": 30,
+          "name": "Oklahoma",
+          "value": 29
+        },
+        {
+          "i": 31,
+          "name": "PacificNorthwest",
+          "value": 30
+        },
+        {
+          "i": 32,
+          "name": "Pennsylvania",
+          "value": 31
+        },
+        {
+          "i": 33,
+          "name": "SouthCarolina",
+          "value": 32
+        },
+        {
+          "i": 34,
+          "name": "SouthFlorida",
+          "value": 33
+        },
+        {
+          "i": 35,
+          "name": "SouthGeorgia",
+          "value": 34
+        },
+        {
+          "i": 36,
+          "name": "SouthernCalifornia",
+          "value": 35
+        },
+        {
+          "i": 37,
+          "name": "SouthwestTexas",
+          "value": 36
+        },
+        {
+          "i": 38,
+          "name": "Tennessee",
+          "value": 37
+        },
+        {
+          "i": 39,
+          "name": "Tidewater",
+          "value": 38
+        },
+        {
+          "i": 40,
+          "name": "Utah",
+          "value": 39
+        },
+        {
+          "i": 41,
+          "name": "WestVirginia",
+          "value": 40
+        },
+        {
+          "i": 42,
+          "name": "Wisconsin",
+          "value": 41
+        },
+        {
+          "i": 43,
+          "name": "International",
+          "value": 42
+        },
+        {
+          "i": 44,
+          "name": "Last_",
+          "value": 42
+        },
+        {
+          "i": 45,
+          "name": "Count_",
+          "value": 43
+        },
+        {
+          "i": 46,
+          "name": "Invalid",
+          "value": 44
+        }
+      ]
+    },
+    "TeamBuilding": {
+      "enumName": "TeamBuilding",
+      "members": [
+        {
+          "i": 0,
+          "name": "Balanced",
+          "value": 0
+        },
+        {
+          "i": 1,
+          "name": "ThroughDraft",
+          "value": 1
+        },
+        {
+          "i": 2,
+          "name": "ThroughFreeAgency",
+          "value": 2
+        }
+      ]
+    },
+    "TradingTendency": {
+      "enumName": "TradingTendency",
+      "members": [
+        {
+          "i": 0,
+          "name": "DoesNotTrade",
+          "value": 0
+        },
+        {
+          "i": 1,
+          "name": "TradesUp",
+          "value": 1
+        },
+        {
+          "i": 2,
+          "name": "TradesDown",
+          "value": 2
+        }
+      ]
+    },
+    "COACH_ADAPTIVE_AI": {
+      "enumName": "CoachAdaptiveAI",
+      "members": [
+        {
+          "i": 0,
+          "name": "Conservative",
+          "value": 0
+        },
+        {
+          "i": 1,
+          "name": "First_",
+          "value": 0
+        },
+        {
+          "i": 2,
+          "name": "Balanced",
+          "value": 1
+        },
+        {
+          "i": 3,
+          "name": "Aggressive",
+          "value": 2
+        },
+        {
+          "i": 4,
+          "name": "Conservative_1",
+          "value": 3
+        },
+        {
+          "i": 5,
+          "name": "Balanced_1",
+          "value": 4
+        },
+        {
+          "i": 6,
+          "name": "Aggressive_1",
+          "value": 5
+        },
+        {
+          "i": 7,
+          "name": "Conservative_2",
+          "value": 6
+        },
+        {
+          "i": 8,
+          "name": "Balanced_2",
+          "value": 7
+        },
+        {
+          "i": 9,
+          "name": "Aggressive_2",
+          "value": 8
+        },
+        {
+          "i": 10,
+          "name": "Conservative_3",
+          "value": 9
+        },
+        {
+          "i": 11,
+          "name": "Balanced_3",
+          "value": 10
+        },
+        {
+          "i": 12,
+          "name": "Aggressive_3",
+          "value": 11
+        },
+        {
+          "i": 13,
+          "name": "Max_",
+          "value": 12
+        },
+        {
+          "i": 14,
+          "name": "Invalid_",
+          "value": 13
+        }
+      ]
+    },
+    "COACH_DEMEANOR": {
+      "enumName": "CoachDemeanor",
+      "members": [
+        {
+          "i": 0,
+          "name": "Classic",
+          "value": 0
+        },
+        {
+          "i": 1,
+          "name": "First_",
+          "value": 0
+        },
+        {
+          "i": 2,
+          "name": "Calm",
+          "value": 1
+        },
+        {
+          "i": 3,
+          "name": "Intense",
+          "value": 2
+        },
+        {
+          "i": 4,
+          "name": "Max",
+          "value": 3
+        },
+        {
+          "i": 5,
+          "name": "Invalid",
+          "value": 15
+        }
+      ]
+    },
+    "COACH_NO_HUDDLE_TEMPO": {
+      "enumName": "CoachNoHuddleTempo",
+      "members": [
+        {
+          "i": 0,
+          "name": "Conservative",
+          "value": 0
+        },
+        {
+          "i": 1,
+          "name": "First_",
+          "value": 0
+        },
+        {
+          "i": 2,
+          "name": "Balanced",
+          "value": 1
+        },
+        {
+          "i": 3,
+          "name": "Aggressive",
+          "value": 2
+        },
+        {
+          "i": 4,
+          "name": "Max_",
+          "value": 3
+        },
+        {
+          "i": 5,
+          "name": "Invalid_",
+          "value": 4
+        }
+      ]
+    },
+    "COACH_SPECIALTY": {
+      "enumName": "CoachSpecialty",
+      "members": [
+        {
+          "i": 0,
+          "name": "First_",
+          "value": 0
+        },
+        {
+          "i": 1,
+          "name": "Quarterbacks",
+          "value": 0
+        },
+        {
+          "i": 2,
+          "name": "RunningBacks",
+          "value": 1
+        },
+        {
+          "i": 3,
+          "name": "Receivers",
+          "value": 2
+        },
+        {
+          "i": 4,
+          "name": "OffensiveLine",
+          "value": 3
+        },
+        {
+          "i": 5,
+          "name": "DefensiveLine",
+          "value": 4
+        },
+        {
+          "i": 6,
+          "name": "Linebackers",
+          "value": 5
+        },
+        {
+          "i": 7,
+          "name": "Secondary",
+          "value": 6
+        },
+        {
+          "i": 8,
+          "name": "SpecialTeams",
+          "value": 7
+        },
+        {
+          "i": 9,
+          "name": "Max_",
+          "value": 8
+        },
+        {
+          "i": 10,
+          "name": "Invalid_",
+          "value": 255
+        }
+      ]
+    },
+    "COACH_STANCE": {
+      "enumName": "CoachStance",
+      "members": [
+        {
+          "i": 0,
+          "name": "Classic",
+          "value": 0
+        },
+        {
+          "i": 1,
+          "name": "First_",
+          "value": 0
+        },
+        {
+          "i": 2,
+          "name": "PlaySheet",
+          "value": 1
+        },
+        {
+          "i": 3,
+          "name": "HandsOnKnees",
+          "value": 2
+        },
+        {
+          "i": 4,
+          "name": "Max_",
+          "value": 3
+        },
+        {
+          "i": 5,
+          "name": "Invalid_",
+          "value": 15
+        }
+      ]
+    },
+    "CoachBackstory": {
+      "enumName": "CoachBackstory",
+      "members": [
+        {
+          "i": 0,
+          "name": "Motivator",
+          "value": 0
+        },
+        {
+          "i": 1,
+          "name": "Strategist",
+          "value": 1
+        },
+        {
+          "i": 2,
+          "name": "First_",
+          "value": 2
+        },
+        {
+          "i": 3,
+          "name": "TeamBuilder",
+          "value": 2
+        },
+        {
+          "i": 4,
+          "name": "StaffBuilder",
+          "value": 3
+        },
+        {
+          "i": 5,
+          "name": "HCMotivator",
+          "value": 4
+        },
+        {
+          "i": 6,
+          "name": "HCSchemer",
+          "value": 5
+        },
+        {
+          "i": 7,
+          "name": "HCSalesman",
+          "value": 6
+        },
+        {
+          "i": 8,
+          "name": "OCMotivator",
+          "value": 7
+        },
+        {
+          "i": 9,
+          "name": "OCSchemer",
+          "value": 8
+        },
+        {
+          "i": 10,
+          "name": "OCSalesman",
+          "value": 9
+        },
+        {
+          "i": 11,
+          "name": "DCMotivator",
+          "value": 10
+        },
+        {
+          "i": 12,
+          "name": "DCSchemer",
+          "value": 11
+        },
+        {
+          "i": 13,
+          "name": "DCSalesman",
+          "value": 12
+        },
+        {
+          "i": 14,
+          "name": "Count_",
+          "value": 13
+        },
+        {
+          "i": 15,
+          "name": "Invalid_",
+          "value": 14
+        }
+      ]
+    },
+    "CoachPrestige": {
+      "enumName": "LetterGrade",
+      "members": [
+        {
+          "i": 0,
+          "name": "Aplus",
+          "value": 0
+        },
+        {
+          "i": 1,
+          "name": "First_",
+          "value": 0
+        },
+        {
+          "i": 2,
+          "name": "A",
+          "value": 1
+        },
+        {
+          "i": 3,
+          "name": "Aminus",
+          "value": 2
+        },
+        {
+          "i": 4,
+          "name": "Bplus",
+          "value": 3
+        },
+        {
+          "i": 5,
+          "name": "B",
+          "value": 4
+        },
+        {
+          "i": 6,
+          "name": "Bminus",
+          "value": 5
+        },
+        {
+          "i": 7,
+          "name": "Cplus",
+          "value": 6
+        },
+        {
+          "i": 8,
+          "name": "C",
+          "value": 7
+        },
+        {
+          "i": 9,
+          "name": "Cminus",
+          "value": 8
+        },
+        {
+          "i": 10,
+          "name": "Dplus",
+          "value": 9
+        },
+        {
+          "i": 11,
+          "name": "D",
+          "value": 10
+        },
+        {
+          "i": 12,
+          "name": "Dminus",
+          "value": 11
+        },
+        {
+          "i": 13,
+          "name": "F",
+          "value": 12
+        },
+        {
+          "i": 14,
+          "name": "Last_",
+          "value": 12
+        },
+        {
+          "i": 15,
+          "name": "COUNT",
+          "value": 13
+        },
+        {
+          "i": 16,
+          "name": "Incomplete",
+          "value": 13
+        }
+      ]
+    },
+    "ContractExpectationProgress": {
+      "enumName": "ContractExpectations",
+      "members": [
+        {
+          "i": 0,
+          "name": "First_",
+          "value": 0
+        },
+        {
+          "i": 1,
+          "name": "FirstWins_",
+          "value": 0
+        },
+        {
+          "i": 2,
+          "name": "Win4Games",
+          "value": 0
+        },
+        {
+          "i": 3,
+          "name": "Win5Games",
+          "value": 1
+        },
+        {
+          "i": 4,
+          "name": "Win6Games",
+          "value": 2
+        },
+        {
+          "i": 5,
+          "name": "Win7Games",
+          "value": 3
+        },
+        {
+          "i": 6,
+          "name": "Win8Games",
+          "value": 4
+        },
+        {
+          "i": 7,
+          "name": "LastWins_",
+          "value": 5
+        },
+        {
+          "i": 8,
+          "name": "Win9Games",
+          "value": 5
+        },
+        {
+          "i": 9,
+          "name": "WinConfChamp",
+          "value": 6
+        },
+        {
+          "i": 10,
+          "name": "Last_",
+          "value": 7
+        },
+        {
+          "i": 11,
+          "name": "WinNY6Bowl",
+          "value": 7
+        },
+        {
+          "i": 12,
+          "name": "Count_",
+          "value": 8
+        },
+        {
+          "i": 13,
+          "name": "Invalid_",
+          "value": 8
+        }
+      ]
+    },
+    "CurrentContractExpectation": {
+      "enumName": "ContractExpectations",
+      "members": [
+        {
+          "i": 0,
+          "name": "First_",
+          "value": 0
+        },
+        {
+          "i": 1,
+          "name": "FirstWins_",
+          "value": 0
+        },
+        {
+          "i": 2,
+          "name": "Win4Games",
+          "value": 0
+        },
+        {
+          "i": 3,
+          "name": "Win5Games",
+          "value": 1
+        },
+        {
+          "i": 4,
+          "name": "Win6Games",
+          "value": 2
+        },
+        {
+          "i": 5,
+          "name": "Win7Games",
+          "value": 3
+        },
+        {
+          "i": 6,
+          "name": "Win8Games",
+          "value": 4
+        },
+        {
+          "i": 7,
+          "name": "LastWins_",
+          "value": 5
+        },
+        {
+          "i": 8,
+          "name": "Win9Games",
+          "value": 5
+        },
+        {
+          "i": 9,
+          "name": "WinConfChamp",
+          "value": 6
+        },
+        {
+          "i": 10,
+          "name": "Last_",
+          "value": 7
+        },
+        {
+          "i": 11,
+          "name": "WinNY6Bowl",
+          "value": 7
+        },
+        {
+          "i": 12,
+          "name": "Count_",
+          "value": 8
+        },
+        {
+          "i": 13,
+          "name": "Invalid_",
+          "value": 8
+        }
+      ]
+    },
+    "CurrentJobSecurityStatus": {
+      "enumName": "JobSecurityStatus",
+      "members": [
+        {
+          "i": 0,
+          "name": "Safe",
+          "value": 0
+        },
+        {
+          "i": 1,
+          "name": "SafeForNow",
+          "value": 1
+        },
+        {
+          "i": 2,
+          "name": "Low",
+          "value": 2
+        },
+        {
+          "i": 3,
+          "name": "HotSeat",
+          "value": 3
+        },
+        {
+          "i": 4,
+          "name": "Invalid",
+          "value": 4
+        }
+      ]
+    },
+    "DominantArchetype": {
+      "enumName": "CoachTalentArcheType",
+      "members": [
+        {
+          "i": 0,
+          "name": "First_",
+          "value": 0
+        },
+        {
+          "i": 1,
+          "name": "Motivator",
+          "value": 0
+        },
+        {
+          "i": 2,
+          "name": "Schemer",
+          "value": 1
+        },
+        {
+          "i": 3,
+          "name": "Recruiter",
+          "value": 2
+        },
+        {
+          "i": 4,
+          "name": "MasterMotivator",
+          "value": 3
+        },
+        {
+          "i": 5,
+          "name": "Architect",
+          "value": 4
+        },
+        {
+          "i": 6,
+          "name": "SchemeGuru",
+          "value": 5
+        },
+        {
+          "i": 7,
+          "name": "Strategist",
+          "value": 6
+        },
+        {
+          "i": 8,
+          "name": "EliteRecruiter",
+          "value": 7
+        },
+        {
+          "i": 9,
+          "name": "TalentDeveloper",
+          "value": 8
+        },
+        {
+          "i": 10,
+          "name": "Rainmaker",
+          "value": 9
+        },
+        {
+          "i": 11,
+          "name": "Visionary",
+          "value": 10
+        },
+        {
+          "i": 12,
+          "name": "ProgramBuilder",
+          "value": 11
+        },
+        {
+          "i": 13,
+          "name": "CEO",
+          "value": 12
+        },
+        {
+          "i": 14,
+          "name": "Last_",
+          "value": 12
+        },
+        {
+          "i": 15,
+          "name": "Count_",
+          "value": 13
+        },
+        {
+          "i": 16,
+          "name": "Invalid_",
+          "value": 255
+        }
+      ]
+    },
+    "SeasonStartJobSecurityStatus": {
+      "enumName": "JobSecurityStatus",
+      "members": [
+        {
+          "i": 0,
+          "name": "Safe",
+          "value": 0
+        },
+        {
+          "i": 1,
+          "name": "SafeForNow",
+          "value": 1
+        },
+        {
+          "i": 2,
+          "name": "Low",
+          "value": 2
+        },
+        {
+          "i": 3,
+          "name": "HotSeat",
+          "value": 3
+        },
+        {
+          "i": 4,
+          "name": "Invalid",
+          "value": 4
+        }
+      ]
+    },
+    "SpecialtyType": {
+      "enumName": "CoachSpecialtyType",
+      "members": [
+        {
+          "i": 0,
+          "name": "Offense",
+          "value": 0
+        },
+        {
+          "i": 1,
+          "name": "Defense",
+          "value": 1
+        },
+        {
+          "i": 2,
+          "name": "Any",
+          "value": 2
+        }
+      ]
+    }
+  },
+  "madden": {
+    "Archetype": {
+      "enumName": "StaffArchetypeEnum",
+      "members": [
+        {
+          "i": 0,
+          "name": "OffensiveGuru",
+          "value": 0
+        },
+        {
+          "i": 1,
+          "name": "DefensiveGenius",
+          "value": 1
+        },
+        {
+          "i": 2,
+          "name": "PersonnelCzar",
+          "value": 2
+        },
+        {
+          "i": 3,
+          "name": "DevelopmentWizard",
+          "value": 3
+        },
+        {
+          "i": 4,
+          "name": "HeadScout",
+          "value": 4
+        },
+        {
+          "i": 5,
+          "name": "HeadTrainer",
+          "value": 5
+        },
+        {
+          "i": 6,
+          "name": "MasterMotivator",
+          "value": 6
+        },
+        {
+          "i": 7,
+          "name": "MasterMotivator_JohnMadden",
+          "value": 7
+        },
+        {
+          "i": 8,
+          "name": "Count",
+          "value": 8
+        }
+      ]
+    },
+    "ContractStatus": {
+      "enumName": "StaffPersonContractStatus",
+      "members": [
+        {
+          "i": 0,
+          "name": "Signed",
+          "value": 0
+        },
+        {
+          "i": 1,
+          "name": "FreeAgent",
+          "value": 1
+        },
+        {
+          "i": 2,
+          "name": "Retired",
+          "value": 2
+        },
+        {
+          "i": 3,
+          "name": "Deleted",
+          "value": 3
+        },
+        {
+          "i": 4,
+          "name": "Expiring",
+          "value": 4
+        },
+        {
+          "i": 5,
+          "name": "None",
+          "value": 5
+        }
+      ]
+    },
+    "OriginalPosition": {
+      "enumName": "StaffPosition",
+      "members": [
+        {
+          "i": 0,
+          "name": "First_",
+          "value": 0
+        },
+        {
+          "i": 1,
+          "name": "HeadCoach",
+          "value": 0
+        },
+        {
+          "i": 2,
+          "name": "OffensiveCoordinator",
+          "value": 1
+        },
+        {
+          "i": 3,
+          "name": "DefensiveCoordinator",
+          "value": 2
+        },
+        {
+          "i": 4,
+          "name": "SpecialTeams",
+          "value": 3
+        },
+        {
+          "i": 5,
+          "name": "Owner",
+          "value": 4
+        },
+        {
+          "i": 6,
+          "name": "Scout",
+          "value": 5
+        },
+        {
+          "i": 7,
+          "name": "Trainer",
+          "value": 6
+        },
+        {
+          "i": 8,
+          "name": "GeneralManager",
+          "value": 7
+        },
+        {
+          "i": 9,
+          "name": "PlayerPersonnel",
+          "value": 8
+        },
+        {
+          "i": 10,
+          "name": "Max_",
+          "value": 9
+        },
+        {
+          "i": 11,
+          "name": "Invalid_",
+          "value": 255
+        }
+      ]
+    },
+    "Portrait_Swappable_Library_Path": {
+      "enumName": "SwappableLibraryPath",
+      "members": [
+        {
+          "i": 0,
+          "name": "First_",
+          "value": 0
+        },
+        {
+          "i": 1,
+          "name": "Last_",
+          "value": 0
+        },
+        {
+          "i": 2,
+          "name": "library_icons_brt",
+          "value": 0
+        },
+        {
+          "i": 3,
+          "name": "Max_",
+          "value": 1
+        },
+        {
+          "i": 4,
+          "name": "Invalid_",
+          "value": 255
+        }
+      ]
+    },
+    "Position": {
+      "enumName": "StaffPosition",
+      "members": [
+        {
+          "i": 0,
+          "name": "First_",
+          "value": 0
+        },
+        {
+          "i": 1,
+          "name": "HeadCoach",
+          "value": 0
+        },
+        {
+          "i": 2,
+          "name": "OffensiveCoordinator",
+          "value": 1
+        },
+        {
+          "i": 3,
+          "name": "DefensiveCoordinator",
+          "value": 2
+        },
+        {
+          "i": 4,
+          "name": "SpecialTeams",
+          "value": 3
+        },
+        {
+          "i": 5,
+          "name": "Owner",
+          "value": 4
+        },
+        {
+          "i": 6,
+          "name": "Scout",
+          "value": 5
+        },
+        {
+          "i": 7,
+          "name": "Trainer",
+          "value": 6
+        },
+        {
+          "i": 8,
+          "name": "GeneralManager",
+          "value": 7
+        },
+        {
+          "i": 9,
+          "name": "PlayerPersonnel",
+          "value": 8
+        },
+        {
+          "i": 10,
+          "name": "Max_",
+          "value": 9
+        },
+        {
+          "i": 11,
+          "name": "Invalid_",
+          "value": 255
+        }
+      ]
+    },
+    "CharacterBodyType": {
+      "enumName": "CharacterBodyType",
+      "members": [
+        {
+          "i": 0,
+          "name": "First_",
+          "value": 0
+        },
+        {
+          "i": 1,
+          "name": "FirstMain_",
+          "value": 0
+        },
+        {
+          "i": 2,
+          "name": "Standard",
+          "value": 0
+        },
+        {
+          "i": 3,
+          "name": "Thin",
+          "value": 1
+        },
+        {
+          "i": 4,
+          "name": "Muscular",
+          "value": 2
+        },
+        {
+          "i": 5,
+          "name": "Heavy",
+          "value": 3
+        },
+        {
+          "i": 6,
+          "name": "Freshman",
+          "value": 4
+        },
+        {
+          "i": 7,
+          "name": "LastMain_",
+          "value": 4
+        },
+        {
+          "i": 8,
+          "name": "ReservedMain_1",
+          "value": 5
+        },
+        {
+          "i": 9,
+          "name": "ReservedMain_2",
+          "value": 6
+        },
+        {
+          "i": 10,
+          "name": "ReservedMain_3",
+          "value": 7
+        },
+        {
+          "i": 11,
+          "name": "FirstAlternate_",
+          "value": 8
+        },
+        {
+          "i": 12,
+          "name": "Standard_Alternate",
+          "value": 8
+        },
+        {
+          "i": 13,
+          "name": "LastAlternate_",
+          "value": 9
+        },
+        {
+          "i": 14,
+          "name": "Thin_Alternate",
+          "value": 9
+        },
+        {
+          "i": 15,
+          "name": "Max_",
+          "value": 10
+        },
+        {
+          "i": 16,
+          "name": "Invalid_",
+          "value": 15
+        }
+      ]
+    },
+    "FaceShape": {
+      "enumName": "CoachFace",
+      "members": [
+        {
+          "i": 0,
+          "name": "BelichickBill",
+          "value": 0
+        },
+        {
+          "i": 1,
+          "name": "First_",
+          "value": 0
+        },
+        {
+          "i": 2,
+          "name": "FirstCustom_",
+          "value": 0
+        },
+        {
+          "i": 3,
+          "name": "CowherBill",
+          "value": 1
+        },
+        {
+          "i": 4,
+          "name": "KubiakGary",
+          "value": 2
+        },
+        {
+          "i": 5,
+          "name": "CoughlinTom",
+          "value": 3
+        },
+        {
+          "i": 6,
+          "name": "McAdooBen",
+          "value": 4
+        },
+        {
+          "i": 7,
+          "name": "KoetterDirk",
+          "value": 5
+        },
+        {
+          "i": 8,
+          "name": "DelRioJack",
+          "value": 6
+        },
+        {
+          "i": 9,
+          "name": "RevisDarrelle",
+          "value": 7
+        },
+        {
+          "i": 10,
+          "name": "JosephVance",
+          "value": 8
+        },
+        {
+          "i": 11,
+          "name": "FisherJeff",
+          "value": 9
+        },
+        {
+          "i": 12,
+          "name": "FoxJohn",
+          "value": 10
+        },
+        {
+          "i": 13,
+          "name": "GibbsJoe",
+          "value": 11
+        },
+        {
+          "i": 14,
+          "name": "ShanahanKyle",
+          "value": 12
+        },
+        {
+          "i": 15,
+          "name": "LynnAnthony",
+          "value": 13
+        },
+        {
+          "i": 16,
+          "name": "paytonSean",
+          "value": 14
+        },
+        {
+          "i": 17,
+          "name": "PedersonDoug",
+          "value": 15
+        },
+        {
+          "i": 18,
+          "name": "HolmgrenMike",
+          "value": 16
+        },
+        {
+          "i": 19,
+          "name": "LewisMarvin",
+          "value": 17
+        },
+        {
+          "i": 20,
+          "name": "GaseAdam",
+          "value": 18
+        },
+        {
+          "i": 21,
+          "name": "McDermottSean",
+          "value": 19
+        },
+        {
+          "i": 22,
+          "name": "McVaySean",
+          "value": 20
+        },
+        {
+          "i": 23,
+          "name": "ReidAndy",
+          "value": 24
+        },
+        {
+          "i": 24,
+          "name": "ShanahanMike",
+          "value": 27
+        },
+        {
+          "i": 25,
+          "name": "mcCarthyMike",
+          "value": 28
+        },
+        {
+          "i": 26,
+          "name": "SmithLovie",
+          "value": 29
+        },
+        {
+          "i": 27,
+          "name": "TomlinMike",
+          "value": 34
+        },
+        {
+          "i": 28,
+          "name": "WhisenhuntKen",
+          "value": 39
+        },
+        {
+          "i": 29,
+          "name": "RyanRex",
+          "value": 41
+        },
+        {
+          "i": 30,
+          "name": "Caldwelljim",
+          "value": 43
+        },
+        {
+          "i": 31,
+          "name": "SchwartzJim",
+          "value": 46
+        },
+        {
+          "i": 32,
+          "name": "PostLaunch1",
+          "value": 47
+        },
+        {
+          "i": 33,
+          "name": "PostLaunch2",
+          "value": 48
+        },
+        {
+          "i": 34,
+          "name": "smithMike",
+          "value": 49
+        },
+        {
+          "i": 35,
+          "name": "ZornJim",
+          "value": 50
+        },
+        {
+          "i": 36,
+          "name": "harbaughJohn",
+          "value": 51
+        },
+        {
+          "i": 37,
+          "name": "PostLaunch3",
+          "value": 52
+        },
+        {
+          "i": 38,
+          "name": "PostLaunch4",
+          "value": 53
+        },
+        {
+          "i": 39,
+          "name": "CarrollPete",
+          "value": 54
+        },
+        {
+          "i": 40,
+          "name": "FrazierLeslie",
+          "value": 55
+        },
+        {
+          "i": 41,
+          "name": "HarbaughJim",
+          "value": 56
+        },
+        {
+          "i": 42,
+          "name": "GarrettJason",
+          "value": 57
+        },
+        {
+          "i": 43,
+          "name": "JacksonHue",
+          "value": 58
+        },
+        {
+          "i": 44,
+          "name": "MunchakMike",
+          "value": 59
+        },
+        {
+          "i": 45,
+          "name": "PostLaunch5",
+          "value": 60
+        },
+        {
+          "i": 46,
+          "name": "RiveraRon",
+          "value": 61
+        },
+        {
+          "i": 47,
+          "name": "PaganoChuck",
+          "value": 62
+        },
+        {
+          "i": 48,
+          "name": "MularkeyMike",
+          "value": 63
+        },
+        {
+          "i": 49,
+          "name": "SchianoGreg",
+          "value": 64
+        },
+        {
+          "i": 50,
+          "name": "PhilbinJoe",
+          "value": 65
+        },
+        {
+          "i": 51,
+          "name": "AllenDennis",
+          "value": 66
+        },
+        {
+          "i": 52,
+          "name": "LandryTom",
+          "value": 68
+        },
+        {
+          "i": 53,
+          "name": "LombardiVince",
+          "value": 69
+        },
+        {
+          "i": 54,
+          "name": "MaddenJohn",
+          "value": 70
+        },
+        {
+          "i": 55,
+          "name": "NollChuck",
+          "value": 71
+        },
+        {
+          "i": 56,
+          "name": "VermeilDick",
+          "value": 72
+        },
+        {
+          "i": 57,
+          "name": "WalshBill",
+          "value": 73
+        },
+        {
+          "i": 58,
+          "name": "FloresTom",
+          "value": 74
+        },
+        {
+          "i": 59,
+          "name": "JohnsonJimmy",
+          "value": 75
+        },
+        {
+          "i": 60,
+          "name": "JonesJerry",
+          "value": 77
+        },
+        {
+          "i": 61,
+          "name": "DavisMark",
+          "value": 78
+        },
+        {
+          "i": 62,
+          "name": "GlazerBryan",
+          "value": 79
+        },
+        {
+          "i": 63,
+          "name": "YorkJed",
+          "value": 80
+        },
+        {
+          "i": 64,
+          "name": "SpanosAlex",
+          "value": 81
+        },
+        {
+          "i": 65,
+          "name": "JohnsonIVRobert",
+          "value": 82
+        },
+        {
+          "i": 66,
+          "name": "TischSteve",
+          "value": 83
+        },
+        {
+          "i": 67,
+          "name": "KraftRobert",
+          "value": 84
+        },
+        {
+          "i": 68,
+          "name": "WilfZygi",
+          "value": 85
+        },
+        {
+          "i": 69,
+          "name": "RossStephenM",
+          "value": 86
+        },
+        {
+          "i": 70,
+          "name": "HuntClark",
+          "value": 87
+        },
+        {
+          "i": 71,
+          "name": "McNairRobertC",
+          "value": 88
+        },
+        {
+          "i": 72,
+          "name": "MurphyMark",
+          "value": 89
+        },
+        {
+          "i": 73,
+          "name": "FordSrWilliam",
+          "value": 90
+        },
+        {
+          "i": 74,
+          "name": "BowlenPat",
+          "value": 91
+        },
+        {
+          "i": 75,
+          "name": "HaslamJimmy",
+          "value": 92
+        },
+        {
+          "i": 76,
+          "name": "PhillipsTed",
+          "value": 93
+        },
+        {
+          "i": 77,
+          "name": "BisciottiSteve",
+          "value": 94
+        },
+        {
+          "i": 78,
+          "name": "AdamsBud",
+          "value": 95
+        },
+        {
+          "i": 79,
+          "name": "AllenPaul",
+          "value": 96
+        },
+        {
+          "i": 80,
+          "name": "BensonTom",
+          "value": 97
+        },
+        {
+          "i": 81,
+          "name": "BidwillBill",
+          "value": 98
+        },
+        {
+          "i": 82,
+          "name": "BlankArthur",
+          "value": 99
+        },
+        {
+          "i": 83,
+          "name": "BrownMike",
+          "value": 100
+        },
+        {
+          "i": 84,
+          "name": "DeBarteloJrEddie",
+          "value": 101
+        },
+        {
+          "i": 85,
+          "name": "IrsayJim",
+          "value": 102
+        },
+        {
+          "i": 86,
+          "name": "KhanShad",
+          "value": 103
+        },
+        {
+          "i": 87,
+          "name": "KroenkeStan",
+          "value": 104
+        },
+        {
+          "i": 88,
+          "name": "LurieJeffrey",
+          "value": 105
+        },
+        {
+          "i": 89,
+          "name": "RichardsonJerry",
+          "value": 106
+        },
+        {
+          "i": 90,
+          "name": "RooneyArt",
+          "value": 107
+        },
+        {
+          "i": 91,
+          "name": "RooneyDan",
+          "value": 108
+        },
+        {
+          "i": 92,
+          "name": "SynderDan",
+          "value": 109
+        },
+        {
+          "i": 93,
+          "name": "WilsonRalph",
+          "value": 110
+        },
+        {
+          "i": 94,
+          "name": "MaraJohn",
+          "value": 111
+        },
+        {
+          "i": 95,
+          "name": "KellyChip",
+          "value": 112
+        },
+        {
+          "i": 96,
+          "name": "AriansBruce",
+          "value": 113
+        },
+        {
+          "i": 97,
+          "name": "TrestmanMarc",
+          "value": 114
+        },
+        {
+          "i": 98,
+          "name": "ChudzinskiRob",
+          "value": 115
+        },
+        {
+          "i": 99,
+          "name": "BradleyGus",
+          "value": 116
+        },
+        {
+          "i": 100,
+          "name": "McCoyMike",
+          "value": 117
+        },
+        {
+          "i": 101,
+          "name": "MarroneDoug",
+          "value": 118
+        },
+        {
+          "i": 102,
+          "name": "DitkaMike",
+          "value": 119
+        },
+        {
+          "i": 103,
+          "name": "GrudenJay",
+          "value": 120
+        },
+        {
+          "i": 104,
+          "name": "OBrienBill",
+          "value": 121
+        },
+        {
+          "i": 105,
+          "name": "ZimmerMike",
+          "value": 122
+        },
+        {
+          "i": 106,
+          "name": "PettineMike",
+          "value": 123
+        },
+        {
+          "i": 107,
+          "name": "BowlesTodd",
+          "value": 124
+        },
+        {
+          "i": 108,
+          "name": "QuinnDan",
+          "value": 125
+        },
+        {
+          "i": 109,
+          "name": "LastCustom_",
+          "value": 126
+        },
+        {
+          "i": 110,
+          "name": "TomsulaJim",
+          "value": 126
+        },
+        {
+          "i": 111,
+          "name": "FirstSpecial_",
+          "value": 127
+        },
+        {
+          "i": 112,
+          "name": "patriotsgeneric",
+          "value": 127
+        },
+        {
+          "i": 113,
+          "name": "saintsgeneric",
+          "value": 128
+        },
+        {
+          "i": 114,
+          "name": "InvisibleCoach",
+          "value": 129
+        },
+        {
+          "i": 115,
+          "name": "LastSpecial_",
+          "value": 129
+        },
+        {
+          "i": 116,
+          "name": "FirstStory_",
+          "value": 130
+        },
+        {
+          "i": 117,
+          "name": "JamisonHank",
+          "value": 130
+        },
+        {
+          "i": 118,
+          "name": "MarinoDan",
+          "value": 131
+        },
+        {
+          "i": 119,
+          "name": "McCarthyCaptain",
+          "value": 132
+        },
+        {
+          "i": 120,
+          "name": "FordJack",
+          "value": 133
+        },
+        {
+          "i": 121,
+          "name": "WadeCutter",
+          "value": 134
+        },
+        {
+          "i": 122,
+          "name": "HouslerDylan",
+          "value": 135
+        },
+        {
+          "i": 123,
+          "name": "AustinKen",
+          "value": 136
+        },
+        {
+          "i": 124,
+          "name": "YoungMike",
+          "value": 137
+        },
+        {
+          "i": 125,
+          "name": "LastStory_",
+          "value": 138
+        },
+        {
+          "i": 126,
+          "name": "MustBeUnique",
+          "value": 138
+        },
+        {
+          "i": 127,
+          "name": "coachhead_1_B_N_01",
+          "value": 150
+        },
+        {
+          "i": 128,
+          "name": "FirstGeneric_",
+          "value": 150
+        },
+        {
+          "i": 129,
+          "name": "FirstSkinTone1_",
+          "value": 150
+        },
+        {
+          "i": 130,
+          "name": "coachhead_1_B_N_20",
+          "value": 151
+        },
+        {
+          "i": 131,
+          "name": "coachhead_1_B_S_20",
+          "value": 152
+        },
+        {
+          "i": 132,
+          "name": "coachhead_1_H_B_009",
+          "value": 153
+        },
+        {
+          "i": 133,
+          "name": "coachhead_1_H_BD_01",
+          "value": 154
+        },
+        {
+          "i": 134,
+          "name": "coachhead_1_H_N_01",
+          "value": 155
+        },
+        {
+          "i": 135,
+          "name": "coachhead_1_H_N_03",
+          "value": 156
+        },
+        {
+          "i": 136,
+          "name": "coachhead_1_H_N_20",
+          "value": 157
+        },
+        {
+          "i": 137,
+          "name": "coachhead_1_M_BD_01",
+          "value": 158
+        },
+        {
+          "i": 138,
+          "name": "coachhead_1_M_N_30",
+          "value": 159
+        },
+        {
+          "i": 139,
+          "name": "coachhead_1_M_S_011",
+          "value": 160
+        },
+        {
+          "i": 140,
+          "name": "LastSkinTone1_",
+          "value": 160
+        },
+        {
+          "i": 141,
+          "name": "coachhead_2_B_M_20",
+          "value": 161
+        },
+        {
+          "i": 142,
+          "name": "FirstSkinTone2_",
+          "value": 161
+        },
+        {
+          "i": 143,
+          "name": "coachhead_2_B_N_20",
+          "value": 162
+        },
+        {
+          "i": 144,
+          "name": "coachhead_2_B_N_21",
+          "value": 163
+        },
+        {
+          "i": 145,
+          "name": "coachhead_2_H_M_11",
+          "value": 164
+        },
+        {
+          "i": 146,
+          "name": "coachhead_2_H_M_20",
+          "value": 165
+        },
+        {
+          "i": 147,
+          "name": "coachhead_2_H_N_03",
+          "value": 166
+        },
+        {
+          "i": 148,
+          "name": "coachhead_2_M_N_20",
+          "value": 167
+        },
+        {
+          "i": 149,
+          "name": "coachhead_2_M_N_21",
+          "value": 168
+        },
+        {
+          "i": 150,
+          "name": "coachhead_2_M_N_22",
+          "value": 169
+        },
+        {
+          "i": 151,
+          "name": "coachhead_2_M_N_30",
+          "value": 170
+        },
+        {
+          "i": 152,
+          "name": "LastSkinTone2_",
+          "value": 170
+        },
+        {
+          "i": 153,
+          "name": "coachhead_3_B_N_21",
+          "value": 171
+        },
+        {
+          "i": 154,
+          "name": "FirstSkinTone3_",
+          "value": 171
+        },
+        {
+          "i": 155,
+          "name": "coachhead_3_B_S_20",
+          "value": 172
+        },
+        {
+          "i": 156,
+          "name": "coachhead_3_H_B_20",
+          "value": 173
+        },
+        {
+          "i": 157,
+          "name": "coachhead_3_H_BD_01",
+          "value": 174
+        },
+        {
+          "i": 158,
+          "name": "coachhead_3_H_G_20",
+          "value": 175
+        },
+        {
+          "i": 159,
+          "name": "coachhead_3_H_N_20",
+          "value": 176
+        },
+        {
+          "i": 160,
+          "name": "coachhead_3_H_N_21",
+          "value": 177
+        },
+        {
+          "i": 161,
+          "name": "coachhead_3_H_S_001",
+          "value": 178
+        },
+        {
+          "i": 162,
+          "name": "coachhead_3_M_N_20",
+          "value": 179
+        },
+        {
+          "i": 163,
+          "name": "coachhead_3_M_N_21",
+          "value": 180
+        },
+        {
+          "i": 164,
+          "name": "coachhead_3_M_N_22",
+          "value": 181
+        },
+        {
+          "i": 165,
+          "name": "LastSkinTone3_",
+          "value": 181
+        },
+        {
+          "i": 166,
+          "name": "coachhead_4_B_G_01",
+          "value": 182
+        },
+        {
+          "i": 167,
+          "name": "FirstSkinTone4_",
+          "value": 182
+        },
+        {
+          "i": 168,
+          "name": "coachhead_4_B_MS_01",
+          "value": 183
+        },
+        {
+          "i": 169,
+          "name": "coachhead_4_H_BD_01",
+          "value": 184
+        },
+        {
+          "i": 170,
+          "name": "coachhead_4_H_G_01",
+          "value": 185
+        },
+        {
+          "i": 171,
+          "name": "coachhead_4_H_MS_01",
+          "value": 186
+        },
+        {
+          "i": 172,
+          "name": "coachhead_4_H_N_30",
+          "value": 187
+        },
+        {
+          "i": 173,
+          "name": "coachhead_4_M_B_30",
+          "value": 188
+        },
+        {
+          "i": 174,
+          "name": "coachhead_4_M_BD_01",
+          "value": 189
+        },
+        {
+          "i": 175,
+          "name": "coachhead_4_M_N_30",
+          "value": 190
+        },
+        {
+          "i": 176,
+          "name": "coachhead_4_T_N_006",
+          "value": 191
+        },
+        {
+          "i": 177,
+          "name": "LastSkinTone4_",
+          "value": 191
+        },
+        {
+          "i": 178,
+          "name": "coachhead_5_B_G_20",
+          "value": 192
+        },
+        {
+          "i": 179,
+          "name": "FirstSkinTone5_",
+          "value": 192
+        },
+        {
+          "i": 180,
+          "name": "coachhead_5_B_N_20",
+          "value": 193
+        },
+        {
+          "i": 181,
+          "name": "coachhead_5_B_N_21",
+          "value": 194
+        },
+        {
+          "i": 182,
+          "name": "coachhead_5_H_B_20",
+          "value": 195
+        },
+        {
+          "i": 183,
+          "name": "coachhead_5_H_N_20",
+          "value": 196
+        },
+        {
+          "i": 184,
+          "name": "coachhead_5_H_N_21",
+          "value": 197
+        },
+        {
+          "i": 185,
+          "name": "coachhead_5_M_M_30",
+          "value": 198
+        },
+        {
+          "i": 186,
+          "name": "coachhead_5_M_N_02",
+          "value": 199
+        },
+        {
+          "i": 187,
+          "name": "coachhead_5_M_N_20",
+          "value": 200
+        },
+        {
+          "i": 188,
+          "name": "LastSkinTone5_",
+          "value": 200
+        },
+        {
+          "i": 189,
+          "name": "coachhead_6_B_M_20",
+          "value": 201
+        },
+        {
+          "i": 190,
+          "name": "FirstSkinTone6_",
+          "value": 201
+        },
+        {
+          "i": 191,
+          "name": "coachhead_6_B_N_03",
+          "value": 202
+        },
+        {
+          "i": 192,
+          "name": "coachhead_6_B_N_20",
+          "value": 203
+        },
+        {
+          "i": 193,
+          "name": "coachhead_6_H_B_30",
+          "value": 204
+        },
+        {
+          "i": 194,
+          "name": "coachhead_6_H_G_20",
+          "value": 205
+        },
+        {
+          "i": 195,
+          "name": "coachhead_6_H_N_20",
+          "value": 206
+        },
+        {
+          "i": 196,
+          "name": "coachhead_6_H_N_21",
+          "value": 207
+        },
+        {
+          "i": 197,
+          "name": "coachhead_6_M_N_20",
+          "value": 208
+        },
+        {
+          "i": 198,
+          "name": "coachhead_6_M_N_21",
+          "value": 209
+        },
+        {
+          "i": 199,
+          "name": "coachhead_6_M_N_22",
+          "value": 210
+        },
+        {
+          "i": 200,
+          "name": "LastSkinTone6_",
+          "value": 210
+        },
+        {
+          "i": 201,
+          "name": "coachhead_7_B_B_20",
+          "value": 211
+        },
+        {
+          "i": 202,
+          "name": "FirstSkinTone7_",
+          "value": 211
+        },
+        {
+          "i": 203,
+          "name": "coachhead_7_B_BD_01",
+          "value": 212
+        },
+        {
+          "i": 204,
+          "name": "coachhead_7_B_G_20",
+          "value": 213
+        },
+        {
+          "i": 205,
+          "name": "coachhead_7_B_M_20",
+          "value": 214
+        },
+        {
+          "i": 206,
+          "name": "coachhead_7_B_N_01",
+          "value": 215
+        },
+        {
+          "i": 207,
+          "name": "coachhead_7_B_N_06",
+          "value": 216
+        },
+        {
+          "i": 208,
+          "name": "coachhead_7_B_N_20",
+          "value": 217
+        },
+        {
+          "i": 209,
+          "name": "coachhead_7_H_BD_01",
+          "value": 218
+        },
+        {
+          "i": 210,
+          "name": "coachhead_7_H_M_20",
+          "value": 219
+        },
+        {
+          "i": 211,
+          "name": "coachhead_7_H_M_21",
+          "value": 220
+        },
+        {
+          "i": 212,
+          "name": "coachhead_7_H_N_01",
+          "value": 221
+        },
+        {
+          "i": 213,
+          "name": "coachhead_7_H_N_30",
+          "value": 222
+        },
+        {
+          "i": 214,
+          "name": "coachhead_7_M_B_20",
+          "value": 223
+        },
+        {
+          "i": 215,
+          "name": "coachhead_7_M_BD_02",
+          "value": 224
+        },
+        {
+          "i": 216,
+          "name": "coachhead_7_M_M_30",
+          "value": 225
+        },
+        {
+          "i": 217,
+          "name": "coachhead_7_M_N_30",
+          "value": 226
+        },
+        {
+          "i": 218,
+          "name": "LastGeneric_",
+          "value": 226
+        },
+        {
+          "i": 219,
+          "name": "LastSkinTone7_",
+          "value": 226
+        },
+        {
+          "i": 220,
+          "name": "1_MorphCoachHead",
+          "value": 227
+        },
+        {
+          "i": 221,
+          "name": "MorphFirst_",
+          "value": 227
+        },
+        {
+          "i": 222,
+          "name": "2_MorphCoachHead",
+          "value": 228
+        },
+        {
+          "i": 223,
+          "name": "3_MorphCoachHead",
+          "value": 229
+        },
+        {
+          "i": 224,
+          "name": "4_MorphCoachHead",
+          "value": 230
+        },
+        {
+          "i": 225,
+          "name": "5_MorphCoachHead",
+          "value": 231
+        },
+        {
+          "i": 226,
+          "name": "6_MorphCoachHead",
+          "value": 232
+        },
+        {
+          "i": 227,
+          "name": "7_MorphCoachHead",
+          "value": 233
+        },
+        {
+          "i": 228,
+          "name": "MorphLast_",
+          "value": 233
+        },
+        {
+          "i": 229,
+          "name": "Max_",
+          "value": 234
+        },
+        {
+          "i": 230,
+          "name": "Invalid_",
+          "value": 255
+        }
+      ]
+    },
+    "Personality": {
+      "enumName": "Personality",
+      "members": [
+        {
+          "i": 0,
+          "name": "First_",
+          "value": 0
+        },
+        {
+          "i": 1,
+          "name": "Leader",
+          "value": 0
+        },
+        {
+          "i": 2,
+          "name": "Intense",
+          "value": 1
+        },
+        {
+          "i": 3,
+          "name": "Entertainer",
+          "value": 2
+        },
+        {
+          "i": 4,
+          "name": "TeamPlayer",
+          "value": 3
+        },
+        {
+          "i": 5,
+          "name": "Unpredictable",
+          "value": 4
+        },
+        {
+          "i": 6,
+          "name": "UserAvailableCount_",
+          "value": 4
+        },
+        {
+          "i": 7,
+          "name": "NPCAvailableCount_",
+          "value": 5
+        },
+        {
+          "i": 8,
+          "name": "Invalid_",
+          "value": 15
+        }
+      ]
+    },
+    "TeamBuilding": {
+      "enumName": "TeamBuilding",
+      "members": [
+        {
+          "i": 0,
+          "name": "Balanced",
+          "value": 0
+        },
+        {
+          "i": 1,
+          "name": "ThroughDraft",
+          "value": 1
+        },
+        {
+          "i": 2,
+          "name": "ThroughFreeAgency",
+          "value": 2
+        }
+      ]
+    },
+    "TradingTendency": {
+      "enumName": "TradingTendency",
+      "members": [
+        {
+          "i": 0,
+          "name": "DoesNotTrade",
+          "value": 0
+        },
+        {
+          "i": 1,
+          "name": "TradesUp",
+          "value": 1
+        },
+        {
+          "i": 2,
+          "name": "TradesDown",
+          "value": 2
+        }
+      ]
+    },
+    "COACH_ADAPTIVE_AI": {
+      "enumName": "CoachAdaptiveAI",
+      "members": [
+        {
+          "i": 0,
+          "name": "Conservative",
+          "value": 0
+        },
+        {
+          "i": 1,
+          "name": "First_",
+          "value": 0
+        },
+        {
+          "i": 2,
+          "name": "Balanced",
+          "value": 1
+        },
+        {
+          "i": 3,
+          "name": "Aggressive",
+          "value": 2
+        },
+        {
+          "i": 4,
+          "name": "Conservative_1",
+          "value": 3
+        },
+        {
+          "i": 5,
+          "name": "Balanced_1",
+          "value": 4
+        },
+        {
+          "i": 6,
+          "name": "Aggressive_1",
+          "value": 5
+        },
+        {
+          "i": 7,
+          "name": "Conservative_2",
+          "value": 6
+        },
+        {
+          "i": 8,
+          "name": "Balanced_2",
+          "value": 7
+        },
+        {
+          "i": 9,
+          "name": "Aggressive_2",
+          "value": 8
+        },
+        {
+          "i": 10,
+          "name": "Conservative_3",
+          "value": 9
+        },
+        {
+          "i": 11,
+          "name": "Balanced_3",
+          "value": 10
+        },
+        {
+          "i": 12,
+          "name": "Aggressive_3",
+          "value": 11
+        },
+        {
+          "i": 13,
+          "name": "Max_",
+          "value": 12
+        },
+        {
+          "i": 14,
+          "name": "Invalid_",
+          "value": 13
+        }
+      ]
+    },
+    "COACH_DEMEANOR": {
+      "enumName": "CoachDemeanor",
+      "members": [
+        {
+          "i": 0,
+          "name": "Classic",
+          "value": 0
+        },
+        {
+          "i": 1,
+          "name": "First_",
+          "value": 0
+        },
+        {
+          "i": 2,
+          "name": "Calm",
+          "value": 1
+        },
+        {
+          "i": 3,
+          "name": "Intense",
+          "value": 2
+        },
+        {
+          "i": 4,
+          "name": "Max",
+          "value": 3
+        },
+        {
+          "i": 5,
+          "name": "Invalid",
+          "value": 15
+        }
+      ]
+    },
+    "COACH_SPECIALTY": {
+      "enumName": "CoachSpecialty",
+      "members": [
+        {
+          "i": 0,
+          "name": "First_",
+          "value": 0
+        },
+        {
+          "i": 1,
+          "name": "Quarterbacks",
+          "value": 0
+        },
+        {
+          "i": 2,
+          "name": "RunningBacks",
+          "value": 1
+        },
+        {
+          "i": 3,
+          "name": "Receivers",
+          "value": 2
+        },
+        {
+          "i": 4,
+          "name": "OffensiveLine",
+          "value": 3
+        },
+        {
+          "i": 5,
+          "name": "DefensiveLine",
+          "value": 4
+        },
+        {
+          "i": 6,
+          "name": "Linebackers",
+          "value": 5
+        },
+        {
+          "i": 7,
+          "name": "Secondary",
+          "value": 6
+        },
+        {
+          "i": 8,
+          "name": "SpecialTeams",
+          "value": 7
+        },
+        {
+          "i": 9,
+          "name": "Max_",
+          "value": 8
+        },
+        {
+          "i": 10,
+          "name": "Invalid_",
+          "value": 255
+        }
+      ]
+    },
+    "COACH_STANCE": {
+      "enumName": "CoachStance",
+      "members": [
+        {
+          "i": 0,
+          "name": "Classic",
+          "value": 0
+        },
+        {
+          "i": 1,
+          "name": "First_",
+          "value": 0
+        },
+        {
+          "i": 2,
+          "name": "PlaySheet",
+          "value": 1
+        },
+        {
+          "i": 3,
+          "name": "HandsOnKnees",
+          "value": 2
+        },
+        {
+          "i": 4,
+          "name": "Max_",
+          "value": 3
+        },
+        {
+          "i": 5,
+          "name": "Invalid_",
+          "value": 15
+        }
+      ]
+    },
+    "CoachBackstory": {
+      "enumName": "CoachBackstory",
+      "members": [
+        {
+          "i": 0,
+          "name": "Motivator",
+          "value": 0
+        },
+        {
+          "i": 1,
+          "name": "Strategist",
+          "value": 1
+        },
+        {
+          "i": 2,
+          "name": "First_",
+          "value": 2
+        },
+        {
+          "i": 3,
+          "name": "TeamBuilder",
+          "value": 2
+        },
+        {
+          "i": 4,
+          "name": "StaffBuilder",
+          "value": 3
+        },
+        {
+          "i": 5,
+          "name": "Count_",
+          "value": 4
+        },
+        {
+          "i": 6,
+          "name": "Invalid_",
+          "value": 5
+        }
+      ]
+    }
+  }
+}

@@ -5,9 +5,22 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased]
+## [0.1.0] - 2026-07-21
+
+First public release, as **Pipeline**.
 
 ### Added
+- **Draft-class file export** — builds a Madden `CAREERDRAFT-*` file directly
+  from a generated class, importable in-game via *Franchise -> Manage Roster ->
+  Import Draft Class*, with no franchise save required. Patches a bundled
+  402-slot template with each player's name, position, archetype, age, jersey,
+  height/weight, all ratings, dev trait, and draft round/pick.
+- **Real colleges written into the exported draft class.** Each drafted
+  player's actual CFB school is baked into the file itself, so the class
+  imports with correct colleges and needs no post-import fix-up step.
+- **Matching appearance on import** — skin tone and body build now follow the
+  generated player rather than being inherited from whichever template
+  prospect previously occupied that slot.
 - **Power-Curve rating-translation engine** (now the default conversion
   engine), replacing the quantile/flat-drop model as the primary path: four
   closed-form category curves (`base = a·xᵖ` — Physical, Technical Light,
@@ -28,13 +41,23 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Rating Translation** and **Rating Categories** settings pages (the latter
   repurposed from the old Physical Attributes page), all with tooltips,
   live previews, and per-value modified indicators.
-- `npm test` regression suite (115 assertions) locking engine fidelity against
-  the original model spec's worked examples, the shipped/tuned defaults, every
-  phase's own behavioral proof (global strength, category reclassification,
-  position/rating flat drops and caps, per-position exceptions), and dev-trait
-  invariance to rating-conversion tuning.
+- **Big WR/CB Agility + Change-of-Direction realism pass** (on by default)
+  that reins in unrealistically high Agility/COD on large receivers and
+  corners, scaled by frame size. Can be switched off in Advanced -> Rating
+  Realism if you already run the external Agility/COD tool.
+- `npm test` regression suite locking engine fidelity against the original
+  model spec's worked examples, the shipped/tuned defaults, every phase's own
+  behavioral proof (global strength, category reclassification, position/rating
+  flat drops and caps, per-position exceptions), dev-trait invariance to
+  rating-conversion tuning, and the draft-class file format/exporter.
 
 ### Changed
+- Class Size now defaults to **402** and cannot be set lower — that's the fixed
+  slot count of a Madden draft-class file, so any generated class can always be
+  exported.
+- The player pool now includes everyone leaving the dynasty (graduating seniors
+  plus early declarers), not just the players already listed as officially
+  declared, so draft-stage saves no longer yield a truncated class.
 - `translation.strategy` now defaults to `powercurve`. The legacy quantile/
   flat-drop engine remains available as `v1` (no UI exposes it; reachable only
   by hand-editing a config file), kept dormant as a fallback/reference. The
@@ -59,17 +82,26 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   Throw/Kick Power, now lives in Physical instead).
 
 ### Fixed
+- Exported players no longer import with a mismatched appearance (a light-
+  skinned player rendering with a dark-skinned model, or a quarterback built
+  like a lineman).
+- The app icon now renders correctly on the Windows taskbar, Start Menu, and
+  desktop shortcut.
 - The Rating Categories page's "modified" indicator dot never lit up for a
   *global* reclassification (per-position overrides were unaffected).
 
-## [0.2.0] - 2026-07-08
+## Pre-release history
+
+Internal builds predating the public release, under the project's former name.
+
+### 0.2.0 - 2026-07-08
 
 Merges in the draft-simulation half of [cfb2madden](https://github.com/seanpdwyer7/cfb2madden)
 (see NOTICE.md for full credit) while keeping this project's rating
 conversion engine as the source of truth for player ratings. Full rationale
 and subsystem-by-subsystem comparison in MERGE_PLAN.md.
 
-### Added
+#### Added
 - Declaration prediction for dynasty saves earlier than the official
   players-leaving stage, with auto-detection and a manual override in the UI.
 - Career college production aggregation (season stats -> career totals),
@@ -89,19 +121,18 @@ and subsystem-by-subsystem comparison in MERGE_PLAN.md.
 - Advanced settings: Production Weight, Board Variance, and a Generational
   Prospect toggle for the draft-projection model.
 
-### Changed
+#### Changed
 - Upgraded the `madden-franchise` dependency to a vendored 4.3.0 and the CFB
   read path to the full CFB27 809/0 schema (Core+Football+Franchise),
   unlocking real Team/SeasonStats/CareerStats tables.
 
-## [0.1.0] - 2026-07-08
+### 0.1.0 - 2026-07-08
 
-### Added
-- Initial release of CFB Transfer Application
+#### Added
+- First working build
 - GUI for transferring draft classes from EA SPORTS College Football 27 to Madden NFL 26 franchise saves
 - Draft class mapping and calibration system
 - Position calibration and quantile calibration support
 - Configuration and defaults system
 - Draft data pipeline processing
 - Windows NSIS installer build support
-

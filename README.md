@@ -1,4 +1,4 @@
-# CFB Transfer
+# Pipeline
 
 A desktop app (Windows, Electron) that takes the players leaving your **EA
 SPORTS College Football 27** dynasty and turns them into the incoming rookie

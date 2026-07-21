@@ -1,0 +1,268 @@
+{
+  "cfb": {
+    "OffensiveScheme": {
+      "nulls": 4,
+      "targets": [
+        {
+          "tableId": 16433,
+          "tableName": "(no table)",
+          "distinctRows": 10,
+          "refCount": 493
+        }
+      ]
+    },
+    "DefensiveScheme": {
+      "nulls": 4,
+      "targets": [
+        {
+          "tableId": 16433,
+          "tableName": "(no table)",
+          "distinctRows": 9,
+          "refCount": 493
+        }
+      ]
+    },
+    "OffensivePlaybook": {
+      "nulls": 4,
+      "targets": [
+        {
+          "tableId": 16456,
+          "tableName": "(no table)",
+          "distinctRows": 132,
+          "refCount": 449
+        },
+        {
+          "tableId": 16455,
+          "tableName": "(no table)",
+          "distinctRows": 11,
+          "refCount": 36
+        },
+        {
+          "tableId": 16468,
+          "tableName": "(no table)",
+          "distinctRows": 2,
+          "refCount": 4
+        },
+        {
+          "tableId": 16491,
+          "tableName": "(no table)",
+          "distinctRows": 2,
+          "refCount": 4
+        }
+      ]
+    },
+    "DefensivePlaybook": {
+      "nulls": 4,
+      "targets": [
+        {
+          "tableId": 16482,
+          "tableName": "(no table)",
+          "distinctRows": 21,
+          "refCount": 233
+        },
+        {
+          "tableId": 16434,
+          "tableName": "(no table)",
+          "distinctRows": 9,
+          "refCount": 260
+        }
+      ]
+    },
+    "TeamPhilosophy": {
+      "nulls": 4,
+      "targets": [
+        {
+          "tableId": 16433,
+          "tableName": "(no table)",
+          "distinctRows": 1,
+          "refCount": 221
+        },
+        {
+          "tableId": 16453,
+          "tableName": "(no table)",
+          "distinctRows": 113,
+          "refCount": 257
+        },
+        {
+          "tableId": 16455,
+          "tableName": "(no table)",
+          "distinctRows": 5,
+          "refCount": 15
+        }
+      ]
+    },
+    "DefaultTeamPhilosophy": {
+      "nulls": 5,
+      "targets": [
+        {
+          "tableId": 16433,
+          "tableName": "(no table)",
+          "distinctRows": 1,
+          "refCount": 221
+        },
+        {
+          "tableId": 16453,
+          "tableName": "(no table)",
+          "distinctRows": 112,
+          "refCount": 256
+        },
+        {
+          "tableId": 16455,
+          "tableName": "(no table)",
+          "distinctRows": 5,
+          "refCount": 15
+        }
+      ]
+    },
+    "CharacterVisuals": {
+      "nulls": 296,
+      "targets": [
+        {
+          "tableId": 4222,
+          "tableName": "CharacterVisuals",
+          "distinctRows": 201,
+          "refCount": 201
+        }
+      ]
+    },
+    "ActiveTalentTree": {
+      "nulls": 19,
+      "targets": [
+        {
+          "tableId": 4202,
+          "tableName": "ActiveTalentTree",
+          "distinctRows": 477,
+          "refCount": 478
+        }
+      ]
+    },
+    "SeasonStats": {
+      "nulls": 101,
+      "targets": [
+        {
+          "tableId": 4131,
+          "tableName": "SeasonCoachStats",
+          "distinctRows": 396,
+          "refCount": 396
+        }
+      ]
+    },
+    "CareerStats": {
+      "nulls": 101,
+      "targets": [
+        {
+          "tableId": 4231,
+          "tableName": "CareerCoachStats",
+          "distinctRows": 396,
+          "refCount": 396
+        }
+      ]
+    },
+    "SeasonalGoal": {
+      "nulls": 497,
+      "targets": []
+    },
+    "HasTrait": {
+      "nulls": 497,
+      "targets": []
+    }
+  },
+  "madden": {
+    "OffensiveScheme": {
+      "nulls": 2,
+      "targets": [
+        {
+          "tableId": 16384,
+          "tableName": "(no table)",
+          "distinctRows": 11,
+          "refCount": 125
+        }
+      ]
+    },
+    "DefensiveScheme": {
+      "nulls": 2,
+      "targets": [
+        {
+          "tableId": 16384,
+          "tableName": "(no table)",
+          "distinctRows": 10,
+          "refCount": 125
+        }
+      ]
+    },
+    "OffensivePlaybook": {
+      "nulls": 2,
+      "targets": [
+        {
+          "tableId": 16384,
+          "tableName": "(no table)",
+          "distinctRows": 33,
+          "refCount": 125
+        }
+      ]
+    },
+    "DefensivePlaybook": {
+      "nulls": 2,
+      "targets": [
+        {
+          "tableId": 16384,
+          "tableName": "(no table)",
+          "distinctRows": 32,
+          "refCount": 125
+        }
+      ]
+    },
+    "TeamPhilosophy": {
+      "nulls": 30,
+      "targets": [
+        {
+          "tableId": 16384,
+          "tableName": "(no table)",
+          "distinctRows": 30,
+          "refCount": 97
+        }
+      ]
+    },
+    "DefaultTeamPhilosophy": {
+      "nulls": 31,
+      "targets": [
+        {
+          "tableId": 16384,
+          "tableName": "(no table)",
+          "distinctRows": 30,
+          "refCount": 96
+        }
+      ]
+    },
+    "CharacterVisuals": {
+      "nulls": 2,
+      "targets": [
+        {
+          "tableId": 4204,
+          "tableName": "CharacterVisuals",
+          "distinctRows": 125,
+          "refCount": 125
+        }
+      ]
+    },
+    "HasTrait": {
+      "nulls": 127,
+      "targets": []
+    }
+  },
+  "dumps": {
+    "cfb": {
+      "16433": null,
+      "16434": null,
+      "16453": null,
+      "16455": null,
+      "16456": null,
+      "16468": null,
+      "16482": null,
+      "16491": null
+    },
+    "madden": {
+      "16384": null
+    }
+  }
+}
