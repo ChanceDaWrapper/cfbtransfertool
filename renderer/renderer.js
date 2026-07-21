@@ -735,6 +735,20 @@ function buildAdvancedPage() {
   d.appendChild(knob('Star Target %', D['devTraits.starPercentTarget'],
     numberInput(cfg.devTraits.starPercentTarget, { step: 1, min: 0, max: 100 }, (v) => { cfg.devTraits.starPercentTarget = v; })));
 
+  const bo = $('advDraftBoard');
+  bo.innerHTML = '';
+  bo.appendChild(knob('Board Organization', D['draftBoard.organization'],
+    selectInput(cfg.draftBoard.organization, [
+      ['cfbProjected', 'CFB Projected Rounds'],
+      ['realisticDraftDay', 'Realistic Draft Day (late-round steals)'],
+    ], (v) => { cfg.draftBoard.organization = v; buildAdvancedPage(); })));
+  // The chaos dial only means anything for the sliding engine -- hide it under
+  // the default mode rather than showing a control that does nothing.
+  if (cfg.draftBoard.organization === 'realisticDraftDay') {
+    bo.appendChild(knob('Draft Day Chaos', D['draftBoard.chaos'],
+      numberInput(cfg.draftBoard.chaos, { step: 5, min: 0, max: 100 }, (v) => { cfg.draftBoard.chaos = v; })));
+  }
+
   const dv = $('advDraftValue');
   dv.innerHTML = '';
   dv.appendChild(knob('Position Value Weight', D['draftValue.positionValueWeight'],
