@@ -26,6 +26,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   have placed them. Positive/green = fell later (a steal); negative/red =
   went earlier.
 
+### Fixed
+- **Players you talked out of declaring no longer appear in the draft class.**
+  When a player declares early and is then persuaded to stay, the game keeps
+  their "declared" marking and only flags them separately as staying -- so
+  they were still being exported as an incoming rookie despite returning to
+  college for another season. They're now excluded, both from the declared
+  list and from the graduating-senior scan.
+
+  This only ever showed up after the persuade step resolves (offseason week 2
+  and later). At the Draft Stage nobody has been persuaded yet, so classes
+  generated there were never affected.
+
 ## [0.1.0] - 2026-07-21
 
 First public release, as **Pipeline**.
