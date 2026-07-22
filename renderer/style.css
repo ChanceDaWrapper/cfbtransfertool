@@ -190,6 +190,17 @@ body {
   border-radius: 999px;
   box-shadow: 0 6px 20px rgba(0, 0, 0, 0.45);
 }
+
+/* A single not-yet-available control, as opposed to .locked-card which covers
+   a whole section. Faded and inert, but still legible so it reads as "coming"
+   rather than "broken". */
+.locked-btn,
+.locked-btn:hover {
+  opacity: 0.4;
+  filter: saturate(0.6);
+  cursor: not-allowed;
+  pointer-events: none;
+}
 .hint { color: var(--text-dim); font-size: 12.5px; line-height: 1.5; margin: 0 0 14px; }
 .hint.compact { margin-bottom: 12px; }
 

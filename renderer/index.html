@@ -81,7 +81,7 @@
       <div class="grid-2">
         <div class="card">
           <h2>1 · Player Pool</h2>
-          <p class="hint">Load the players leaving your CFB dynasty via college save file, or a CSV export.</p>
+          <p class="hint">Load the players leaving your CFB dynasty from your college save file.</p>
           <div class="warning-box subtle">
             <strong>Best accuracy at Offseason Week 1 (the "Draft Stage").</strong>
             That's the one point in a dynasty where the game has finalized exactly
@@ -89,7 +89,7 @@
             who's likely to declare from Junior/Senior rosters -- but the closer you
             are to Week 1, the more accurate the class.
           </div>
-          <p class="hint">No direct save access? Export your roster to a CSV instead (must include at minimum FirstName, LastName, Position, OverallRating columns) and load that.</p>
+          <p class="hint">Loading a class from a CSV export instead of a save file is coming in a later version.</p>
           <div class="field">
             <label>Declaration source</label>
             <div class="radio-row" id="sourceModeRow">
@@ -101,7 +101,9 @@
           </div>
           <div class="btn-row">
             <button id="loadSave" class="primary">Load CFB Save…</button>
-            <button id="loadCsv">Load CSV…</button>
+            <button id="loadCsv" class="locked-btn" disabled tabindex="-1"
+              title="CSV import isn't available yet — load a CFB dynasty save instead.">Load CSV…</button>
+            <span class="badge-info">Coming Soon</span>
           </div>
           <div id="poolStatus" class="status-chip empty">No pool loaded</div>
         </div>
