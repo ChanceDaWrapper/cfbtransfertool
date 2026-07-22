@@ -891,8 +891,6 @@ async function generate() {
     setGenStatus(`${players.length} players generated`, 'ok');
     $('viewResultsBtn').disabled = false;
     $('regenerateBtn').disabled = false;
-    $('exportCsvBtn').disabled = false;
-    $('exportJsonBtn').disabled = false;
     $('writeBtn').disabled = !maddenPath || (outMode === 'copy' && !outputPath);
     updateExportDraftEnabled();
     renderResults();
@@ -1223,16 +1221,11 @@ function renderResults() {
   $(id).addEventListener('input', renderResults);
 });
 
-$('exportCsvBtn').addEventListener('click', async () => {
-  const res = await window.api.exportResults({ format: 'csv' });
-  if (res.ok) toast('Exported CSV');
-  else if (!res.cancelled) toast(res.error, true);
-});
-$('exportJsonBtn').addEventListener('click', async () => {
-  const res = await window.api.exportResults({ format: 'json' });
-  if (res.ok) toast('Exported JSON');
-  else if (!res.cancelled) toast(res.error, true);
-});
+// CSV/JSON export of the generated class is not surfaced yet -- the buttons
+// were removed from the Draft Class header. The main-process handler
+// ('export-results') and window.api.exportResults are deliberately left in
+// place, so restoring this is just re-adding the two buttons and their
+// listeners.
 
 /* ---------------- collapsible settings nav group ---------------- */
 const settingsToggle = $('settingsGroupToggle');
