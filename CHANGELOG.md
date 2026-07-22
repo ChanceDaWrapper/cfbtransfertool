@@ -38,6 +38,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   and later). At the Draft Stage nobody has been persuaded yet, so classes
   generated there were never affected.
 
+### Changed
+- **Class Size can go well below 402 now, with a warning instead of a hard
+  block.** A class smaller than 402 still exports: it fills as many of the
+  file's 402 slots as it has players for, and leaves the rest as the bundled
+  template's original, unconverted prospects (not blank, not duplicated).
+  Go below 224 (7 full rounds) and some *drafted* rounds will include those
+  unconverted fillers too, not just the undrafted tail -- the app now warns
+  about this both in Advanced and on the Export step, rather than refusing to
+  export at all. The technical floor is 32 (one full round).
+- Confirmed the export ceiling stays exactly 402 on purpose: checked against
+  four real Madden 26 draft-class exports spanning two different game builds,
+  every one of them is exactly 402 players (224 drafted + a 178 UDFA tail),
+  matching what Madden's own importer requires. A larger generated class still
+  works fine for tuning/preview -- the export just uses the top 402 by rank.
+
 ## [0.1.0] - 2026-07-21
 
 First public release, as **Pipeline**.

@@ -190,6 +190,12 @@ function computeWarnings() {
     msgs.push('Very high Rating Scatter can create extremely inconsistent ratings.');
   }
 
+  const classSize = Number(cfg.general && cfg.general.classSize);
+  if (Number.isFinite(classSize) && classSize > 0 && classSize < 224) {
+    msgs.push('Class Size is below 224 (7 full rounds) — the exported draft-class file will show unconverted '
+      + 'template prospects even in some DRAFTED rounds, not just the undrafted tail.');
+  }
+
   const extremePositions = META.positions.filter((p) => Math.abs(cfg.positionExtraDrop[p]) >= 15);
   if (extremePositions.length) {
     const names = extremePositions.map((p) => META.positionLabels[p] || p).join(', ');
@@ -714,7 +720,7 @@ function buildAdvancedPage() {
   const g = $('advGeneral');
   g.innerHTML = '';
   g.appendChild(knob('Class Size', D['general.classSize'],
-    numberInput(cfg.general.classSize, { step: 10, min: 402, max: 1000 }, (v) => { cfg.general.classSize = v; })));
+    numberInput(cfg.general.classSize, { step: 10, min: 32, max: 1000 }, (v) => { cfg.general.classSize = v; })));
   const seedIn = el('input');
   seedIn.type = 'text';
   seedIn.placeholder = 'random';
@@ -939,7 +945,8 @@ function updateWriteEnabled() {
   $('writeBtn').disabled = !(players.length && maddenPath && (outMode === 'edit' ? true : !!outputPath));
 }
 
-const DRAFT_FILE_MIN = 402; // Madden draft-class files are a fixed 402 players
+const DRAFT_FILE_SLOTS = 402;  // the file's fixed total slot count
+const DRAFT_FILE_DRAFTED = 224; // 7 rounds x 32 -- below this, even drafted rounds get unconverted fillers
 function updateExportDraftEnabled() {
   const btn = $('exportDraftFileBtn');
   const st = $('exportDraftFileStatus');
@@ -947,14 +954,21 @@ function updateExportDraftEnabled() {
     btn.disabled = true;
     st.textContent = '';
     st.className = 'inline-status';
-  } else if (players.length < DRAFT_FILE_MIN) {
-    btn.disabled = true;
-    st.textContent = `Need ${DRAFT_FILE_MIN}+ players (have ${players.length}). Raise Class Size and regenerate.`;
+    return;
+  }
+  btn.disabled = false;
+  const filled = Math.min(players.length, DRAFT_FILE_SLOTS);
+  if (filled >= DRAFT_FILE_SLOTS) {
+    st.textContent = `${players.length} players ready — top ${DRAFT_FILE_SLOTS} will be exported.`;
+    st.className = 'inline-status';
+  } else if (filled < DRAFT_FILE_DRAFTED) {
+    st.textContent = `Only ${filled} players ready — even some DRAFTED rounds (round ${Math.floor(filled / 32) + 1}+) `
+      + `will show unconverted template prospects. Raise Class Size to at least ${DRAFT_FILE_DRAFTED} to fill every drafted round.`;
     st.className = 'inline-status err';
   } else {
-    btn.disabled = false;
-    st.textContent = `${players.length} players ready — top ${DRAFT_FILE_MIN} will be exported.`;
-    st.className = 'inline-status';
+    st.textContent = `${filled} of ${DRAFT_FILE_SLOTS} slots will be your players — the remaining `
+      + `${DRAFT_FILE_SLOTS - filled} (UDFA tail) keep the template's original prospects.`;
+    st.className = 'inline-status warn';
   }
 }
 

@@ -19,7 +19,7 @@ const {
   getArchetype, getDevTrait, getDraftRound, getDraftPick, getRatings, getCollegeIndex,
   getGenericHead, getSkinTone, getCharacterBuild, getFaceId, BODY_BUILD_INDEX, RATING_OFFSETS,
 } = require('../lib/draftClassFile');
-const { loadTemplateBuffer } = require('../lib/draftClassTemplate');
+const { loadTemplateBuffer, loadTemplateModel } = require('../lib/draftClassTemplate');
 const { collegeIndexForRef } = require('../lib/collegeIndex');
 const { buildCollegeMatcher } = require('../lib/pipeline');
 
@@ -28,6 +28,7 @@ function check(label, got, want) {
   assert.strictEqual(got, want, `${label}: got ${JSON.stringify(got)}, expected ${JSON.stringify(want)}`);
   passed++;
 }
+function ok(label, cond) { assert.ok(cond, label); passed++; }
 
 const POSITIONS = ['QB', 'HB', 'WR', 'TE', 'LT', 'LG', 'C', 'RG', 'RT', 'LE', 'RE', 'DT', 'LOLB', 'MLB', 'ROLB', 'CB', 'FS', 'SS', 'K', 'P'];
 const ARCHETYPES = ['QB_StrongArm', 'HB_ElusiveBack', 'WR_DeepThreat', 'DT_NoseTackle', 'CB_Zone'];
@@ -61,15 +62,52 @@ function makeSyntheticClass(n) {
   return out;
 }
 
-// 1. Class size: <402 must throw and produce nothing (locked user decision).
+// 1. Only an empty/missing class is refused -- everything else exports,
+// filling as many of the 402 slots as it can (2026-07-22 decision, supersedes
+// the earlier "must be exactly 402 or throw" rule).
 {
-  const small = makeSyntheticClass(300);
-  assert.throws(() => buildDraftClassFile(small), /needs exactly 402/, 'a <402 class should throw, not produce a partial file');
+  assert.throws(() => buildDraftClassFile([]), /empty/, 'an empty class should throw');
   passed++;
-  assert.throws(() => buildDraftClassFile([]), /needs exactly 402/, 'an empty class should throw');
+  assert.throws(() => buildDraftClassFile(null), /empty/, 'a non-array class should throw');
   passed++;
-  assert.throws(() => buildDraftClassFile(null), /needs exactly 402/, 'a non-array class should throw');
-  passed++;
+}
+
+// 1b. A class smaller than 402 exports successfully: the top-N slots are the
+// real generated players, and the REMAINING slots are left completely
+// untouched -- byte-identical to the bundled template's own original
+// prospects, not blanked or duplicated.
+{
+  const N = 300;
+  const small = makeSyntheticClass(N);
+  const buf = buildDraftClassFile(small);
+  check('a <402 class still produces a template-length file', buf.length, loadTemplateBuffer().length);
+  const model = parseDraftClassFile(buf);
+  check('output still parses as 402 players', model.players.length, TEMPLATE_SLOT_COUNT);
+
+  const sorted = small.slice().sort((a, b) => a.DraftRank - b.DraftRank);
+  check('slot 0 is the top-ranked real player', model.players[0].binary.firstName, sorted[0].FirstName);
+  check(`slot ${N - 1} is the last real player`, model.players[N - 1].binary.firstName, sorted[N - 1].FirstName);
+
+  const original = loadTemplateModel();
+  let leftoverMismatches = 0;
+  for (let i = N; i < TEMPLATE_SLOT_COUNT; i++) {
+    if (model.players[i].binary.firstName !== original.players[i].binary.firstName) leftoverMismatches++;
+    if (model.players[i].binary.lastName !== original.players[i].binary.lastName) leftoverMismatches++;
+    if (Buffer.compare(model.players[i].binary.raw, original.players[i].binary.raw) !== 0) leftoverMismatches++;
+  }
+  check(`unfilled slots (${N}-401) are byte-identical to the original template`, leftoverMismatches, 0);
+}
+
+// 1c. Going below 224 (the drafted-picks boundary) still succeeds -- there is
+// no hard floor, only the WARNING draftClassExporter.js logs.
+{
+  const tiny = makeSyntheticClass(50);
+  const logs = [];
+  const buf = buildDraftClassFile(tiny, { log: (m) => logs.push(m) });
+  check('a class below 224 still produces a template-length file', buf.length, loadTemplateBuffer().length);
+  const model = parseDraftClassFile(buf);
+  check('slot 0 is still the top-ranked real player', model.players[0].binary.firstName, 'First0');
+  ok('a warning about drafted rounds is logged', logs.some((m) => /WARNING/.test(m) && /drafted/i.test(m)));
 }
 
 // 2. Exactly 402 succeeds, and a larger class truncates to the top 402 by DraftRank.

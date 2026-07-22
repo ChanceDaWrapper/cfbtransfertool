@@ -202,17 +202,12 @@ ipcMain.handle('write-career', async (_e, { maddenPath, outputPath, config }) =>
 
 // Draft-class file export (the "Import Draft Class" path). Builds a CAREERDRAFT-*
 // file from the generated class by patching the bundled template -- no franchise
-// save needed. Throws (surfaced as an error) if the class has fewer than 402
-// players, since Madden's draft-class file is fixed at that count.
+// save needed. The file is always 402 players (Madden's own fixed slot count);
+// a class smaller than that fills fewer slots and leaves the rest as the
+// bundled template's original prospects (see draftClassExporter.js). Only an
+// empty class is refused.
 ipcMain.handle('export-draft-class-file', async () => {
   if (!lastGenerated) return { ok: false, error: 'Generate a draft class first.' };
-  if (lastGenerated.length < TEMPLATE_SLOT_COUNT) {
-    return {
-      ok: false,
-      error: `Draft class has ${lastGenerated.length} players; a Madden draft-class file needs `
-        + `exactly ${TEMPLATE_SLOT_COUNT}. Raise Class Size on the Generate step and regenerate.`,
-    };
-  }
   let buffer;
   try {
     // Build first so any error surfaces before we prompt for a save location.
@@ -239,7 +234,7 @@ ipcMain.handle('export-draft-class-file', async () => {
     return { ok: false, error: `Could not write file: ${e.message}` };
   }
   sendLog(`Exported draft-class file: ${outPath}`);
-  return { ok: true, path: outPath, count: TEMPLATE_SLOT_COUNT };
+  return { ok: true, path: outPath, count: Math.min(lastGenerated.length, TEMPLATE_SLOT_COUNT) };
 });
 
 ipcMain.handle('export-results', async (_e, { format }) => {

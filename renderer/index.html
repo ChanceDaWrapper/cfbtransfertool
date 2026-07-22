@@ -135,10 +135,13 @@
           In Madden: <strong>Franchise → Manage Roster → Import Draft Class</strong> and pick this file. It replaces the
           whole rookie class (no duplicates), with correct faces, positions, sizes, ratings, archetypes, and dev traits.</p>
         <div class="warning-box">
-          Madden's draft-class files are a fixed <strong>402 players</strong>. Your generated class must have at least
-          402 (the top 402 by projection are used) — if it's smaller, raise <em>Class Size</em> on the Generate step and
-          regenerate. Name the file whatever you like when saving — the app automatically adds the
-          <code>CAREERDRAFT-</code> prefix Madden's importer requires, so you don't need to type it yourself.
+          Madden's draft-class files are a fixed <strong>402 players</strong>. A class of 402 or more fills every slot
+          with your generated players (extras beyond 402 are just ignored). A <em>smaller</em> class still exports —
+          it fills as many slots as it can and leaves the rest as the bundled template's original, unconverted
+          prospects. Go below <strong>224</strong> (7 full rounds) and even some drafted rounds will include those
+          unconverted fillers, not just the undrafted tail. Name the file whatever you like when saving — the app
+          automatically adds the <code>CAREERDRAFT-</code> prefix Madden's importer requires, so you don't need to
+          type it yourself.
         </div>
         <div class="btn-row">
           <button id="exportDraftFileBtn" class="primary" disabled>Export Draft Class File…</button>
