@@ -1376,7 +1376,7 @@ $('openCoachCarouselBtn').addEventListener('click', () => gotoPage('coach-carous
 // reaches first for Write to Franchise (or, later, the coach carousel) just
 // works, and both input fields always agree.
 async function selectMaddenSave() {
-  const file = await window.api.pickFile({ title: 'Select your Madden 26 franchise save', defaultDir: defaultDirs.madden });
+  const file = await window.api.pickFile({ title: 'Select your Madden franchise save', defaultDir: defaultDirs.madden });
   if (!file) return null;
   maddenPath = file;
   if ($('maddenPathInput')) $('maddenPathInput').value = file;
