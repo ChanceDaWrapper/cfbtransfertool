@@ -1,0 +1,9 @@
+{
+  "pkg": {
+    "assets": [
+      "data/schemas/**/*",
+      "node_modules/madden-franchise/data/**/*",
+      "node_modules/madden-franchise/dist/**/*"
+    ]
+  }
+}

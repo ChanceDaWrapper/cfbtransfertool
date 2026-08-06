@@ -1,0 +1,27 @@
+{
+  "_comment": "Your own CFB coach skin-tone choices. Head asset name -> tone 1-8. Layered on top of the app's bundled data/cfbCoachTones.json, and wins over it. Safe to delete: every coach here just goes back to being guessed.",
+  "scale": {
+    "min": 1,
+    "max": 8,
+    "note": "same 1-8 scale as data/coachHeadTones.json"
+  },
+  "overrides": {},
+  "_fallbackComment": [
+    "Tone distribution measured from the 263 CFB coaches in the sample dynasty",
+    "whose heads DO encode a tone. Used to pick a tone for unmapped coaches, so",
+    "the fallback matches how CFB actually populates its coaching pool rather",
+    "than how Madden happens to distribute its head art (which skews differently:",
+    "Madden supply is 11/27/36/26/38/21/26/15 across tones 1-8).",
+    "Selection stays deterministic -- the same seeded rng as everything else."
+  ],
+  "fallbackDistribution": {
+    "1": 44,
+    "2": 35,
+    "3": 39,
+    "4": 28,
+    "5": 28,
+    "6": 30,
+    "7": 34,
+    "8": 25
+  }
+}

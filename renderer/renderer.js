@@ -43,10 +43,18 @@ function toast(msg, isErr = false) {
   toastTimer = setTimeout(() => { t.className = 'toast'; }, 2600);
 }
 
+const HUB_LOG_TAIL_LINES = 6; // compact "Recent Activity" mirror on the Dashboard hub
 function appendLog(msg) {
   const log = $('log');
   log.textContent += (log.textContent ? '\n' : '') + msg;
   log.scrollTop = log.scrollHeight;
+
+  const tail = $('hubLogTail');
+  if (tail) {
+    const lines = (tail.textContent ? tail.textContent.split('\n') : []).concat(msg);
+    tail.textContent = lines.slice(-HUB_LOG_TAIL_LINES).join('\n');
+    tail.scrollTop = tail.scrollHeight;
+  }
 }
 window.api.onLog(appendLog);
 $('clearLog').addEventListener('click', () => { $('log').textContent = ''; });
@@ -115,6 +123,20 @@ function countSectionDiffs() {
       if (cfg.powerCurve[k] !== d.powerCurve[k]) translation++;
     }
   }
+  // CONFIG_HARDENING_ROADMAP.md Phase 6: Dice Roll's own knobs and the UFL
+  // boost card both live on this same Rating Translation page (Phase 2) but
+  // were invisible to this count until now -- edit either and the "modified"
+  // badge never moved.
+  if (cfg.diceRoll && d.diceRoll) {
+    for (const k of ['classStrength', 'debuff', 'spread']) {
+      if ((cfg.diceRoll[k] ?? null) !== (d.diceRoll[k] ?? null)) translation++;
+    }
+  }
+  if (cfg.overallBoost && d.overallBoost) {
+    for (const k of ['enabled', 'points']) {
+      if (cfg.overallBoost[k] !== d.overallBoost[k]) translation++;
+    }
+  }
 
   for (const pos of META.positions) {
     if (cfg.positionValue[pos] !== d.positionValue[pos]) weights++;
@@ -143,8 +165,27 @@ function countSectionDiffs() {
   for (const key of ['positionValueWeight', 'awardsWeight', 'athleticismWeight', 'productionWeight', 'roundWeight', 'boardVariance', 'generationalEnabled']) {
     if (cfg.draftValue[key] !== d.draftValue[key]) advanced++;
   }
+  // CONFIG_HARDENING_ROADMAP.md Phase 6: realism.agilityCodSizePenalty has
+  // no dedicated card of its own -- wherever its control eventually lives,
+  // it belongs in this count too.
+  if (cfg.realism && d.realism && cfg.realism.agilityCodSizePenalty !== d.realism.agilityCodSizePenalty) advanced++;
 
   return { weights, physical, advanced, translation };
+}
+
+// Coach Settings live in localStorage (see loadCoachSettings, defined in the
+// Coach Carousel section below -- safe to reference here since this function
+// is only ever CALLED after the whole script has finished evaluating).
+// Counted as a single "modified" flag rather than a per-field count: two
+// simple settings don't need the same granularity as the player pages.
+// Deliberately NO skipTalentTree/skipAppearance here -- those are real engine
+// capabilities (used by tests/research probes to isolate variables) but never
+// exposed as app options: skipping either leaves a coach reading as "Level 1
+// / DUMMY ARCHETYPE" with no abilities, or as a silhouette, in Coach Central.
+const COACH_SETTINGS_DEFAULTS = { allowOffWindowHeadCoachHire: false, contractLength: 4 };
+function coachSettingsModified() {
+  const s = loadCoachSettings();
+  return Object.keys(COACH_SETTINGS_DEFAULTS).some((k) => s[k] !== COACH_SETTINGS_DEFAULTS[k]) ? 1 : 0;
 }
 
 function renderConfigSummary() {
@@ -152,7 +193,8 @@ function renderConfigSummary() {
   if (!body || !META) return;
   body.innerHTML = '';
   const { weights, physical, advanced, translation } = countSectionDiffs();
-  if (!weights && !physical && !advanced && !translation) {
+  const coach = coachSettingsModified();
+  if (!weights && !physical && !advanced && !translation && !coach) {
     body.appendChild(el('p', 'config-summary-default', 'Using Default Settings'));
     return;
   }
@@ -162,6 +204,7 @@ function renderConfigSummary() {
     ['weights', 'Position Weights', weights],
     ['physical', 'Rating Categories', physical],
     ['advanced', 'Advanced', advanced],
+    ['coach-advanced', 'Coach Settings', coach],
   ]) {
     if (!count) continue;
     const row = el('button', 'config-summary-row');
@@ -239,6 +282,8 @@ function renderWarnings() {
 function onConfigChanged() {
   renderConfigSummary();
   renderWarnings();
+  updateUflStartBadge();
+  updateDashboardMissionCards();
 }
 
 /* ---------------- numeric knob helper ---------------- */
@@ -364,26 +409,100 @@ function buildWeightsPage() {
 function buildTranslationPage() {
   const D = META.descriptions;
 
-  // Ensure the config has the power-curve sections even if it was saved before
-  // they existed (mergeConfig on load supplies them, but guard defensively).
+  // Ensure the config has the power-curve/dice-roll sections even if it was
+  // saved before they existed (mergeConfig on load supplies them, but guard
+  // defensively).
   if (!cfg.powerCurve) cfg.powerCurve = JSON.parse(JSON.stringify(META.defaults.powerCurve));
   if (!cfg.positionStrength) cfg.positionStrength = JSON.parse(JSON.stringify(META.defaults.positionStrength));
   if (!cfg.translation) cfg.translation = JSON.parse(JSON.stringify(META.defaults.translation));
+  if (!cfg.diceRoll) cfg.diceRoll = JSON.parse(JSON.stringify(META.defaults.diceRoll));
+  if (!cfg.overallBoost) cfg.overallBoost = JSON.parse(JSON.stringify(META.defaults.overallBoost));
 
   /* --- engine selector --- */
-  // Power Curve is the only supported live engine right now -- the dropdown
-  // stays (rather than being removed outright) so a future engine has
-  // somewhere to slot in without another round of UI surgery. Sanitize any
-  // stale saved strategy (from before this cleanup, or a hand-edited config)
-  // back to the one real option rather than silently rendering a value the
-  // dropdown doesn't offer.
-  if (cfg.translation.strategy !== 'powercurve') { cfg.translation.strategy = 'powercurve'; scheduleSave(); }
+  // Two real, independent engines. Sanitize any stale saved strategy (an old
+  // config from before Dice Roll existed, 'v1'/'rosetta' hand-edited in, or
+  // anything else the dropdown doesn't offer) back to the default rather than
+  // silently rendering a value that isn't one of the options.
+  const ENGINE_OPTIONS = [['powercurve', 'Power Curve'], ['diceroll', 'Dice Roll']];
+  if (!ENGINE_OPTIONS.some(([v]) => v === cfg.translation.strategy)) {
+    cfg.translation.strategy = 'powercurve'; scheduleSave();
+  }
+  const isDiceRoll = cfg.translation.strategy === 'diceroll';
   const eng = $('translationEngine');
   eng.innerHTML = '';
   eng.appendChild(knob('Conversion Engine', D['translation.strategy'],
-    selectInput(cfg.translation.strategy, [
-      ['powercurve', 'Power Curve'],
-    ], (v) => { cfg.translation.strategy = v; })));
+    selectInput(cfg.translation.strategy, ENGINE_OPTIONS, (v) => {
+      cfg.translation.strategy = v;
+      buildTranslationPage();
+      buildPhysicalPage();
+      markResultsStale();
+    })));
+
+  // Power-Curve-only cards (its knobs do nothing under Dice Roll) vs the
+  // Dice Roll card -- exactly one side is shown, so nobody tunes a dial that
+  // silently has no effect on the engine they actually picked.
+  $('diceRollControls').style.display = isDiceRoll ? '' : 'none';
+  for (const id of ['powerCurveGlobalStrengthCard', 'powerCurveControls', 'strengthControls', 'globalTranslationControls']) {
+    $(id).style.display = isDiceRoll ? 'none' : '';
+  }
+
+  // CONFIG_HARDENING_ROADMAP.md Phase 2: the boost is UFL-only but
+  // engine-agnostic (pipeline.js applies it identically under Power Curve
+  // and Dice Roll), so it has to be built BEFORE the isDiceRoll early-return
+  // below, not inside either engine-specific branch -- otherwise it would
+  // silently never render under one of the two engines.
+  const isUfl = cfg.league === 'ufl';
+  $('uflBoostCard').style.display = isUfl ? '' : 'none';
+  if (isUfl) {
+    const b = $('uflBoostSettings');
+    b.innerHTML = '';
+    b.appendChild(knob('Enable Overall Boost', D['overallBoost.enabled'],
+      checkboxInput(cfg.overallBoost.enabled, (v) => {
+        cfg.overallBoost.enabled = v;
+        // Never let enabling it be a silent no-op (CONFIG_HARDENING finding
+        // #4): a config saved before the shipped default changed to
+        // points: 4 may still carry a persisted points: 0.
+        if (v && !Number(cfg.overallBoost.points)) {
+          cfg.overallBoost.points = META.defaults.overallBoost.points || 4;
+        }
+        // checkboxInput() already calls scheduleSave() right after this
+        // callback returns -- it'll pick up both the `enabled` flip and the
+        // points auto-fill above in the same save, no extra call needed here.
+        buildTranslationPage();
+      })));
+    b.appendChild(knob('Boost Points', D['overallBoost.points'],
+      numberInput(cfg.overallBoost.points ?? 4, { step: 1, min: 0, max: 25 },
+        (v) => { cfg.overallBoost.points = v; })));
+  }
+
+  if (isDiceRoll) {
+    const dr = $('diceRollSettings');
+    dr.innerHTML = '';
+    // The mechanism differs by league, not just the value (pipeline.js):
+    // NFL rolls/forces a class-strength TIER via classStrength; UFL uses a
+    // FIXED debuff via diceRoll.debuff and never reads classStrength at all
+    // -- showing the Class Strength dropdown on UFL was a real dead control
+    // (CONFIG_HARDENING finding #2).
+    if (!isUfl) {
+      dr.appendChild(knob('Class Strength', D['diceRoll.classStrength'],
+        selectInput(cfg.diceRoll.classStrength || '', [
+          ['', 'Auto (roll each generation)'],
+          ['veryWeak', 'Very Weak'],
+          ['weak', 'Weak'],
+          ['normal', 'Normal'],
+          ['strong', 'Strong'],
+          ['veryStrong', 'Very Strong'],
+        ], (v) => { cfg.diceRoll.classStrength = v; })));
+    } else {
+      dr.appendChild(knob('Fixed Class Debuff', D['diceRoll.debuff'],
+        numberInput(cfg.diceRoll.debuff ?? -0.05, { step: 0.01, min: -0.5, max: 0.2 },
+          (v) => { cfg.diceRoll.debuff = v; })));
+    }
+    dr.appendChild(knob('Player Roll Spread', D['diceRoll.spread'],
+      numberInput(cfg.diceRoll.spread ?? 1, { step: 0.1, min: 0, max: 2 },
+        (v) => { cfg.diceRoll.spread = v; })));
+    return; // nothing below this point applies to Dice Roll
+  }
 
   /* --- global class strength (Level 1) --- */
   const gs = $('globalStrengthControl');
@@ -550,6 +669,8 @@ function categoryBucketOptions() {
 // position numeric tweaks aren't in scope (categoryOverrides is category-only).
 // Only non-default entries are ever stored, at whichever scope is active.
 function buildPhysicalPage() {
+  $('physicalEngineNotice').style.display = cfg.translation?.strategy === 'diceroll' ? '' : 'none';
+
   const catDefaults = META.ratingCategoryDefaults || {}; // { [Rating]: category } from CATEGORY_OF
   const bucketOptions = categoryBucketOptions();
   const bucketLabel = Object.fromEntries(bucketOptions);
@@ -799,6 +920,21 @@ $('resetTranslation').addEventListener('click', () => resetSection(() => {
   cfg.positionStrength = JSON.parse(JSON.stringify(META.defaults.positionStrength));
   cfg.positionExtraDrop = JSON.parse(JSON.stringify(META.defaults.positionExtraDrop));
   cfg.translation = JSON.parse(JSON.stringify(META.defaults.translation));
+  cfg.diceRoll = JSON.parse(JSON.stringify(META.defaults.diceRoll));
+  // CONFIG_HARDENING_ROADMAP.md Phase 6: overallBoost's card (Phase 2) lives
+  // on this same page and was missing from this reset entirely.
+  cfg.overallBoost = JSON.parse(JSON.stringify(META.defaults.overallBoost));
+  // legacy/bell/ratingAdjustments/kpAwarenessCap have no UI of their own
+  // (V1-engine-only -- see main.js's own comment on why V1 has no card), so
+  // normal use can never cause them to differ from default. Reset anyway:
+  // they're real TUNING_KEYS members a hand-edited or imported file COULD
+  // set, they're conceptually part of "the conversion engine," same as
+  // everything else this button already covers, and "Reset" should mean
+  // reset rather than "reset everything that happens to have a control."
+  cfg.legacy = JSON.parse(JSON.stringify(META.defaults.legacy));
+  cfg.bell = JSON.parse(JSON.stringify(META.defaults.bell));
+  cfg.ratingAdjustments = JSON.parse(JSON.stringify(META.defaults.ratingAdjustments));
+  cfg.kpAwarenessCap = META.defaults.kpAwarenessCap;
 }));
 $('resetPhysical').addEventListener('click', () => resetSection(() => {
   // Rating Categories page: clears every global reclassification, every
@@ -827,7 +963,10 @@ $('presetImport').addEventListener('click', async () => {
   try {
     const imported = await window.api.configImport();
     if (imported) {
-      cfg = imported;
+      // A whole-app-state preset carries its own `league` -- may not match
+      // whichever one was active before the import, so sync the toggle/hint/
+      // defaults to it too, not just the tuning values.
+      syncLeagueState(imported.config, imported.defaults);
       rebuildAllPages();
       markResultsStale();
       onConfigChanged();
@@ -838,14 +977,234 @@ $('presetImport').addEventListener('click', async () => {
   }
 });
 
+// LEAGUE_PROFILES_ROADMAP.md Phase 4: one league's tuning per file, tagged,
+// so a UFL (or NFL) setup can be shared without touching anyone's other
+// league. NFL and UFL each have their OWN export/import buttons (wired by
+// wireLeaguePresetButtons below), so neither needs the active-league
+// relabelling those buttons used to do -- only the reset button, which acts
+// on whichever league is currently being edited, still tracks it.
+function updateLeagueResetLabel() {
+  const lg = (cfg.league === 'ufl' ? 'UFL' : 'NFL');
+  $('leagueResetProfile').textContent = `Reset ${lg} to Defaults`;
+}
+// LEAGUE_PROFILES_ROADMAP.md Phase 5: preview before applying. Reads the
+// picked file (config-import-profile now only reads -- see main.js) and
+// shows exactly what would change against the CURRENTLY ACTIVE league's live
+// values, with a mismatch banner if the file's own tag doesn't match where
+// it's landing. Nothing is written until "Apply Import" is clicked.
+//
+// Diffs generically by flattening both sides to leaf paths (recursing into
+// any plain object -- works unmodified whether a key is a single number like
+// diceRoll.spread or a 22-position table like positionValue) and keeping
+// only paths whose value actually differs, so the list stays proportional
+// to the real size of the change instead of listing 100+ unchanged rows.
+function flattenLeaves(obj, prefix = '') {
+  const out = {};
+  for (const [k, v] of Object.entries(obj || {})) {
+    const path = prefix ? `${prefix}.${k}` : k;
+    if (v !== null && typeof v === 'object' && !Array.isArray(v)) {
+      Object.assign(out, flattenLeaves(v, path));
+    } else {
+      out[path] = v;
+    }
+  }
+  return out;
+}
+// `baseline` is the flat config of the league being imported INTO -- which
+// is not necessarily the active one, since each league has its own import
+// button now. Passed in explicitly rather than reading `cfg` so the diff
+// can never silently describe the wrong league's values.
+function diffProfileAgainstCurrent(incomingProfile, baseline) {
+  const rows = [];
+  for (const key of Object.keys(incomingProfile)) {
+    const curLeaves = flattenLeaves({ [key]: baseline[key] });
+    const newLeaves = flattenLeaves({ [key]: incomingProfile[key] });
+    for (const path of new Set([...Object.keys(curLeaves), ...Object.keys(newLeaves)])) {
+      const oldVal = curLeaves[path];
+      const newVal = newLeaves[path];
+      if (JSON.stringify(oldVal) !== JSON.stringify(newVal)) rows.push({ path, oldVal, newVal });
+    }
+  }
+  return rows;
+}
+
+let pendingImportProfile = null;
+// The league being imported INTO -- now always an explicit target (each
+// league has its own Import button), never inferred from whatever happens
+// to be active. Still held in a variable across the modal's lifetime rather
+// than re-read at Apply time: CONFIG_HARDENING_ROADMAP.md Phase 6 finding
+// #11 -- the whole preview (mismatch banner, diff, summary) describes ONE
+// league, so Apply has to commit to that same one even if the active
+// league changed while the modal was open.
+let pendingImportLeague = null;
+let modalPreviousFocus = null;
+async function showImportPreview(fileLeague, profile, ignoredKeys, targetLeague) {
+  pendingImportProfile = profile;
+  pendingImportLeague = targetLeague;
+  modalPreviousFocus = document.activeElement;
+  const targetLg = targetLeague === 'ufl' ? 'UFL' : 'NFL';
+  const mismatchEl = $('importPreviewMismatch');
+  if (fileLeague && fileLeague !== targetLeague) {
+    mismatchEl.textContent = `This file is tagged ${fileLeague.toUpperCase()}, but you're importing it into your ${targetLg} settings.`;
+    mismatchEl.classList.remove('hidden');
+  } else {
+    mismatchEl.classList.add('hidden');
+  }
+
+  // CONFIG_HARDENING_ROADMAP.md Phase 5 (closes finding #6): main.js already
+  // stripped anything not a real tuning key before this ever reached the
+  // diff below, so it can't show up as a pending change -- surfaced here
+  // instead, so "ignored" doesn't just mean "silently vanished."
+  const ignoredEl = $('importPreviewIgnored');
+  if (ignoredKeys && ignoredKeys.length) {
+    ignoredEl.textContent = `${ignoredKeys.length} unrecognized setting${ignoredKeys.length === 1 ? '' : 's'} ignored: ${ignoredKeys.join(', ')}`;
+    ignoredEl.classList.remove('hidden');
+  } else {
+    ignoredEl.classList.add('hidden');
+  }
+
+  // Diff against the TARGET league's values. When that's the active league,
+  // use the live `cfg` so unsaved edits are reflected; otherwise fetch that
+  // league's saved profile, since it has no in-memory representation here.
+  const baseline = targetLeague === cfg.league
+    ? cfg
+    : (await window.api.configGetForLeague(targetLeague)).config;
+  const rows = diffProfileAgainstCurrent(profile, baseline);
+  $('importPreviewSummary').textContent = rows.length
+    ? `${rows.length} value${rows.length === 1 ? '' : 's'} would change in your ${targetLg} settings:`
+    : `No values differ from your current ${targetLg} settings -- applying this file would be a no-op.`;
+  const diffEl = $('importPreviewDiff');
+  diffEl.innerHTML = '';
+  if (!rows.length) {
+    diffEl.appendChild(el('div', 'import-diff-empty', 'Nothing to change.'));
+  }
+  for (const { path, oldVal, newVal } of rows) {
+    const row = el('div', 'import-diff-row');
+    row.appendChild(el('span', 'import-diff-key', path));
+    row.appendChild(el('span', 'import-diff-old', oldVal === undefined ? '(none)' : JSON.stringify(oldVal)));
+    row.appendChild(el('span', 'import-diff-arrow', '→'));
+    row.appendChild(el('span', 'import-diff-new', newVal === undefined ? '(none)' : JSON.stringify(newVal)));
+    diffEl.appendChild(row);
+  }
+
+  $('importPreviewOverlay').classList.remove('hidden');
+  // Focus lands on Cancel, not Apply -- an accidental Enter/Space press
+  // right after the modal opens should never commit an import.
+  $('importPreviewCancel').focus();
+}
+function hideImportPreview() {
+  pendingImportProfile = null;
+  pendingImportLeague = null;
+  $('importPreviewOverlay').classList.add('hidden');
+  if (modalPreviousFocus && typeof modalPreviousFocus.focus === 'function') modalPreviousFocus.focus();
+  modalPreviousFocus = null;
+}
+$('importPreviewCancel').addEventListener('click', hideImportPreview);
+// Click on the backdrop (not the card itself) cancels, same as Escape.
+// e.target === e.currentTarget is true only when the click landed directly
+// on the overlay element -- a click anywhere inside .modal-card bubbles up
+// with e.target still pointing at whatever was actually clicked, so this
+// guard can't misfire on clicks inside the card.
+$('importPreviewOverlay').addEventListener('click', (e) => {
+  if (e.target === e.currentTarget) hideImportPreview();
+});
+document.addEventListener('keydown', (e) => {
+  if (e.key === 'Escape' && !$('importPreviewOverlay').classList.contains('hidden')) hideImportPreview();
+});
+$('importPreviewApply').addEventListener('click', async () => {
+  if (!pendingImportProfile) return;
+  const league = pendingImportLeague; // frozen at preview time -- see the comment above showImportPreview
+  const profile = pendingImportProfile;
+  try {
+    // Flush the active league's pending edits first. The apply below folds
+    // into whatever is ON DISK, so an edit still sitting in the autosave
+    // debounce would be clobbered when that write lands afterwards. Doing
+    // this unconditionally (not just when target === active) keeps one
+    // ordering rule instead of two.
+    clearTimeout(saveTimer);
+    await window.api.configSet(cfg);
+    const applied = await window.api.configApplyImportedProfile(league, profile);
+    hideImportPreview();
+    // Only adopt the result into the live view if it's the league currently
+    // being edited -- importing into the OTHER league must not silently
+    // switch which league the user is looking at, and can't have changed
+    // anything the current results were generated from.
+    if (league === cfg.league) {
+      syncLeagueState(applied.config, applied.defaults);
+      rebuildAllPages();
+      markResultsStale();
+      onConfigChanged();
+      toast(`${league === 'ufl' ? 'UFL' : 'NFL'} weights imported`);
+    } else {
+      toast(`${league === 'ufl' ? 'UFL' : 'NFL'} weights imported (switch to ${league.toUpperCase()} to see them)`);
+    }
+  } catch (e) {
+    hideImportPreview();
+    toast(e.message || 'Import failed', true);
+  }
+});
+
+// Both leagues' export/import, wired identically -- the only difference is
+// which league each pair targets, so the target is a parameter rather than
+// something inferred from the active league.
+function wireLeaguePresetButtons(league) {
+  const LG = league.toUpperCase();
+  $(`${league}PresetExport`).addEventListener('click', async () => {
+    try {
+      const p = await window.api.configExportProfile(cfg, league);
+      if (p) toast(`${LG} weights exported`);
+    } catch (e) {
+      toast(e.message || 'Export failed', true);
+    }
+  });
+  $(`${league}PresetImport`).addEventListener('click', async () => {
+    try {
+      const picked = await window.api.configImportProfile();
+      if (picked) await showImportPreview(picked.league, picked.profile, picked.ignoredKeys, league);
+    } catch (e) {
+      toast(e.message || 'Import failed', true);
+    }
+  });
+}
+wireLeaguePresetButtons('nfl');
+wireLeaguePresetButtons('ufl');
+
+// CONFIG_HARDENING_ROADMAP.md Phase 6, finding #9: repurposed from the old
+// dead, league-unaware config-reset. Resets ONLY the currently active
+// league's tuning -- the other league, and shared session settings (engine
+// choice, seed, class size, draft board), are untouched. window.confirm()
+// matches the one other irreversible action in this app (overwriting the
+// franchise file in place, in the write-career handler below) rather than
+// introducing a second confirmation pattern.
+$('leagueResetProfile').addEventListener('click', async () => {
+  const lg = cfg.league === 'ufl' ? 'UFL' : 'NFL';
+  const sure = confirm(`Reset all ${lg} settings to their shipped defaults? This can't be undone (though you can Export first if you want a backup).`);
+  if (!sure) return;
+  try {
+    const result = await window.api.configResetProfile(cfg.league);
+    syncLeagueState(result.config, result.defaults);
+    rebuildAllPages();
+    markResultsStale();
+    onConfigChanged();
+    toast(`${lg} settings reset to defaults`);
+  } catch (e) {
+    toast(e.message || 'Reset failed', true);
+  }
+});
+
 /* ---------------- dashboard: pool + generate + write ---------------- */
 let defaultDirs = { cfb: null, madden: null };
 let maddenPath = null, outputPath = null, outMode = 'edit';
+let cfbSavePath = null; // last CFB save picked -- shared with the Coach Carousel pages
 
+// Both status chips mirror to a Dashboard-hub twin when one exists (Build
+// Class keeps the canonical id; the hub's copy is purely a reflection).
 function setPoolStatus(text, cls) {
   const c = $('poolStatus');
   c.textContent = text;
   c.className = 'status-chip ' + (cls || 'empty');
+  const hub = $('hubCfbStatus');
+  if (hub) { hub.textContent = text; hub.className = 'status-chip ' + (cls || 'empty'); }
 }
 function setGenStatus(text, cls) {
   const c = $('genStatus');
@@ -853,9 +1212,96 @@ function setGenStatus(text, cls) {
   c.className = 'status-chip ' + (cls || 'empty');
 }
 
+// Draft Class mission card on the Dashboard hub -- shows whichever is most
+// advanced: a generated class, a loaded pool, or neither. Derives from state
+// that already exists (players.length, the poolStatus chip's own class)
+// rather than tracking a second parallel status.
+function updateDashboardMissionCards() {
+  const chip = $('missionDraftStatus');
+  if (chip) {
+    if (players.length) {
+      chip.textContent = `${players.length} players generated`;
+      chip.className = 'status-chip ok';
+    } else if ($('poolStatus') && $('poolStatus').classList.contains('ok')) {
+      chip.textContent = 'Pool loaded — ready to generate';
+      chip.className = 'status-chip ok';
+    } else {
+      chip.textContent = 'Not started';
+      chip.className = 'status-chip empty';
+    }
+  }
+
+  // Coach Carousel mission card -- same derive-don't-track-twice approach,
+  // reading state the Coach Carousel page already maintains (coachPlan/
+  // coachSummary, declared further down but safe to reference here: this
+  // function is only ever CALLED after the whole script has evaluated).
+  const coachChip = $('missionCoachStatus');
+  if (coachChip) {
+    if (typeof coachPlan !== 'undefined' && coachPlan && coachSummary) {
+      coachChip.textContent = `${coachSummary.included}/${coachSummary.total} ready`;
+      coachChip.className = 'status-chip ' + (coachSummary.included ? 'ok' : 'err');
+    } else {
+      coachChip.textContent = 'Not started';
+      coachChip.className = 'status-chip empty';
+    }
+  }
+}
+
 let sourceMode = 'auto'; // 'auto' | 'leaving' | 'synthesized' -- manual override for dynasty stage detection
 document.querySelectorAll('input[name="sourceMode"]').forEach((r) => {
   r.addEventListener('change', (e) => { sourceMode = e.target.value; });
+});
+
+// NFL/UFL switch (see UFL_ROADMAP.md). Unlike sourceMode above, this IS part
+// of the persisted generation config -- it has to reach main.js's
+// generateClass() -- so it writes cfg.league and autosaves, same as any
+// cfg-backed knob elsewhere in the app.
+//
+// LEAGUE_PROFILES_ROADMAP.md Phase 2: `cfg` is a FLAT view of whichever
+// league is active -- flipping the toggle has to swap ALL of it (every
+// tuning value, not just the `league` field itself), or the settings pages
+// would keep showing the OLD league's numbers under the NEW league's label.
+// syncLeagueState() is the shared primitive for "adopt this flat config/
+// defaults pair and reflect it in the toggle + hint"; callers decide
+// separately whether/when to rebuild pages (init() sequences that after its
+// own setup; the switch handler and preset import do it immediately).
+function updateLeagueModeHint() {
+  $('leagueModeHint').textContent = (META && META.descriptions && META.descriptions.league) || '';
+}
+// classSize is a session-level setting (shared by both leagues, edited only
+// on Advanced), so this just needs to track it -- not the active league.
+function updateUflStartBadge() {
+  const badge = $('uflStartBadge');
+  if (!badge) return;
+  const size = Number(cfg && cfg.general && cfg.general.classSize);
+  badge.textContent = Number.isFinite(size) && size > 0 ? `starts at #${size + 1}` : '';
+}
+function syncLeagueState(flatCfg, flatDefaults) {
+  cfg = flatCfg;
+  META.defaults = flatDefaults;
+  const radio = document.querySelector(`input[name="leagueMode"][value="${cfg.league === 'ufl' ? 'ufl' : 'nfl'}"]`);
+  if (radio) radio.checked = true;
+  updateLeagueModeHint();
+  updateLeagueResetLabel();
+}
+document.querySelectorAll('input[name="leagueMode"]').forEach((r) => {
+  r.addEventListener('change', async (e) => {
+    const newLeague = e.target.value;
+    if (newLeague === cfg.league) return;
+    // Flush the OUTGOING league's edits immediately rather than waiting on
+    // any pending debounced scheduleSave() -- clear its timer too, since that
+    // timer closes over the OUTER `cfg` and would otherwise fire against
+    // whatever `cfg` has been swapped to by the time it goes off (harmless
+    // in practice, since cfg's own `.league` field always matches its own
+    // content, but a needless extra write racing this explicit flush).
+    clearTimeout(saveTimer);
+    await window.api.configSet(cfg);
+    const { config, defaults } = await window.api.configGetForLeague(newLeague);
+    syncLeagueState(config, defaults);
+    rebuildAllPages();
+    markResultsStale();
+    onConfigChanged();
+  });
 });
 
 const SOURCE_LABELS = {
@@ -868,6 +1314,10 @@ async function loadPool(sourceType) {
     ? { title: 'Select departed-players CSV', filters: [{ name: 'CSV', extensions: ['csv'] }] }
     : { title: 'Select your CFB 27 dynasty save', defaultDir: defaultDirs.cfb });
   if (!file) return;
+  if (sourceType === 'save') {
+    cfbSavePath = file;
+    if ($('hubCfbPathInput')) $('hubCfbPathInput').value = file;
+  }
   setPoolStatus('Loading…', 'busy');
   const res = await window.api.extractPool({
     sourcePath: file, sourceType,
@@ -883,9 +1333,16 @@ async function loadPool(sourceType) {
     appendLog('ERROR: ' + res.error);
     toast(res.error, true);
   }
+  updateDashboardMissionCards();
+  if (sourceType === 'save' && res.ok) {
+    updateCoachSavesSummary();
+    cfbScanResult = null; // stale -- a new CFB save invalidates any prior scan
+    loadCoachTonesPage();
+  }
 }
 $('loadSave').addEventListener('click', () => loadPool('save'));
 $('loadCsv').addEventListener('click', () => loadPool('csv'));
+$('hubLoadCfb').addEventListener('click', () => loadPool('save'));
 
 async function generate() {
   setGenStatus('Generating…', 'busy');
@@ -906,18 +1363,36 @@ async function generate() {
     appendLog('ERROR: ' + res.error);
     toast(res.error, true);
   }
+  updateDashboardMissionCards();
 }
 $('generateBtn').addEventListener('click', generate);
 $('regenerateBtn').addEventListener('click', generate);
 $('viewResultsBtn').addEventListener('click', () => gotoPage('results'));
+$('openBuildBtn').addEventListener('click', () => gotoPage('build'));
+$('openCoachCarouselBtn').addEventListener('click', () => gotoPage('coach-carousel'));
 
-$('pickMadden').addEventListener('click', async () => {
+// Shared by the (currently locked) Build Class picker and the Dashboard hub's
+// picker -- both write the same `maddenPath` state, so whichever one a user
+// reaches first for Write to Franchise (or, later, the coach carousel) just
+// works, and both input fields always agree.
+async function selectMaddenSave() {
   const file = await window.api.pickFile({ title: 'Select your Madden 26 franchise save', defaultDir: defaultDirs.madden });
-  if (!file) return;
+  if (!file) return null;
   maddenPath = file;
-  $('maddenPathInput').value = file;
+  if ($('maddenPathInput')) $('maddenPathInput').value = file;
+  if ($('hubMaddenPathInput')) $('hubMaddenPathInput').value = file;
   if (outMode === 'edit') outputPath = file;
   updateWriteEnabled();
+  updateCoachSavesSummary();
+  maddenScanResult = null; // stale -- a new Madden save invalidates any prior scan
+  return file;
+}
+$('pickMadden').addEventListener('click', selectMaddenSave);
+$('hubPickMadden').addEventListener('click', async () => {
+  const file = await selectMaddenSave();
+  if (!file) return;
+  const chip = $('hubMaddenStatus');
+  if (chip) { chip.textContent = 'Selected — ' + file.split(/[\\/]/).pop(); chip.className = 'status-chip ok'; }
 });
 
 document.querySelectorAll('input[name="outMode"]').forEach((r) => {
@@ -999,7 +1474,7 @@ $('writeBtn').addEventListener('click', async () => {
   }
   st.textContent = 'Writing…'; st.className = 'inline-status';
   $('writeBtn').disabled = true;
-  const res = await window.api.writeCareer({ maddenPath, outputPath: outputPath || maddenPath, config: cfg });
+  const res = await window.api.writeCareer({ maddenPath, outputPath: outputPath || maddenPath });
   if (res.ok) {
     st.textContent = `Done — ${res.stats.written} players written.`;
     st.className = 'inline-status ok';
@@ -1254,6 +1729,19 @@ settingsToggle.addEventListener('click', () => {
   localStorage.setItem('settingsGroupCollapsed', String(collapsed));
 });
 
+/* ---------------- collapsible coaches nav group ---------------- */
+const coachToggle = $('coachGroupToggle');
+const coachItems = $('coachGroupItems');
+if (localStorage.getItem('coachGroupCollapsed') === 'true') {
+  coachItems.classList.add('collapsed');
+  coachToggle.setAttribute('aria-expanded', 'false');
+}
+coachToggle.addEventListener('click', () => {
+  const collapsed = coachItems.classList.toggle('collapsed');
+  coachToggle.setAttribute('aria-expanded', String(!collapsed));
+  localStorage.setItem('coachGroupCollapsed', String(collapsed));
+});
+
 /* ---------------- hide adjusted stats toggle ---------------- */
 const hideStatsToggle = $('hideStatsToggle');
 hideStatsToggle.checked = hideStats;
@@ -1272,10 +1760,431 @@ careerStatsToggle.addEventListener('change', () => {
   if (players.length) renderResults();
 });
 
+/* ================= Coach Carousel ================= */
+// PIPELINE_APP_INTEGRATION_SPEC.md Part C.3, extended for the reverse
+// direction per COACH_TRANSFER_AUDIT.md. Mirrors the player pipeline's own
+// pool -> generate -> write shape: propose is a dry run (coach-propose, no
+// bytes touched), review the plan, then commit (coach-commit, always to a
+// NEW save the user picks -- there is no "edit in place" here, unlike the
+// player Write to Franchise card).
+//
+// Two SEPARATE scan caches, not one shared "coachScanResult": cfbScanResult
+// (CFB coaches) feeds both the Tone Overrides page AND the Carousel's Manual
+// mode when direction is cfbToMadden; maddenScanResult (Madden coaches)
+// feeds Manual mode only, and only when direction is maddenToCfb. Tone
+// Overrides is inherently CFB-side regardless of which direction the
+// Carousel is currently set to -- sharing one cache risked a maddenToCfb
+// scan silently clobbering the Tone Overrides page's CFB data.
+let cfbScanResult = null;
+let maddenScanResult = null;
+let coachPlan = null;       // last coach-propose plan (mirrors main.js's own lastCoachPlan cache)
+let coachSummary = null;
+let coachDirection = 'cfbToMadden';
+let coachMode = 'auto';
+let manualMoves = []; // [{ sourceRow, coachLabel, teamName }] queued for Manual mode, before Propose
+
+function updateCoachSavesSummary() {
+  const box = $('coachSavesSummary');
+  if (!box) return;
+  const base = (p) => String(p).split(/[\\/]/).pop();
+  const ready = !!(cfbSavePath && maddenPath);
+  box.textContent = ready
+    ? `CFB: ${base(cfbSavePath)}   ·   Madden: ${base(maddenPath)}`
+    : 'Pick a CFB dynasty save and a Madden franchise save on the Dashboard first.';
+  if ($('coachProposeBtn')) $('coachProposeBtn').disabled = !ready;
+}
+
+// Direction-dependent copy. Auto-propose now works in BOTH directions --
+// the reverse direction pairs against CFB's own CurrentJobSecurityPercentage
+// field (movement.js's scoreCfbJobVulnerability), so a hot-seat coach at a
+// high-prestige school reads as the most open job, exactly the way a weak
+// incumbent on a good NFL roster does going the other way.
+function updateCoachDirectionUI() {
+  const isReverse = coachDirection === 'maddenToCfb';
+  const intro = $('coachPageIntro');
+  if (intro) {
+    intro.textContent = isReverse
+      ? 'Transfer a Madden head coach, OC, or DC into your CFB dynasty — right job, level, talent state, and a tone-matched face. Uses the saves picked on the Dashboard.'
+      : 'Transfer a CFB head coach, OC, or DC into your Madden franchise — right job, level, abilities, and a tone-matched face. Uses the saves picked on the Dashboard.';
+  }
+  const hint = $('coachDirectionHint');
+  if (hint) {
+    hint.textContent = isReverse
+      ? 'Move an NFL coach into your college dynasty.'
+      : 'Move a college coach into your NFL franchise.';
+  }
+  const modeHint = $('coachModeHint');
+  if (modeHint) {
+    modeHint.textContent = isReverse
+      ? "Auto-propose finds the CFB jobs most likely to open — a coach on the hot seat at a high-prestige school — and pairs available NFL coaches to them. Manual lets you pick exactly which NFL coach goes to which school."
+      : "Auto-propose scores who's likely to move and pairs them to the most vulnerable jobs. Manual lets you pick exactly which coach goes to which team.";
+  }
+  const writeWarning = $('coachWriteWarning');
+  if (writeWarning) {
+    writeWarning.textContent = isReverse
+      ? 'Writes to a NEW save you choose — your CFB dynasty save is never overwritten in place.'
+      : 'Writes to a NEW save you choose — your Madden save is never overwritten in place.';
+  }
+  const teamInput = $('coachManualTeamInput');
+  if (teamInput) {
+    teamInput.placeholder = isReverse
+      ? 'Destination school name (e.g. Nebraska)'
+      : 'Destination team name (e.g. Giants)';
+  }
+  // A direction switch invalidates any queued manual moves and the coach
+  // picker's contents (they're row indices into a specific save's table).
+  manualMoves = [];
+  renderManualList();
+  if (coachMode === 'manual') ensureCoachScanForManual();
+}
+document.querySelectorAll('input[name="coachDirection"]').forEach((r) => {
+  r.addEventListener('change', (e) => { coachDirection = e.target.value; updateCoachDirectionUI(); });
+});
+
+// Coach Settings persistence. These are UI preferences for the carousel
+// subsystem, not player-generation tuning values -- they don't belong in
+// DEFAULT_CONFIG's league profiles (which get exported/imported as shareable
+// generation presets and reset via "Reset League to Defaults"; folding
+// carousel toggles in there would make them bleed into that flow in
+// confusing ways). Persisted the same way hideAdjustedStats/showCareerStats
+// already are: localStorage, read once at load, written on change.
+const COACH_SETTINGS_KEY = 'coachSettings';
+function loadCoachSettings() {
+  try {
+    return { allowOffWindowHeadCoachHire: false, contractLength: 4, ...JSON.parse(localStorage.getItem(COACH_SETTINGS_KEY) || '{}') };
+  } catch (e) {
+    return { allowOffWindowHeadCoachHire: false, contractLength: 4 };
+  }
+}
+function saveCoachSettings(s) { localStorage.setItem(COACH_SETTINGS_KEY, JSON.stringify(s)); }
+
+// Talent tree and appearance are NEVER skippable from here -- always granted
+// in full, matching lib/carousel/index.js's own defaults. See the comment on
+// COACH_SETTINGS_DEFAULTS above for why.
+function coachConfigFromToggles() {
+  const cfgOut = {
+    allowOffWindowHeadCoachHire: $('coachAllowOffWindowToggle').checked,
+    contractLength: Number($('coachContractLengthInput').value) || 4,
+  };
+  saveCoachSettings(cfgOut);
+  return cfgOut;
+}
+
+// Apply the persisted settings to the toggles once, at load.
+(function initCoachSettingsToggles() {
+  const s = loadCoachSettings();
+  $('coachAllowOffWindowToggle').checked = s.allowOffWindowHeadCoachHire;
+  $('coachContractLengthInput').value = s.contractLength;
+  for (const id of ['coachAllowOffWindowToggle', 'coachContractLengthInput']) {
+    $(id).addEventListener('change', () => coachConfigFromToggles());
+  }
+})();
+
+document.querySelectorAll('input[name="coachMode"]').forEach((r) => {
+  r.addEventListener('change', (e) => {
+    coachMode = e.target.value;
+    $('coachManualPanel').style.display = coachMode === 'manual' ? '' : 'none';
+    if (coachMode === 'manual') ensureCoachScanForManual();
+  });
+});
+
+// Populates the Manual-mode coach picker from whichever save is the SOURCE
+// for the current direction -- cfbScanResult for cfbToMadden,
+// maddenScanResult for maddenToCfb. Each cache is scanned at most once per
+// save (cleared when that save changes -- see loadPool/selectMaddenSave).
+async function ensureCoachScanForManual() {
+  const select = $('coachManualCoachSelect');
+  const isReverse = coachDirection === 'maddenToCfb';
+  const sourcePath = isReverse ? maddenPath : cfbSavePath;
+  if (!sourcePath) { select.innerHTML = ''; return; }
+
+  if (isReverse) {
+    if (!maddenScanResult) {
+      const res = await window.api.coachScanMadden(sourcePath);
+      if (!res.ok) { toast(res.error, true); return; }
+      maddenScanResult = res;
+    }
+  } else if (!cfbScanResult) {
+    const res = await window.api.coachScan(sourcePath);
+    if (!res.ok) { toast(res.error, true); return; }
+    cfbScanResult = res;
+  }
+
+  const scan = isReverse ? maddenScanResult : cfbScanResult;
+  select.innerHTML = '';
+  const sorted = [...scan.coaches].sort((a, b) => a.name.localeCompare(b.name));
+  for (const c of sorted) {
+    const o = document.createElement('option');
+    o.value = c.row;
+    o.textContent = `${c.name} — ${c.position} (${c.school})`;
+    select.appendChild(o);
+  }
+}
+
+function renderManualList() {
+  const box = $('coachManualList');
+  box.innerHTML = '';
+  manualMoves.forEach((m, i) => {
+    const row = el('div', 'warning-box subtle coach-manual-row');
+    row.appendChild(el('span', '', `${m.coachLabel} → ${m.teamName}`));
+    const rm = el('button', 'ghost small', 'Remove');
+    rm.addEventListener('click', () => { manualMoves.splice(i, 1); renderManualList(); });
+    row.appendChild(rm);
+    box.appendChild(row);
+  });
+}
+
+$('coachManualAddBtn').addEventListener('click', () => {
+  const select = $('coachManualCoachSelect');
+  const teamInput = $('coachManualTeamInput');
+  if (!select.options.length) { toast('No coaches loaded yet', true); return; }
+  const teamName = teamInput.value.trim();
+  if (!teamName) { toast('Enter a destination team name', true); return; }
+  const sourceRow = Number(select.value);
+  const scan = coachDirection === 'maddenToCfb' ? maddenScanResult : cfbScanResult;
+  const coach = scan && scan.coaches.find((c) => c.row === sourceRow);
+  manualMoves.push({ sourceRow, coachLabel: coach ? `${coach.name} (${coach.position})` : `row ${sourceRow}`, teamName });
+  teamInput.value = '';
+  renderManualList();
+});
+
+async function coachPropose() {
+  const config = coachConfigFromToggles();
+  if (coachMode === 'manual') {
+    if (!manualMoves.length) { toast('Add at least one move first', true); return; }
+    config.mode = 'manual';
+    config.moves = manualMoves.map((m) => ({ sourceRow: m.sourceRow, teamName: m.teamName }));
+  }
+  const chip = $('coachProposeStatus');
+  chip.textContent = 'Proposing…'; chip.className = 'status-chip busy';
+  $('coachProposeBtn').disabled = true;
+  const res = await window.api.coachPropose({ direction: coachDirection, cfbPath: cfbSavePath, maddenPath, config });
+  $('coachProposeBtn').disabled = false;
+  if (res.ok) {
+    coachPlan = res.plan;
+    coachSummary = res.summary;
+    renderCoachPlanTable();
+    renderCoachPlanSummary();
+    chip.textContent = `${res.summary.included}/${res.summary.total} ready`;
+    chip.className = 'status-chip ' + (res.summary.included ? 'ok' : 'err');
+    updateCoachWriteEnabled();
+    toast(`Proposed ${res.summary.total} move(s)`);
+  } else {
+    chip.textContent = 'Propose failed';
+    chip.className = 'status-chip err';
+    appendLog('ERROR: ' + res.error);
+    toast(res.error, true);
+  }
+  updateDashboardMissionCards();
+}
+$('coachProposeBtn').addEventListener('click', coachPropose);
+
+function renderCoachPlanSummary() {
+  const box = $('coachPlanSummary');
+  if (!coachSummary) { box.textContent = ''; return; }
+  let txt = `${coachSummary.total} move(s) · ${coachSummary.included} ready · ${coachSummary.blocked} blocked `
+    + `· ${coachSummary.toneGuessed} tone-guessed`;
+  if (coachSummary.visualsFree !== null && !coachSummary.visualsOk) {
+    txt += ` — WARNING: only ${coachSummary.visualsFree} free face slots for ${coachSummary.visualsNeeded} needed.`;
+  }
+  // Explains why "(free agent)" fills the From column: the movement engine
+  // prefers unemployed NFL coaches on purpose. A swollen pool is also the tell
+  // that this save has already had carousel moves committed into it, so the
+  // raw numbers are shown and flagged rather than silently accepted.
+  if (coachSummary.nflCoaches) {
+    const { nflCoaches, nflFreeAgents } = coachSummary;
+    txt += `\nNFL pool: ${nflFreeAgents} of ${nflCoaches} coaches are free agents`;
+    txt += nflFreeAgents / nflCoaches > 0.3
+      ? ' — unusually high. This save may already have carousel moves written into it; '
+        + 'check you loaded the Madden save you meant to.'
+      : ' (the engine prefers unemployed coaches for college jobs).';
+  }
+  if (coachSummary.cfbSlotsFree !== undefined && !coachSummary.cfbSlotsOk) {
+    txt += ` — WARNING: only ${coachSummary.cfbSlotsFree} disposable CFB coach slot(s) for `
+      + `${coachSummary.cfbSlotsNeeded} proposed move(s). Try a smaller batch, or advance a CFB season `
+      + `first so retirements/firings free up more slots.`;
+  }
+  box.textContent = txt;
+}
+
+// Blocked reasons come from the engine as full sentences -- far too long for a
+// table cell, where they overflow and push the useful half off the right edge
+// behind a horizontal scrollbar (so the "here's how to fix it" part never gets
+// read). The cell shows a short, actionable summary; the full text stays
+// available on hover.
+function shortBlockedReason(msg) {
+  const m = String(msg || '');
+  if (/hiring window/i.test(m)) return 'Outside the destination save\'s coach-hiring window — turn on the override in Coach Settings';
+  if (/no disposable Coach row/i.test(m)) return 'No reusable coach slot left in the destination save';
+  if (/no school named|no team with TeamIndex|no team named/i.test(m)) return 'That team wasn\'t found in the destination save';
+  if (/failed schema validation/i.test(m)) return 'Blocked by a pre-write safety check';
+  if (/no coach at .* row/i.test(m)) return 'Source coach row is empty';
+  const firstSentence = m.split(/(?<=\.)\s/)[0];
+  return firstSentence.length > 110 ? `${firstSentence.slice(0, 107)}…` : firstSentence;
+}
+
+function renderCoachPlanTable() {
+  const tbody = $('coachPlanTable').querySelector('tbody');
+  tbody.innerHTML = '';
+  if (!coachPlan) return;
+  for (const row of coachPlan) {
+    const tr = el('tr');
+    if (row.blocked) tr.classList.add('plan-row-blocked');
+
+    const tdChk = el('td');
+    const chk = document.createElement('input');
+    chk.type = 'checkbox';
+    row.included = !row.blocked;
+    chk.checked = row.included;
+    chk.disabled = !!row.blocked;
+    chk.addEventListener('change', () => { row.included = chk.checked; updateCoachWriteEnabled(); });
+    tdChk.appendChild(chk);
+    tr.appendChild(tdChk);
+
+    tr.appendChild(el('td', '', row.coach || '—'));
+    tr.appendChild(el('td', '', row.fromSchool || '—'));
+    tr.appendChild(el('td', '', row.toTeam || '—'));
+    tr.appendChild(el('td', '', row.position || '—'));
+    tr.appendChild(el('td', 'num', row.level ?? '—'));
+
+    const tdTone = el('td');
+    if (row.tone === null || row.tone === undefined) {
+      tdTone.textContent = row.toneWasGuessed ? '?' : '—';
+    } else {
+      tdTone.textContent = String(row.tone);
+    }
+    if (row.toneWasGuessed) {
+      const warn = el('span', '', ' ⚠');
+      warn.title = coachDirection === 'maddenToCfb'
+        ? 'No measured tone for this coach\'s head (a licensed likeness) -- a face will be picked at random from the CFB head catalog.'
+        : 'No tone encoded for this coach -- will be sampled from the CFB tone distribution '
+          + 'unless you set an override on Tone Overrides.';
+      tdTone.appendChild(warn);
+    }
+    tr.appendChild(tdTone);
+
+    tr.appendChild(el('td', '', row.displaces ? row.displaces.name : '(vacant)'));
+
+    const tdStatus = el('td', 'inline-status status-cell ' + (row.blocked ? 'err' : 'ok'),
+      row.blocked ? shortBlockedReason(row.blocked) : 'Ready');
+    if (row.blocked) tdStatus.title = row.blocked; // full engine text on hover
+    tr.appendChild(tdStatus);
+
+    tbody.appendChild(tr);
+  }
+}
+
+function updateCoachWriteEnabled() {
+  $('coachWriteBtn').disabled = !(coachPlan && coachPlan.some((r) => !r.blocked && r.included !== false));
+}
+
+$('coachWriteBtn').addEventListener('click', async () => {
+  if (!coachPlan || !coachPlan.length) return;
+  const excludedSourceRows = coachPlan.filter((r) => r.included === false).map((r) => r.sourceRow);
+  const isReverse = coachDirection === 'maddenToCfb';
+  const basePath = isReverse ? cfbSavePath : maddenPath;
+  const defaultPath = basePath ? `${basePath}-COACHES` : undefined;
+  const outPath = await window.api.pickSaveLocation({ defaultPath });
+  if (!outPath) return;
+  const st = $('coachWriteStatus');
+  st.textContent = 'Writing…'; st.className = 'inline-status';
+  $('coachWriteBtn').disabled = true;
+  const res = await window.api.coachCommit({ outputPath: outPath, excludedSourceRows, config: coachConfigFromToggles() });
+  if (res.ok) {
+    // A face is cosmetic and never blocks the write (see lib/carousel/index.js),
+    // but the user still needs to know it didn't get applied -- otherwise a
+    // coach quietly keeps the destination row's old face with no explanation.
+    const noFace = (res.results || []).filter((r) => r.appearanceError);
+    if (noFace.length) {
+      st.textContent = `Done — ${res.written} coach(es) written to ${res.outputPath}. `
+        + `Note: ${noFace.length} kept their destination slot's existing face — this save's `
+        + 'appearance data could not be read. Everything else (job, level, contract, abilities) transferred normally.';
+      st.className = 'inline-status warn';
+      toast(`Written — ${noFace.length} coach(es) kept an existing face`);
+    } else {
+      st.textContent = `Done — ${res.written} coach(es) written to ${res.outputPath}.`;
+      st.className = 'inline-status ok';
+      toast('Coach carousel written');
+    }
+  } else {
+    st.textContent = res.error;
+    st.className = 'inline-status err';
+    toast(res.error, true);
+  }
+  updateCoachWriteEnabled();
+});
+
+/* ---------------- tone overrides page ---------------- */
+async function loadCoachTonesPage() {
+  const summary = $('coachTonesSummary');
+  if (!summary) return;
+  if (!cfbSavePath) { summary.textContent = 'Pick a CFB save on the Dashboard first.'; return; }
+  summary.textContent = 'Scanning…';
+  const res = await window.api.coachScan(cfbSavePath);
+  if (!res.ok) { summary.textContent = res.error; return; }
+  cfbScanResult = res;
+  renderCoachTonesTable();
+}
+$('coachTonesRescan').addEventListener('click', loadCoachTonesPage);
+$('coachTonesShowAllToggle').addEventListener('change', renderCoachTonesTable);
+
+const COACH_POS_RANK = { HeadCoach: 0, OffensiveCoordinator: 1, DefensiveCoordinator: 2 };
+function renderCoachTonesTable() {
+  if (!cfbScanResult) return;
+  const showAll = $('coachTonesShowAllToggle').checked;
+  const rows = showAll ? cfbScanResult.coaches : cfbScanResult.coaches.filter((c) => c.toneWasGuessed);
+  $('coachTonesSummary').textContent =
+    `${cfbScanResult.counts.toneKnown} known tone, ${cfbScanResult.counts.toneGuessed} guessed — showing ${rows.length}.`;
+
+  const tbody = $('coachTonesTable').querySelector('tbody');
+  tbody.innerHTML = '';
+  const sorted = [...rows].sort((a, b) => (COACH_POS_RANK[a.position] ?? 9) - (COACH_POS_RANK[b.position] ?? 9) || b.level - a.level);
+  for (const c of sorted) {
+    const tr = el('tr');
+    tr.appendChild(el('td', '', c.name));
+    tr.appendChild(el('td', '', c.position));
+    tr.appendChild(el('td', 'num', c.level));
+    tr.appendChild(el('td', '', c.school));
+    tr.appendChild(el('td', '', c.head));
+
+    const tdTone = el('td');
+    const select = document.createElement('select');
+    const blank = document.createElement('option');
+    blank.value = '';
+    blank.textContent = c.toneWasGuessed ? '— (will be guessed)' : '— (from head)';
+    select.appendChild(blank);
+    for (let t = 1; t <= 8; t++) {
+      const o = document.createElement('option');
+      o.value = String(t);
+      o.textContent = String(t);
+      select.appendChild(o);
+    }
+    select.value = c.toneWasGuessed ? '' : String(c.tone);
+    select.addEventListener('change', async () => {
+      const tone = select.value === '' ? null : Number(select.value);
+      const res = await window.api.coachSetTone({ headAssetName: c.head, tone });
+      if (res.ok) {
+        c.tone = tone;
+        c.toneWasGuessed = tone === null;
+        toast(tone === null ? `Cleared override for ${c.name}` : `${c.name} set to tone ${tone}`);
+        cfbScanResult.counts.toneKnown = cfbScanResult.coaches.filter((x) => !x.toneWasGuessed).length;
+        cfbScanResult.counts.toneGuessed = cfbScanResult.coaches.filter((x) => x.toneWasGuessed).length;
+        renderCoachTonesTable();
+      } else {
+        toast(res.error, true);
+      }
+    });
+    tdTone.appendChild(select);
+    tr.appendChild(tdTone);
+
+    tbody.appendChild(tr);
+  }
+}
+
 /* ---------------- init ---------------- */
 (async function init() {
   META = await window.api.configGet();
-  cfg = META.config;
+  syncLeagueState(META.config, META.defaults);
   defaultDirs = await window.api.defaultDirs();
 
   const posSel = $('filterPos');
@@ -1288,4 +2197,6 @@ careerStatsToggle.addEventListener('change', () => {
 
   rebuildAllPages();
   onConfigChanged();
+  updateCoachSavesSummary();
+  updateCoachDirectionUI();
 })();

@@ -16,18 +16,26 @@
         <span class="brand-sub">Draft Class Studio</span>
       </div>
     </div>
+    <!-- Scroll container: the sidebar is a flex column, so without this the nav
+         items are flex children that SHRINK when the list outgrows the window
+         (items collapsing to nothing rather than the list scrolling). Brand and
+         footer stay pinned; only this middle region scrolls. -->
+    <div class="nav-scroll">
     <button class="nav-item active" data-page="dashboard" aria-current="page">
       <span class="nav-icon">⌂</span> Dashboard
     </button>
-    <button class="nav-item" data-page="results">
-      <span class="nav-icon">▤</span> Draft Class
-    </button>
 
     <button class="nav-group-toggle" id="settingsGroupToggle" aria-expanded="true">
-      <span class="nav-group-label">Generation Settings</span>
+      <span class="nav-group-label">Draft Class</span>
       <span class="nav-group-arrow">▾</span>
     </button>
     <div class="nav-group-items" id="settingsGroupItems">
+      <button class="nav-item" data-page="build">
+        <span class="nav-icon">🛠</span> Build Class
+      </button>
+      <button class="nav-item" data-page="results">
+        <span class="nav-icon">▤</span> Class Results
+      </button>
       <button class="nav-item" data-page="weights">
         <span class="nav-icon">⚖</span> Position Weights
       </button>
@@ -41,6 +49,20 @@
         <span class="nav-icon">⚙</span> Advanced
       </button>
     </div>
+
+    <button class="nav-group-toggle" id="coachGroupToggle" aria-expanded="true">
+      <span class="nav-group-label">Coaches</span>
+      <span class="nav-group-arrow">▾</span>
+    </button>
+    <div class="nav-group-items" id="coachGroupItems">
+      <button class="nav-item" data-page="coach-carousel">
+        <span class="nav-icon">🎠</span> Carousel
+      </button>
+      <button class="nav-item" data-page="coach-advanced">
+        <span class="nav-icon">⚙</span> Coach Settings
+      </button>
+    </div>
+    </div><!-- /.nav-scroll -->
 
     <div class="sidebar-footer">
       <label class="toggle-row" for="hideStatsToggle" title="Hides Dev Trait, Speed, Strength, Agility, Awareness, and Est. Madden OVR in the Draft Class table — useful if you don't want to see the effect of your own adjustments.">
@@ -57,19 +79,89 @@
           <span class="toggle-track"><span class="toggle-thumb"></span></span>
         </span>
       </label>
-      <button id="presetExport" class="ghost small">Export Preset</button>
-      <button id="presetImport" class="ghost small">Import Preset</button>
+      <!-- Collapsed by default: these are occasional actions, and pinned open
+           they ate ~150px of sidebar height that the nav needs. A native
+           disclosure keeps this JS-free -- every button id is unchanged. -->
+      <details class="footer-disclosure">
+        <summary>Settings Files</summary>
+        <!-- Each league's weights export/import independently, and either can be
+             targeted without switching to it first -- exporting the ACTIVE
+             league includes edits still sitting in the autosave debounce; the
+             other league exports whatever is saved. -->
+        <div class="preset-group">
+          <span class="preset-group-label">NFL Weights</span>
+          <div class="preset-row">
+            <button id="nflPresetExport" class="ghost small">Export</button>
+            <button id="nflPresetImport" class="ghost small">Import</button>
+          </div>
+        </div>
+        <div class="preset-group">
+          <span class="preset-group-label">UFL Weights</span>
+          <div class="preset-row">
+            <button id="uflPresetExport" class="ghost small">Export</button>
+            <button id="uflPresetImport" class="ghost small">Import</button>
+          </div>
+        </div>
+        <button id="leagueResetProfile" class="ghost small">Reset League to Defaults</button>
+        <button id="presetExport" class="ghost small">Export All Settings</button>
+        <button id="presetImport" class="ghost small">Import All Settings</button>
+      </details>
     </div>
   </nav>
 
   <main class="content">
 
-    <!-- ============================== DASHBOARD ============================== -->
+    <!-- ============================== DASHBOARD (hub) ============================== -->
     <section class="page active" id="page-dashboard">
       <header class="page-head">
         <h1>Dashboard</h1>
-        <p>Pull departing players from your CFB 27 dynasty, generate a calibrated Madden draft class, and write it into your franchise save.</p>
+        <p>Your CFB 27 dynasty and Madden 26 franchise, in one place. Pick your saves below, then jump into building a draft class or running the coach carousel.</p>
       </header>
+
+      <div class="card">
+        <h2>Saves in Play</h2>
+        <p class="hint compact">Shared by every tool below — pick them once here.</p>
+        <div class="save-row">
+          <div class="field">
+            <label for="hubCfbPathInput">CFB Dynasty Save</label>
+            <div class="input-btn">
+              <input type="text" id="hubCfbPathInput" placeholder="No save loaded" readonly tabindex="-1">
+              <button id="hubLoadCfb" class="small">Load…</button>
+            </div>
+          </div>
+          <div id="hubCfbStatus" class="status-chip empty">No pool loaded</div>
+        </div>
+        <div class="save-row">
+          <div class="field">
+            <label for="hubMaddenPathInput">Madden Franchise Save</label>
+            <div class="input-btn">
+              <input type="text" id="hubMaddenPathInput" placeholder="No save selected" readonly tabindex="-1">
+              <button id="hubPickMadden" class="small">Browse…</button>
+            </div>
+          </div>
+          <div id="hubMaddenStatus" class="status-chip empty">Not selected</div>
+        </div>
+      </div>
+
+      <div class="grid-2">
+        <div class="card mission-card">
+          <h2>Draft Class</h2>
+          <p class="hint">Load departing CFB players, generate a calibrated Madden rookie class, and export or write it into your franchise.</p>
+          <div id="missionDraftStatus" class="status-chip empty">Not started</div>
+          <div class="btn-row">
+            <button id="openBuildBtn" class="primary">Open Draft Class →</button>
+          </div>
+        </div>
+
+        <div class="card mission-card">
+          <h2>Coach Carousel</h2>
+          <p class="hint">Transfer head coaches, OCs, and DCs between your CFB dynasty and Madden franchise, either direction — right job, level, abilities, and a tone-matched face.</p>
+          <div id="missionCoachStatus" class="status-chip empty">Not started</div>
+          <div class="btn-row">
+            <button id="openCoachCarouselBtn" class="primary">Open Coach Carousel →</button>
+          </div>
+        </div>
+      </div>
 
       <div class="card config-summary-card">
         <div class="config-summary-head">
@@ -77,6 +169,21 @@
         </div>
         <div id="configSummaryBody"></div>
       </div>
+
+      <div class="card log-card">
+        <div class="log-head">
+          <span>Recent Activity</span>
+        </div>
+        <pre id="hubLogTail" class="log-tail" aria-live="polite"></pre>
+      </div>
+    </section>
+
+    <!-- ============================== BUILD CLASS ============================== -->
+    <section class="page" id="page-build">
+      <header class="page-head">
+        <h1>Build Class</h1>
+        <p>Pull departing players from your CFB 27 dynasty, generate a calibrated Madden draft class, and write it into your franchise save.</p>
+      </header>
 
       <div class="grid-2">
         <div class="card">
@@ -110,7 +217,15 @@
 
         <div class="card">
           <h2>2 · Generate Class</h2>
-          <p class="hint">Applies every setting from Position Weights, Rating Translation, Rating Categories, and Advanced to the loaded pool.</p>
+          <p class="hint">Turns your loaded prospects into a full rookie draft class, applying everything you've set on Position Weights, Rating Translation, Rating Categories, and Advanced.</p>
+          <div class="field">
+            <label>Draft</label>
+            <div class="radio-row" id="leagueModeRow">
+              <label class="radio"><input type="radio" name="leagueMode" value="nfl" checked> NFL</label>
+              <label class="radio"><input type="radio" name="leagueMode" value="ufl"> UFL <span id="uflStartBadge" class="badge-count"></span></label>
+            </div>
+            <p class="hint compact" id="leagueModeHint"></p>
+          </div>
           <div class="warning-box subtle">
             <strong>Recommended: generate once, then move on.</strong>
             Each run adds a little randomness on top of your settings (that's
@@ -239,7 +354,35 @@
         <div class="knob-grid" id="translationEngine"></div>
       </div>
 
-      <div class="card">
+      <div class="card" id="diceRollControls" style="display:none">
+        <h2>Dice Roll</h2>
+        <p class="hint compact">
+          Every generation rolls a strength for the whole class, then a
+          bust/gem roll for each player — the two combine into one delta that
+          nudges every rating. No category curves or per-position dials here;
+          this engine is its own self-contained model.
+        </p>
+        <div class="knob-grid" id="diceRollSettings"></div>
+      </div>
+
+      <!-- CONFIG_HARDENING_ROADMAP.md Phase 2: UFL-only, both engines --
+           pipeline.js only ever applies overallBoost when league === 'ufl',
+           so this card is hidden entirely on NFL regardless of engine, and
+           shown under BOTH Power Curve and Dice Roll on UFL. -->
+      <div class="card" id="uflBoostCard" style="display:none">
+        <h2>UFL Overall Boost</h2>
+        <p class="hint compact">
+          <strong>Optional — you don't need this.</strong> Tested UFL classes
+          already come out averaging in the low 70s overall without it. This
+          is only for pushing the class higher still, on top of whatever the
+          engine above already produced. Off by default; works the same
+          whether you're using Power Curve or Dice Roll, and only ever takes
+          effect in UFL mode.
+        </p>
+        <div class="knob-grid" id="uflBoostSettings"></div>
+      </div>
+
+      <div class="card" id="powerCurveGlobalStrengthCard">
         <h2>Overall Class Strength</h2>
         <p class="hint compact">
           One dial for the whole class — scales every position's Technical and
@@ -316,6 +459,11 @@
         </div>
       </header>
 
+      <div class="warning-box subtle" id="physicalEngineNotice" style="display:none">
+        These buckets only apply to the <strong>Power Curve</strong> engine. The Dice Roll
+        engine is currently selected, so nothing on this page affects your generated class.
+      </div>
+
       <div class="card">
         <div class="field" style="max-width:260px; margin-bottom:14px;">
           <label>Editing</label>
@@ -379,7 +527,7 @@
     <section class="page" id="page-results">
       <header class="page-head">
         <h1>Draft Class</h1>
-        <p id="resultsSummary">No class generated yet — load a pool on the Dashboard and hit Generate.</p>
+        <p id="resultsSummary">No class generated yet — load a pool on Build Class and hit Generate.</p>
         <div class="head-actions">
           <button id="regenerateBtn" class="primary" disabled>Regenerate</button>
         </div>
@@ -415,7 +563,171 @@
       </div>
     </section>
 
+    <!-- ============================== COACH CAROUSEL ============================== -->
+    <section class="page" id="page-coach-carousel">
+      <header class="page-head">
+        <h1>Coach Carousel</h1>
+        <p id="coachPageIntro">Transfer head coaches, OCs, and DCs between your CFB dynasty and your Madden franchise — right job, level, abilities, and a tone-matched face. Uses the saves picked on the Dashboard.</p>
+      </header>
+
+      <div class="card">
+        <h2>Saves</h2>
+        <p class="hint compact" id="coachSavesSummary">Pick a CFB dynasty save and a Madden franchise save on the Dashboard first.</p>
+      </div>
+
+      <div class="card">
+        <h2>Direction</h2>
+        <div class="field">
+          <div class="radio-row" id="coachDirectionRow">
+            <label class="radio"><input type="radio" name="coachDirection" value="cfbToMadden" checked> CFB → Madden</label>
+            <label class="radio"><input type="radio" name="coachDirection" value="maddenToCfb"> Madden → CFB</label>
+          </div>
+          <p class="hint compact" id="coachDirectionHint">Move a college coach into your NFL franchise.</p>
+        </div>
+      </div>
+
+      <div class="card">
+        <h2>Mode</h2>
+        <div class="field">
+          <label>Selection</label>
+          <div class="radio-row" id="coachModeRow">
+            <label class="radio"><input type="radio" name="coachMode" value="auto" checked> Auto-propose (movement engine)</label>
+            <label class="radio"><input type="radio" name="coachMode" value="manual"> Manual (pick teams)</label>
+          </div>
+          <p class="hint compact" id="coachModeHint">Auto-propose scores who's likely to move and pairs them to the most vulnerable jobs. Manual lets you pick exactly which coach goes to which team.</p>
+        </div>
+
+        <div id="coachManualPanel" style="display:none">
+          <div class="field">
+            <label>Add a move</label>
+            <div class="input-btn">
+              <select id="coachManualCoachSelect"></select>
+              <input type="text" id="coachManualTeamInput" placeholder="Destination team name (e.g. Giants)">
+              <button id="coachManualAddBtn" class="small">Add</button>
+            </div>
+            <p class="hint compact">Team names are matched to the destination save when you propose — an unknown name shows up as a blocked row with the reason, not a silent failure.</p>
+          </div>
+          <div id="coachManualList" class="warnings-stack"></div>
+        </div>
+
+        <div class="btn-row">
+          <button id="coachProposeBtn" class="primary" disabled>Propose Moves</button>
+        </div>
+        <div id="coachProposeStatus" class="status-chip empty">Nothing proposed yet</div>
+      </div>
+
+      <div class="card">
+        <h2>Plan</h2>
+        <p class="hint compact" id="coachPlanSummary"></p>
+        <div class="table-scroll">
+          <table class="results-table" id="coachPlanTable">
+            <thead>
+              <tr><th></th><th>Coach</th><th>From</th><th>To</th><th>Pos</th><th>Lvl</th><th>Tone</th><th>Displaces</th><th>Status</th></tr>
+            </thead>
+            <tbody></tbody>
+          </table>
+        </div>
+      </div>
+
+      <div class="card">
+        <h2>Write</h2>
+        <div class="warning-box subtle" id="coachWriteWarning">
+          Writes to a NEW save you choose — your Madden save is never overwritten in place.
+        </div>
+        <div class="btn-row">
+          <button id="coachWriteBtn" class="primary" disabled>Write Save…</button>
+        </div>
+        <div id="coachWriteStatus" class="inline-status"></div>
+      </div>
+    </section>
+
+    <!-- ============================== COACH TONE OVERRIDES ============================== -->
+    <!-- ============================== COACH SETTINGS ============================== -->
+    <section class="page" id="page-coach-advanced">
+      <header class="page-head">
+        <h1>Coach Settings</h1>
+        <p>Defaults applied to every proposed move. Hover any field for details.</p>
+      </header>
+
+      <div class="card">
+        <h2>Hiring</h2>
+        <label class="toggle-row" for="coachAllowOffWindowToggle" title="Head coach, offensive coordinator, and defensive coordinator hires are normally only allowed during Madden's own coach hiring/demand-release window (right after Super Bowl week). Turn this on to place any of them any time.">
+          <span>Allow coach hires outside the hiring window</span>
+          <span class="toggle-switch">
+            <input type="checkbox" id="coachAllowOffWindowToggle">
+            <span class="toggle-track"><span class="toggle-thumb"></span></span>
+          </span>
+        </label>
+        <div class="field" style="max-width:220px; margin-top:12px;">
+          <label for="coachContractLengthInput">Contract length (years)</label>
+          <input type="number" id="coachContractLengthInput" min="1" max="7" step="1" value="4">
+        </div>
+      </div>
+
+      <div class="card">
+        <p class="hint compact">
+          Every placed coach always gets a full talent tree and a face — skipping either
+          leaves a coach reading as "Level 1 / DUMMY ARCHETYPE" with no abilities, or as a
+          silhouette, in Coach Central. Not exposed here on purpose.
+        </p>
+      </div>
+
+      <div class="card">
+        <h2>Skin Tones</h2>
+        <p class="hint compact">
+          A coach's face carries their skin tone, so the carousel has to pick a
+          tone to pick a face. For most coaches CFB states it outright and it's
+          matched exactly. But the named, real-life coaches — the ones you're
+          most likely to actually move — don't have it stated anywhere, so
+          they're the ones the app has to guess at.
+        </p>
+        <p class="hint compact">
+          Set any of them here and that choice is used instead of the guess,
+          permanently. Anyone you leave blank keeps guessing — a tone picked to
+          match how CFB's coaching pool actually looks overall, and consistent
+          run to run rather than random each time.
+        </p>
+        <div class="btn-row" style="margin-bottom:12px;">
+          <button id="coachTonesRescan" class="ghost small">Rescan Coaches</button>
+        </div>
+        <label class="toggle-row" for="coachTonesShowAllToggle" style="margin-bottom:12px;">
+          <span>Show all coaches (not just the ones being guessed)</span>
+          <span class="toggle-switch">
+            <input type="checkbox" id="coachTonesShowAllToggle">
+            <span class="toggle-track"><span class="toggle-thumb"></span></span>
+          </span>
+        </label>
+        <p class="hint compact" id="coachTonesSummary">Pick a CFB save on the Dashboard first.</p>
+        <div class="table-scroll">
+          <table class="config-table" id="coachTonesTable">
+            <thead>
+              <tr><th>Coach</th><th>Pos</th><th>Lvl</th><th>School</th><th>Head Asset</th><th>Tone</th></tr>
+            </thead>
+            <tbody></tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
   </main>
+</div>
+
+<!-- LEAGUE_PROFILES_ROADMAP.md Phase 5: preview a league-settings import before
+     it's applied -- what the file is tagged as, whether that matches where
+     it's landing, and exactly which values would change. Hidden until an
+     import is picked; Cancel commits nothing. -->
+<div id="importPreviewOverlay" class="modal-overlay hidden">
+  <div class="modal-card">
+    <h2>Import League Settings</h2>
+    <p id="importPreviewMismatch" class="hint compact mismatch-warning hidden"></p>
+    <p id="importPreviewIgnored" class="hint compact mismatch-warning hidden"></p>
+    <p id="importPreviewSummary" class="hint compact"></p>
+    <div id="importPreviewDiff" class="import-diff"></div>
+    <div class="btn-row" style="justify-content: flex-end;">
+      <button id="importPreviewCancel" class="ghost small">Cancel</button>
+      <button id="importPreviewApply" class="primary small">Apply Import</button>
+    </div>
+  </div>
 </div>
 
 <div id="toast" class="toast" role="status"></div>
