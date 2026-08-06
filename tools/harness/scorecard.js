@@ -1,16 +1,23 @@
-// Rosetta validation scorecard -- the single, permanent validation framework
-// for this migration. Every future phase EXTENDS this file (adds a category,
-// or fills in a placeholder) instead of writing a new one-off verification
-// script. Supersedes goldenMaster.js's ad hoc capture/verify pair -- its
-// byte-identical legacy check is now the `legacyInvariance` category here.
+// Population/translation validation scorecard -- a permanent quantitative
+// harness for the live extraction + calibration pipeline. Every category
+// returns metrics, not a bare pass/fail -- population counts, position
+// counts, runtime, memory (best-effort; Node's GC makes exact heap
+// accounting approximate, so treat as directional), distribution summaries,
+// and determinism checks.
 //
-// Every category returns quantitative metrics, not a bare pass/fail --
-// population counts, position counts, runtime, memory (best-effort; Node's
-// GC makes exact heap accounting approximate, so treat as directional),
-// distribution summaries, and determinism checks. Categories not yet
-// implementable (they depend on a subsystem a later phase builds) are
-// explicit placeholders with status 'not_applicable' and a note on what
-// they'll check and which phase unlocks them -- never silently omitted.
+// PRUNED (2026-08): originally built as the validation framework for a
+// planned "Rosetta" migration, including a percentile-based translation
+// engine (internally "Two-Anchor") and the calibration-model machinery
+// (college/rookie reference distributions, physical scale, frame providers)
+// it would have read from. That engine was abandoned before any of its
+// translation math shipped, and both it and its calibration/ support code
+// have been removed (see lib/rosetta/translation/rosettaTranslator.js).
+// The five categories that existed only to validate that removed code
+// (calibrationBuilder, twoAnchorMath, twoAnchorTranslation, twoAnchorVsV1,
+// identityPreservation) are gone with it. What remains below still exercises
+// the live pipeline: population extraction (exit vs legacy mode),
+// calibratePlayers' determinism and draft-independence guarantees, the
+// translator strategy seam, and an actual write-to-Madden-file round trip.
 //
 // Usage:
 //   node tools/harness/scorecard.js run <cfbSavePath>       -- run + print, no persistence
@@ -19,10 +26,8 @@
 
 const fs = require('fs');
 const path = require('path');
-const FranchiseFile = require('madden-franchise');
 const {
   extractLeavingPlayers, calibratePlayers, assignDevTraits, writeCareerFile,
-  openCfbSave, buildTeamNames, RATING_NAMES, POS_GROUP,
 } = require('../../lib/pipeline');
 
 const BASELINE_PATH = path.join(__dirname, 'scorecard-baseline.json');
@@ -311,384 +316,6 @@ async function categoryWriteRoundTrip(maddenSourcePath, maddenScratchPath, calib
   };
 }
 
-// Runs the REAL Calibration Builder (lib/rosetta/calibration/build/) against
-// the real CFB + Madden saves: opens both, builds all three artifacts
-// (college reference, rookie reference, physical scale), validates each
-// independently, freezes an InMemoryCalibrationModel, constructs a
-// CalibrationModelFrameProvider backed by it, and spot-checks that every
-// provider reads correctly from the frozen model -- including a mental
-// attribute (physicalScale must be null) and a deliberately-uncovered case
-// (a position/attribute pair the builder has no data for must throw
-// loudly, never return silently-wrong data).
-async function categoryCalibrationBuilder(cfbSavePath, maddenSavePath, exitPopulation) {
-  if (!maddenSavePath) {
-    return { name: 'calibrationBuilder', status: 'not_applicable', metrics: {}, notes: ['No Madden save path provided to the scorecard -- pass one as a 3rd CLI arg to enable this category.'] };
-  }
-
-  const { buildCalibrationModel, CalibrationModelFrameProvider } = require('../../lib/rosetta/calibration');
-
-  const { cfbFile } = await openCfbSave(cfbSavePath);
-  const teamNames = await buildTeamNames(cfbFile);
-  const maddenFile = await FranchiseFile.create(maddenSavePath, { autoUnempty: true });
-
-  const timed = await measure(() => buildCalibrationModel({
-    cfbFile, teamNames, maddenFile, exitPopulation,
-    ratingFields: RATING_NAMES, posGroup: POS_GROUP,
-    log: () => {},
-  }));
-  const { model, validation } = timed.value;
-
-  const collegePositions = validation.college.positions;
-  const collegeAttributePairs = validation.college.attributePairs;
-  const rookiePositions = validation.rookie.positions;
-  const rookieAttributePairs = validation.rookie.attributePairs;
-  const physicalAttributePairs = validation.physicalScale.attributePairs;
-
-  const provider = new CalibrationModelFrameProvider(model);
-
-  // Spot-check: a common position/attribute (physical), a mental attribute
-  // (physicalScale must be null, not a fabricated value), and a
-  // deliberately-uncovered position (LS has zero broad-tier coverage on
-  // real saves where no Junior/Senior LS is currently rostered -- must
-  // throw, not silently return bad data).
-  let physicalOk = false, mentalOk = false, uncoveredThrowsCorrectly = false;
-  let spotCheckError = null;
-  try {
-    const speedRef = provider.attribute('QB', 'SpeedRating');
-    physicalOk = speedRef.collegeDistribution.length > 0 && speedRef.rookieDistribution.length > 0
-      && !!speedRef.physicalScale && speedRef.taxonomy.class === 'physical';
-
-    const awarenessRef = provider.attribute('QB', 'AwarenessRating');
-    mentalOk = awarenessRef.physicalScale === null && awarenessRef.taxonomy.class === 'mental';
-  } catch (e) { spotCheckError = e.message; }
-
-  try {
-    provider.attribute('LS', 'SpeedRating');
-  } catch (e) {
-    uncoveredThrowsCorrectly = true;
-  }
-
-  const isFrozen = Object.isFrozen(model);
-  const status = validation.college.valid && validation.rookie.valid && validation.physicalScale.valid
-    && physicalOk && mentalOk && isFrozen
-    ? 'pass' : 'fail';
-
-  const notes = [];
-  if (!uncoveredThrowsCorrectly) {
-    notes.push('LS unexpectedly had college reference coverage on this save -- spot-check target no longer exercises the uncovered-position path; harmless, but pick a different deliberately-sparse position if this recurs.');
-  }
-  if (spotCheckError) notes.push(`Spot-check error: ${spotCheckError}`);
-
-  return {
-    name: 'calibrationBuilder',
-    status,
-    metrics: {
-      modelVersion: model.version,
-      modelFrozen: isFrozen,
-      collegePositions, collegeAttributePairs,
-      rookiePositions, rookieAttributePairs,
-      physicalAttributePairs,
-      providerSpotCheck: { physicalOk, mentalOk, uncoveredThrowsCorrectly },
-      runtimeMs: timed.runtimeMs,
-      heapDeltaMB: timed.heapDeltaMB,
-    },
-    notes,
-  };
-}
-
-// Hand-verified regression protection for the four pure math primitives
-// (lib/rosetta/translation/twoAnchorMath.js) -- the SAME cases verified by
-// hand against the math spec before twoAnchorTranslator.js was ever wired
-// to use them. If any of these ever drift, it means the numerics changed,
-// not just calibration data -- a much more serious class of regression
-// than anything else in this file catches.
-function categoryTwoAnchorMath() {
-  const { tieAwarePercentile, quantileInterpolate, scaleInterpolate, isDegenerate } = require('../../lib/rosetta/translation/twoAnchorMath');
-  const checks = [];
-  const approx = (a, b, eps = 1e-6) => Math.abs(a - b) < eps;
-
-  const s = [10, 20, 20, 20, 30, 40];
-  checks.push(['tieAwarePercentile(20, ties)', approx(tieAwarePercentile(20, s), 0.41667, 1e-4)]);
-  checks.push(['tieAwarePercentile(10, low tie)', approx(tieAwarePercentile(10, s), 0.08333, 1e-4)]);
-  checks.push(['tieAwarePercentile(40, unique high)', approx(tieAwarePercentile(40, s), 0.91667, 1e-4)]);
-  checks.push(['tieAwarePercentile(25, between)', approx(tieAwarePercentile(25, s), 0.66667, 1e-4)]);
-  checks.push(['tieAwarePercentile(5, below all)', tieAwarePercentile(5, s) === 0]);
-  checks.push(['tieAwarePercentile(50, above all)', tieAwarePercentile(50, s) === 1]);
-
-  const r = [40, 50, 60, 70, 80];
-  checks.push(['quantileInterpolate(0)', quantileInterpolate(0, r) === 40]);
-  checks.push(['quantileInterpolate(1)', quantileInterpolate(1, r) === 80]);
-  checks.push(['quantileInterpolate(0.5, exact knot)', quantileInterpolate(0.5, r) === 60]);
-  checks.push(['quantileInterpolate(0.125, mid-interval)', quantileInterpolate(0.125, r) === 45]);
-  checks.push(['quantileInterpolate single-element', quantileInterpolate(0.5, [99]) === 99]);
-
-  const identityScale = { collegeValues: [0, 99], maddenValues: [0, 99] };
-  checks.push(['scaleInterpolate identity', scaleInterpolate(55, identityScale) === 55]);
-  checks.push(['scaleInterpolate clamps low', scaleInterpolate(-5, identityScale) === 0]);
-  checks.push(['scaleInterpolate clamps high', scaleInterpolate(150, identityScale) === 99]);
-  const compressiveScale = { collegeValues: [0, 50, 100], maddenValues: [0, 25, 50] };
-  checks.push(['scaleInterpolate nonlinear', scaleInterpolate(75, compressiveScale) === 37.5]);
-
-  checks.push(['isDegenerate single value', isDegenerate([5]) === true]);
-  checks.push(['isDegenerate constant sample', isDegenerate([5, 5, 5]) === true]);
-  checks.push(['isDegenerate real sample', isDegenerate([5, 6]) === false]);
-  checks.push(['isDegenerate empty', isDegenerate([]) === true]);
-
-  const failed = checks.filter(([, ok]) => !ok).map(([name]) => name);
-  return {
-    name: 'twoAnchorMath',
-    status: failed.length === 0 ? 'pass' : 'fail',
-    metrics: { checksRun: checks.length, checksFailed: failed.length },
-    notes: failed.length ? [`Failed: ${failed.join(', ')}`] : [],
-  };
-}
-
-// Proves the real Two-Anchor engine (lib/rosetta/translation/
-// twoAnchorTranslator.js) is correctly wired AND correctly handles its two
-// documented edge cases, on synthetic fixtures -- no save file needed.
-//
-// BEHAVIORAL DIFFERENCE from the old skeleton test this replaces: the
-// skeleton asserted a missing fixture THROWS (correct for a skeleton that
-// deliberately had no fallback logic yet). The real engine's documented
-// requirement is "graceful handling of missing data" -- so the same
-// scenario must now NOT throw, must fall back to the raw value, and must
-// record a warning instead. Asserting the old behavior here would be
-// testing for a regression, not a fix.
-function categoryTwoAnchorTranslation() {
-  const { TwoAnchorTranslator } = require('../../lib/rosetta/translation/twoAnchorTranslator');
-  const { StubFrameProvider } = require('../../lib/rosetta/calibration/providers/stubFrameProvider');
-  const { createRosettaContext } = require('../../lib/rosetta/context');
-
-  // A dense, realistically-sized sample (n=60, matching the real
-  // reference distributions' typical order of magnitude per the Phase 5.5
-  // data-quality audit -- college median 160/pair, rookie median 74/pair)
-  // rather than a handful of points. This matters: tieAwarePercentile's
-  // midpoint-CDF convention and quantileInterpolate's type-7 convention are
-  // each individually correct and independently hand-verified (see
-  // twoAnchorMath), but composing them is only an EXACT identity map in the
-  // limit of a dense sample -- on a tiny synthetic sample (e.g. n=7) the
-  // composition can miss by several points purely from that discretization
-  // edge effect, not from any coherence bug. Confirmed by direct
-  // measurement: max deviation 4 points at n=7, 1 point at n=74, 0 points
-  // over a fully dense 0-99 sample. A dense fixture is what actually tests
-  // "does identity hold," rather than testing an artifact of a too-small
-  // synthetic sample.
-  const sample = [];
-  for (let i = 40; i <= 99; i++) sample.push(i);
-  const frames = StubFrameProvider.identity('QB', ['SpeedRating', 'AwarenessRating', 'ThrowPowerRating'], sample);
-  const ratingFields = ['SpeedRating', 'AwarenessRating', 'ThrowPowerRating', 'CatchingRating'];
-  const translator = new TwoAnchorTranslator(frames, ratingFields);
-  const context = createRosettaContext({ config: {}, log: () => {} });
-  // CatchingRating has no fixture -- deliberately exercises the missing-data path.
-  const fixture = [{ FirstName: 'Test', LastName: 'Player', Position: 'QB', SpeedRating: 80, AwarenessRating: 60, ThrowPowerRating: 90, CatchingRating: 50 }];
-
-  let wiringOk = false, wiringError = null, result = null;
-  try {
-    result = translator.translate(fixture, context);
-    wiringOk = result.stage === 'translated' && result.length === 1 && result.strategy === 'rosetta-two-anchor';
-  } catch (e) { wiringError = e.message; }
-
-  // Identity fixture: F^C === F^N === physical y=x -- translation of an
-  // in-range value must be a no-op (within +/-1 point -- see the
-  // discretization-edge-effect note above; exact-zero is only guaranteed
-  // for fully dense samples).
-  const near = (a, b) => Math.abs(a - b) <= 1;
-  const identityHolds = result && near(result[0].Madden_SpeedRating, 80) && near(result[0].Madden_AwarenessRating, 60) && near(result[0].Madden_ThrowPowerRating, 90);
-
-  // Missing-data case: CatchingRating has no fixture -- must NOT throw, must
-  // fall back to the raw value, and must be recorded as a warning.
-  const missingDataGraceful = result && result[0].Madden_CatchingRating === 50;
-  const missingDataWarned = translator.getWarnings().some((w) => w.type === 'missing-data' && w.attribute === 'CatchingRating');
-
-  // Degenerate-source case: a constant reference must pass through, not
-  // manufacture a fake percentile.
-  const degenerateFrames = new StubFrameProvider({ QB: { StaminaRating: { college: [70, 70, 70], rookie: [60, 65, 70] } } });
-  const degenerateTranslator = new TwoAnchorTranslator(degenerateFrames, ['StaminaRating']);
-  const degenerateResult = degenerateTranslator.translate([{ Position: 'QB', StaminaRating: 70 }], context);
-  const degenerateGraceful = degenerateResult[0].Madden_StaminaRating === 70;
-  const degenerateWarned = degenerateTranslator.getWarnings().some((w) => w.type === 'degenerate-source');
-
-  let constructorGuardHolds = false;
-  try { new TwoAnchorTranslator({}, ratingFields); } catch (e) { constructorGuardHolds = true; }
-  let ratingFieldsGuardHolds = false;
-  try { new TwoAnchorTranslator(frames, []); } catch (e) { ratingFieldsGuardHolds = true; }
-
-  const status = wiringOk && identityHolds && missingDataGraceful && missingDataWarned
-    && degenerateGraceful && degenerateWarned && constructorGuardHolds && ratingFieldsGuardHolds
-    ? 'pass' : 'fail';
-
-  return {
-    name: 'twoAnchorTranslation',
-    status,
-    metrics: {
-      wiringOk, wiringError, identityHolds,
-      missingDataGraceful, missingDataWarned,
-      degenerateGraceful, degenerateWarned,
-      constructorGuardHolds, ratingFieldsGuardHolds,
-    },
-    notes: ['Real Two-Anchor math (no longer identity-passthrough). Missing data and degenerate sources fall back gracefully with a recorded warning -- deliberately does NOT throw (differs from the old skeleton, which threw by design since it had no fallback logic yet).'],
-  };
-}
-
-// Runs BOTH V1Translator and the real TwoAnchorTranslator on the SAME real
-// exit population, using the real frozen CalibrationModel from Phase 5, and
-// reports quantitative comparison + identity-preservation metrics. This is
-// the closest thing to ground truth this scorecard can offer for "is the
-// real math doing something sensible," short of a human looking at
-// specific players (see the phase report's before/after examples).
-async function categoryTwoAnchorVsV1(cfbSavePath, maddenSavePath, exitPopulation) {
-  if (!maddenSavePath) {
-    return { name: 'twoAnchorVsV1', status: 'not_applicable', metrics: {}, notes: ['No Madden save path provided.'] };
-  }
-  const { buildCalibrationModel, CalibrationModelFrameProvider } = require('../../lib/rosetta/calibration');
-  const { TwoAnchorTranslator } = require('../../lib/rosetta/translation/twoAnchorTranslator');
-
-  const { cfbFile } = await openCfbSave(cfbSavePath);
-  const teamNames = await buildTeamNames(cfbFile);
-  const maddenFile = await FranchiseFile.create(maddenSavePath, { autoUnempty: true });
-  const { model } = await buildCalibrationModel({
-    cfbFile, teamNames, maddenFile, exitPopulation, ratingFields: RATING_NAMES, posGroup: POS_GROUP, log: () => {},
-  });
-  const frameProvider = new CalibrationModelFrameProvider(model);
-  const rosettaTranslator = new TwoAnchorTranslator(frameProvider, RATING_NAMES);
-
-  const cloneRows = () => JSON.parse(JSON.stringify(exitPopulation));
-  const v1 = calibratePlayers(cloneRows(), { config: { general: { seed: FIXED_SEED } } });
-  const rosetta = rosettaTranslator.translate(cloneRows(), {});
-
-  // Match by identity (name+position+CFB overall -- same key used elsewhere
-  // in this scorecard) since the two translators don't share row order.
-  const v1ByKey = new Map(v1.map((p) => [`${p.FirstName}|${p.LastName}|${p.CFB_Position}|${p.CFB_Overall}`, p]));
-
-  const ratingCols = RATING_NAMES.map((r) => `Madden_${r}`);
-  let compared = 0;
-  const perRatingDiffs = {};
-  for (const col of ratingCols) perRatingDiffs[col] = [];
-  let identitySpearmanSum = 0, identitySpearmanN = 0;
-  let topKConserved = 0, topKTotal = 0;
-
-  function spearman(a, b) {
-    const n = a.length;
-    const rank = (arr) => {
-      const idx = arr.map((v, i) => i).sort((i, j) => arr[i] - arr[j]);
-      const r = new Array(n);
-      idx.forEach((origIdx, rankPos) => { r[origIdx] = rankPos; });
-      return r;
-    };
-    const ra = rank(a), rb = rank(b);
-    let sumSqDiff = 0;
-    for (let i = 0; i < n; i++) sumSqDiff += (ra[i] - rb[i]) ** 2;
-    if (n < 2) return 1;
-    return 1 - (6 * sumSqDiff) / (n * (n * n - 1));
-  }
-
-  for (const rp of rosetta) {
-    const key = `${rp.FirstName}|${rp.LastName}|${rp.CFB_Position}|${rp.CFB_Overall}`;
-    const vp = v1ByKey.get(key);
-    if (!vp) continue;
-    compared++;
-    for (const col of ratingCols) {
-      if (typeof rp[col] === 'number' && typeof vp[col] === 'number') {
-        perRatingDiffs[col].push(Math.abs(rp[col] - vp[col]));
-      }
-    }
-
-    // Identity preservation: within-player Spearman rank correlation
-    // between the player's RAW CFB rating profile and Rosetta's translated
-    // profile -- should sit close to 1.0 since every step is monotone.
-    const attrs = RATING_NAMES.filter((a) => typeof rp.Position !== 'undefined');
-    // (recomputed against the ORIGINAL exit population row for raw values)
-  }
-
-  const avgAbsDiffByRating = {};
-  let overallSum = 0, overallCount = 0;
-  for (const col of ratingCols) {
-    const diffs = perRatingDiffs[col];
-    if (diffs.length === 0) continue;
-    const avg = diffs.reduce((a, b) => a + b, 0) / diffs.length;
-    avgAbsDiffByRating[col] = +avg.toFixed(2);
-    overallSum += diffs.reduce((a, b) => a + b, 0);
-    overallCount += diffs.length;
-  }
-  const overallMeanAbsDiff = overallCount > 0 ? +(overallSum / overallCount).toFixed(2) : null;
-
-  // Identity preservation, computed directly against the exit population's
-  // raw CFB values (not V1's output) -- this is the real test: does
-  // Rosetta's OWN translation preserve each player's own rank order across
-  // his attributes.
-  const exitByKey = new Map(exitPopulation.map((p) => [`${p.FirstName}|${p.LastName}|${p.Position}|${Number(p.OverallRating)}`, p]));
-  let strengthWeaknessConserved = 0, strengthWeaknessTotal = 0;
-  for (const rp of rosetta) {
-    const key = `${rp.FirstName}|${rp.LastName}|${rp.CFB_Position}|${rp.CFB_Overall}`;
-    const raw = exitByKey.get(`${rp.FirstName}|${rp.LastName}|${rp.CFB_Position}|${rp.CFB_Overall}`);
-    if (!raw) continue;
-    const rawVals = [], translatedVals = [];
-    for (const attr of RATING_NAMES) {
-      const rv = Number(raw[attr]);
-      const tv = rp[`Madden_${attr}`];
-      if (Number.isFinite(rv) && typeof tv === 'number') { rawVals.push(rv); translatedVals.push(tv); }
-    }
-    if (rawVals.length < 5) continue;
-    identitySpearmanSum += spearman(rawVals, translatedVals);
-    identitySpearmanN++;
-
-    // top-3 / bottom-3 attribute set conservation
-    const withNames = RATING_NAMES.map((attr, i) => ({ attr, raw: Number(raw[attr]), translated: rp[`Madden_${attr}`] }))
-      .filter((x) => Number.isFinite(x.raw) && typeof x.translated === 'number');
-    if (withNames.length < 6) continue;
-    const byRaw = [...withNames].sort((a, b) => b.raw - a.raw);
-    const byTranslated = [...withNames].sort((a, b) => b.translated - a.translated);
-    const top3Raw = new Set(byRaw.slice(0, 3).map((x) => x.attr));
-    const top3Translated = new Set(byTranslated.slice(0, 3).map((x) => x.attr));
-    const overlap = [...top3Raw].filter((a) => top3Translated.has(a)).length;
-    topKConserved += overlap;
-    topKTotal += 3;
-  }
-
-  const identitySpearmanMean = identitySpearmanN > 0 ? +(identitySpearmanSum / identitySpearmanN).toFixed(4) : null;
-  const topKConservationRate = topKTotal > 0 ? +(topKConserved / topKTotal).toFixed(4) : null;
-
-  return {
-    name: 'twoAnchorVsV1',
-    status: compared > 0 ? 'pass' : 'fail',
-    metrics: {
-      playersCompared: compared,
-      overallMeanAbsDiff,
-      avgAbsDiffByRatingSample: Object.fromEntries(Object.entries(avgAbsDiffByRating).slice(0, 8)),
-      identityPreservation: {
-        withinPlayerSpearmanMean: identitySpearmanMean,
-        playersScored: identitySpearmanN,
-        top3StrengthConservationRate: topKConservationRate,
-      },
-    },
-    notes: [
-      `Rosetta vs V1 differ by ${overallMeanAbsDiff} points on average per rating -- EXPECTED, not a bug: V1 uses single-tier legacy calibration data + a physical flat-drop + a bell-curve squeeze; Rosetta uses self-calibrated multi-tier frames + tie-aware percentile mapping + explicit absolute/relative anchor blending. They are different, both defensible, translations -- not the same algorithm re-verified.`,
-      `Identity preservation (Rosetta vs the player's own raw CFB profile) is the metric that actually matters here, not agreement with V1.`,
-    ],
-  };
-}
-
-// Activates the identityPreservation placeholder now that real Two-Anchor
-// math exists to test. Checks the two guarantees the math spec promises:
-// within-player rank correlation (Spearman) between a player's raw CFB
-// attribute profile and his translated profile should sit close to 1.0
-// (every step -- percentile lookup, quantile interpolation, anchor blend --
-// is monotone), and his strongest attributes should stay his strongest
-// attributes.
-function categoryIdentityPreservation(vsV1Metrics) {
-  if (!vsV1Metrics || !vsV1Metrics.identityPreservation || vsV1Metrics.identityPreservation.playersScored === 0) {
-    return { name: 'identityPreservation', status: 'not_applicable', metrics: {}, notes: ['twoAnchorVsV1 did not run or scored zero players -- see that category for why.'] };
-  }
-  const { withinPlayerSpearmanMean, playersScored, top3StrengthConservationRate } = vsV1Metrics.identityPreservation;
-  const status = withinPlayerSpearmanMean >= 0.9 && top3StrengthConservationRate >= 0.7 ? 'pass' : 'fail';
-  return {
-    name: 'identityPreservation',
-    status,
-    metrics: { withinPlayerSpearmanMean, playersScored, top3StrengthConservationRate },
-    notes: status === 'fail' ? ['Within-player rank correlation or strength conservation fell below threshold -- a real coherence problem, not expected variance.'] : [],
-  };
-}
-
 // Placeholders -- explicit, not omitted. Each names the phase that unlocks
 // it and exactly what it will check once that phase's subsystem exists.
 function placeholderCategories() {
@@ -732,14 +359,6 @@ async function runScorecard(cfbSavePath, maddenSavePath) {
 
   const scratchPath = maddenSavePath ? maddenSavePath + '-SCORECARD-SCRATCH' : null;
   report.categories.push(await categoryWriteRoundTrip(maddenSavePath, scratchPath, calibratedPlayers));
-
-  report.categories.push(await categoryCalibrationBuilder(cfbSavePath, maddenSavePath, exitRows));
-  report.categories.push(categoryTwoAnchorMath());
-  report.categories.push(categoryTwoAnchorTranslation());
-
-  const vsV1 = await categoryTwoAnchorVsV1(cfbSavePath, maddenSavePath, exitRows);
-  report.categories.push(vsV1);
-  report.categories.push(categoryIdentityPreservation(vsV1.metrics));
 
   report.categories.push(...placeholderCategories());
 
