@@ -1,14 +1,31 @@
 # Cross-Game Coaching Carousel — Research & Roadmap
 
-**Status: blueprint. No engine code exists yet and none was written for this document.**
+**Status: CFB → NFL head-coach transfer is BUILT and VERIFIED IN-GAME
+(2026-07-22).** Marcus Freeman moves from Oregon to the Giants, renders in
+Coach Central as *Level 49, Offensive Guru, 28 abilities, 7 playsheets*, with a
+face; the displaced incumbent lands in free agency; the save is stable and
+playable. Presentation polish is tracked separately in
+[`COACH_FIDELITY_ROADMAP.md`](COACH_FIDELITY_ROADMAP.md).
 
 A two-way carousel moving coaches between an EA College Football 27 dynasty save
 and a Madden NFL 26 franchise save, as a sibling engine to the existing
 CFB→Madden player-transfer pipeline.
 
-- **Phase A** CFB27 → NFL (a college coach takes an NFL job)
-- **Phase B** NFL → CFB27 (a fired/available NFL coach returns to college, HC or coordinator)
+- **Phase A** CFB27 → NFL (a college coach takes an NFL job) — ✅ **working, verified in-game**
+- **Phase B** NFL → CFB27 (a fired/available NFL coach returns to college, HC or coordinator) — designed, unbuilt
 - **Phase D** (designed for, not built here) retired Madden players become coaches in either league
+
+**What Phase A ships today**: the movement model (who moves and why), the
+head-coach hiring-window gate, Mode A free-agent injection, Mode B direct
+placement onto a named team with incumbent displacement and both reciprocal
+pointers, a full 156-field map, pre-write schema validation, talent-tree
+cloning, and appearance synthesis.
+
+**One hard-won process rule** (see FIDELITY §2.1): the franchise **setup**
+screen does not resolve coach data and shows "Level 1 / DUMMY ARCHETYPE" for
+perfectly valid coaches. **Verify inside the franchise, in Coach Central** —
+never on the setup screen. Two conclusions in this project were wrong because of
+that, including a live save being written from a mis-verified path.
 
 Supporting research: [`research/FINDINGS.md`](research/FINDINGS.md). Probes:
 `research/probe01..08`, output in `research/out/`. Everything below marked
@@ -378,7 +395,6 @@ wins/losses at all** on the Coach row (see Q3).
 | `WeeklyGoals` | `CoachGoal[]` ref | DROP | ZERO | |
 | `PersuadeAttempts` | int[0..100] | DROP | ZERO | zero for all 497 |
 | `NumContractOffers` | int[0..12] | DROP | ZERO | zero for all 497 |
-| `PrevPosition` | enum | DROP | SYNTH | from Madden `OriginalPosition` |
 | `PreOrderCurrentTitle` | bool | DROP | ZERO | entitlement flag |
 | `PreOrderPartnerTitle` | bool | DROP | ZERO | entitlement flag |
 
@@ -406,8 +422,15 @@ wins/losses at all** on the Coach row (see Q3).
 | `CurrentPurchasedTalentCosts` | int[0..8000] | ZERO | DROP | zero for all 127 |
 | `FaceShape` | enum (231) | SYNTH `Invalid_` | DROP | see §2.8 |
 
-**Coverage check:** 16+11+4+13+16+6+21(+7+6 grouped)+7+32+19 — every one of the
-102 shared, 35 CFB-only and 19 Madden-only fields appears exactly once.
+**Coverage check:** verified by [`research/check-coverage.js`](research/check-coverage.js)
+against the live schema union, not hand-arithmetic — every one of the 102
+shared, 35 CFB-only and 19 Madden-only fields is mentioned. That script checks
+presence, not duplication, and it missed one: `PrevPosition` was originally
+listed twice (here and in section 2.2) with the same action — the section 2.2
+row is the single source of truth now. [`lib/carousel/map/coachFieldMap.js`](lib/carousel/map/coachFieldMap.js)
+encodes this table as data and is schema-checked at require time to have
+exactly 156 entries, so a future duplicate or omission fails loudly instead of
+silently.
 
 ---
 
@@ -432,32 +455,100 @@ by position (FINDINGS §3):
 **6**). A position-blind linear map drops CFB coordinators into Madden at 3–5×
 their peers' level.
 
-**Proposed model — position-conditioned percentile with a linear guardrail:**
+**The model — position-conditioned percentile, winsorized. Settled by probe10.**
 
 1. Read the destination save's live `Level` distribution **for the target
    position** (`HeadCoach` / `OC` / `DC`), excluding `Level == 0` rows (CFB has
-   68 zero-level filler shells, Madden 16).
-2. Compute the source coach's percentile within the *source* save's distribution
-   for their position.
-3. Map to the destination value at that percentile.
-4. **Blend with the schema-ratio anchor** — `linear = round(cfbLevel * 50/100)`
-   — as `out = round(w·percentile + (1-w)·linear)`, default `w = 0.75`.
-   Rationale: Madden's per-position samples are thin (37 HC, 46 OC, 44 DC) so a
-   pure percentile map is lumpy and would compress the whole top of the CFB
-   distribution onto a handful of observed Madden values. The linear term keeps
-   the tail monotone and separated.
-5. Clamp to the destination schema range (`[1..50]` into Madden, `[0..100]` into CFB)
-   and enforce **strict monotonicity**: a higher CFB level must never produce a
+   68 zero-level filler shells, Madden 16 — they would drag every percentile down).
+2. **Winsorize the destination pool at p95.** Madden's OC pool has a single coach
+   at Level 49 against a p95 of 15; without clipping, the best CFB OC maps onto
+   that one outlier and arrives at 49 — i.e. a coordinator at the league's
+   absolute ceiling.
+3. Compute the source coach's percentile within the *source* save's
+   position-matched distribution.
+4. Map to the winsorized destination value at that percentile.
+5. Clamp to the destination schema range (`[1..50]` into Madden, `[0..100]` into
+   CFB) and enforce **monotonicity**: a higher CFB level must never produce a
    lower Madden level.
-6. Re-derive `ExperiencePoints` from the mapped level using the destination
-   save's own observed level↔XP relationship, so the game's progression system
-   agrees with the Level written. (Both games use `int[0..1000000]`, but CFB
-   p50 XP is 7,050 at level 35 while Madden's is 21,646 at level 10 — the curves
-   are entirely different and XP must not be copied.)
+6. Derive `ExperiencePoints` from the mapped level (§3.1a) — never copy it.
 
-`w` is a config constant, exposed in the UI like the existing Power-Curve knobs.
-**Q1 remains open on whether `w = 0.75` feels right in-game** — see the
-verification plan.
+**No linear anchor.** The original draft blended in `round(cfbLevel * 50/100)` at
+`w = 0.25` as a hedge against Madden's thin per-position samples. A sweep over
+`w ∈ {1.0, 0.9, 0.75, 0.5}` (probe10) shows that hedge *actively hurts*: Madden's
+coordinator pools are genuinely compressed (OC p50 = 6, p90 = 11) and the linear
+term fights that compression, pushing a median CFB OC from Madden's p57 up to
+p83 at `w = 0.75` and p91 at `w = 0.5`. Pure percentile (`w = 1.0`) plus
+winsorization preserves rank almost exactly:
+
+| CFB source | → Madden HC | → Madden OC | → Madden DC |
+|---|---|---|---|
+| p25 | p29 | p29 | p26 |
+| median | p49 | p57 | p57 |
+| p75 | p74 | p70 | p74 |
+| p90 | p90 | p88 | p88 |
+| best | p96 | p96 | p94 |
+
+`W` (percentile weight) and `WINSOR` (top-tail clip, default p95) stay config
+constants so they can be retuned, but **1.0 / 0.95 is the shipping default**.
+
+**The resulting table (CFB Level → Madden Level, XP)**, from this save pair:
+
+| CFB Lvl | HC lvl | HC XP | OC lvl | OC XP | DC lvl | DC XP |
+|---|---|---|---|---|---|---|
+| 5 | 2 | 4,040 | 1 | 2,018 | 3 | 6,065 |
+| 15 | 2 | 4,040 | 3 | 6,065 | 10 | 20,344 |
+| 20 | 9 | 18,293 | 5 | 10,127 | 11 | 22,398 |
+| 25 | 12 | 24,456 | 5 | 10,127 | 12 | 24,456 |
+| 30 | 16 | 32,723 | 6 | 12,163 | 12 | 24,456 |
+| 35 | 17 | 34,799 | 6 | 12,163 | 13 | 26,517 |
+| 40 | 23 | 47,329 | 8 | 16,246 | 15 | 30,651 |
+| 45 | 28 | 57,870 | 10 | 20,344 | 17 | 34,799 |
+| 50 | 32 | 66,368 | 13 | 26,517 | 19 | 38,961 |
+| 55 | 36 | 74,923 | 15 | 30,651 | 19 | 38,961 |
+| 60 | 41 | 85,698 | 15 | 30,651 | 19 | 38,961 |
+| 70 | 43 | 90,033 | 15 | 30,651 | 19 | 38,961 |
+| 80+ | 46 | 96,563 | 15 | 30,651 | 19 | 38,961 |
+
+The coordinator columns plateau because Madden's real coordinator pools top out
+at 15 (OC, winsorized) and 19 (DC). That is the destination league's actual
+shape, not a bug — a CFB coordinator moving to the NFL becomes a *good NFL
+coordinator*, not a top-10-overall staffer. A CFB coordinator good enough to
+exceed that ceiling should be moved as a **head coach**, which is the realistic
+career move anyway.
+
+> **The table above is illustrative, computed from one save pair.** The engine
+> recomputes it at load from whichever two saves the user picked. Never bake it in.
+
+### 3.1a `ExperiencePoints` — derived, never copied (Q10)
+
+**The two games do not mean the same thing by this field.** Verified by probe09:
+
+| | Madden 26 | CFB27 |
+|---|---|---|
+| meaning | **cumulative career XP** | **spendable currency**, drained by the talent tree |
+| Level as a function of XP | clean — quadratic fit **R² = 0.9972** | none — **R² = 0.4998** |
+| adjacent-level XP range overlaps | 2 / 32 | **59 / 72** |
+| XP per level | flat, **~2,030–2,100** across the whole range | meaningless |
+| worked example | Level 49 ⇒ ~105,000 XP | a **Level 87** coach holds **112 XP**; a Level 57 coach holds 23,943 |
+
+CFB's number is what the coach has left to spend (consistent with
+`ActiveTalentTree`, `CoachPoints`, `TalentSubTreeStatus`); Madden's is what they
+have earned in total. Copying either across is nonsense in both directions — a
+CFB median coach's 7,050 XP would place them at **Madden level ~3**, and a Madden
+level-49 coach's 105,000 XP exceeds CFB's entire observed maximum (44,735) by 2.4×.
+
+**Rules:**
+- **CFB → Madden**: `XP = round(1.8·L² + 2016.385·L)` on the *mapped* Madden
+  level (the fitted curve, R² = 0.9972). Refit from the destination save at load
+  rather than hardcoding the coefficients.
+- **Madden → CFB**: do **not** derive from level — there is no curve to derive
+  from. Grant a flat starting pool (proposed default **0**, matching the
+  `CoachPoints = 0` decision), since an arriving coach starts with an empty
+  talent tree and should spend their way up. Config constant.
+
+This also removes Q10 from the open list and closes the "coach arrives mid-level-up"
+failure mode, where a written Level and a copied XP disagree and the game
+immediately re-levels the coach on the next advance.
 
 ### 3.2 Archetype mapping (`map/archetypeMap.js`)
 
@@ -671,6 +762,300 @@ The non-obvious case the data forces: a field can be `both` and still need
 `COACH_*` grade are structurally shared but dead on the CFB side. §2 marks each
 one explicitly.
 
+### 3.6a The Movement Model — "why would this coach leave?" (`movement.js`) — **BUILT**
+
+Everything else in this document can *move* a coach. This decides whether a
+coach *would*. Implemented in [`lib/carousel/movement.js`](lib/carousel/movement.js),
+31 assertions in [`test/carouselMovement.spec.js`](test/carouselMovement.spec.js).
+
+**The constraint that shapes the design** (verified,
+[`research/probe12-vacancy-detail.js`](research/probe12-vacancy-detail.js)):
+**there are no vacancies in a static save.** All 32 real NFL franchises and all
+143 CFB schools have HC/OC/DC filled. The only empty slots in the Madden save
+belong to pseudo-teams (`AFC`, `NFC`, `Free Agents` — all `TeamIndex` 32). Real
+carousel openings are *created* by firings during the offseason; they do not
+exist to be found in a snapshot. So the model never looks for an open job — it
+scores how **vulnerable** each existing job is and treats the most vulnerable as
+the openings.
+
+**Three scores, 0..1, each returning its own `reasons[]`** so a proposal is
+auditable rather than a magic number:
+
+| score | question | dominant signals |
+|---|---|---|
+| **Desirability** | would the destination league want them? | CFB: `CoachPrestigeScore` (both percentile-within-position *and* raw-vs-league), `Level`, `CareerWinSeasons`, team prestige. NFL: `Level`, career W-L, plus a generous baseline for NFL pedigree |
+| **Willingness** | would they actually take it? | CFB: inverse of current job quality, plus `CurrentJobSecurityStatus` (HotSeat/Low), coordinator bonus, age penalty. NFL: `ContractStatus == FreeAgent`, `COACH_LASTTEAMFIRED`, low standing in the league |
+| **Vulnerability** | how likely is this job to come open? | weak incumbent `Level`, incumbent losing record, incumbent previously fired, `ContractYearsRemaining <= 1`; blended with roster quality into an `openingScore` |
+
+**`score = desirability × willingness`, and the multiplication is the whole
+point.** The most desirable college coach is usually the *least* willing — Ryan
+Day at Ohio State scores ~1.0 desirability and 0.60 willingness because he
+already has one of the best jobs in the sport, so he correctly never surfaces.
+A single blended "how good is this coach" number would hand the NFL the #1
+college coach every cycle, which is not a believable carousel. The NFL
+realistically hires the coach ranked 3rd–8th.
+
+**Two signals that look usable but are not**, both verified:
+- `COACH_FIREREPORTED` / `COACH_RESIGNREPORTED` read **`true` for every coach in
+  both games** — schema defaults that are never toggled. Zero information.
+  `COACH_LASTTEAMFIRED` is the real "was fired" signal (a genuine team index for
+  44/127 Madden coaches; sentinel `1023` = never fired).
+- CFB `NumContractOffers` and `PersuadeAttempts` are **zero for all 497** coaches.
+
+**Two tuning corrections found by running it**, both locked in by tests:
+1. *Percentile-within-position alone cannot separate a marquee head coach from
+   an elite coordinator* — both sit at the 100th percentile of their own cohort.
+   Added a league-wide `prestigeAbsolute` term (raw score ÷ live league p95).
+   Without it, the first run proposed **only** coordinators and no head coaches
+   at all.
+2. *Over half of CFB's coordinators sit on the hot seat* (107 of 213), so an
+   outsized HotSeat bonus stopped discriminating and drowned out prestige.
+   Softened 0.35 → 0.20, and the blue-blood willingness penalty 0.75 → 0.40
+   (real marquee moves do happen off the very best college jobs).
+
+**What it produces** against the sample saves (`proposeCarousel`):
+- *CFB → NFL*: M. Freeman (Oregon, top-3% prestige, 14 winning seasons, shaky
+  security) → Giants HC; D. Lanning (Miami) → Chiefs HC; elite coordinators →
+  NFL coordinator jobs — the most common real-world CFB→NFL move.
+- *NFL → CFB*: exactly the population the data exposes — fired, unemployed,
+  L1–L9 coaches with losing records (21-30, 18-33, 12-39).
+
+Proposals are filled **per position**, not as one global top-N: a real
+carousel's headline is the head-coaching hires, and a global ranking let
+coordinators (≈2× as many, plus a willingness bonus) crowd them off the list.
+
+`proposeCarousel()` returns proposals only — it never writes. Feeding one to
+`moveCoachCfbToMadden` (Mode A) or `moveCoachCfbToMaddenTeam` (Mode B, §3.7) is
+the caller's decision.
+
+**Acting on a proposal — Mode B, now built**
+([`lib/carousel/placeOnTeam.js`](lib/carousel/placeOnTeam.js),
+`moveCoachCfbToMaddenTeam` in [`index.js`](lib/carousel/index.js)): takes a
+proposal's `target` (a team + position) and actually executes it —
+1. displaces the incumbent into free agency *in place* (same row, same
+   identity/career/appearance; only the employment fields change — a
+   same-save operation, no cross-game mapping needed, since they were already
+   a valid Madden coach),
+2. writes the new coach's mapped fields into a destination row (found
+   *before* the incumbent is displaced, so their about-to-be-freed row can't
+   be picked right back — `findFreeAgentSlot` gained an `excludeRowIndex`
+   guard for this),
+3. writes **both** pointers describing the new job — `Coach.TeamIndex` on the
+   new row, and the reciprocal `Team.<slot>` reference back at them, via the
+   vendored library's own `table.getBinaryReferenceToRecord(index)` (Q8's
+   locked "always write both" decision, now actually implemented, not just
+   promised).
+
+Only same-kind hires are supported (a CFB `HeadCoach` becomes an NFL
+`HeadCoach`, never an `OffensiveCoordinator`) — `mapCoachCfbToMadden`'s Level
+cohort, Archetype, `CareerAssistant`, and `IsMaxLevel` are all derived from the
+coach's own position, so Mode B reads the position off the mapped result
+rather than accepting one that could disagree with it.
+
+**Verified live**, end to end, against a **copy** of the real save (never the
+original): moved Marcus Freeman onto the Giants. Re-opening the output fresh
+confirmed `Giants.HeadCoach` resolves to Freeman's row (`Position=HeadCoach,
+Level=46, ContractStatus=Signed, TeamIndex=15` — matching the Giants' own
+`TeamIndex`), and the displaced incumbent, D. Canales, correctly shows
+`ContractStatus=FreeAgent, TeamIndex=32` (Madden's FA-pool sentinel),
+`COACH_LASTTEAMFIRED=15` — indistinguishable from any other free agent already
+in the pool, exactly as designed. 15 assertions in
+[`test/carouselPlaceOnTeam.spec.js`](test/carouselPlaceOnTeam.spec.js).
+
+### 3.6b Why a coach would leave, plainly stated (2026-07-25)
+
+The table in §3.6a is accurate but compressed into formula terms. This is the
+same logic restated as explicit rules — one clean reference for reviewing or
+adjusting *why* a move happens, independent of the scoring arithmetic. Every
+rule here is grounded in a verified, real save field (§3.6a's own
+"two signals that look usable but are not" already screened out the dead
+ends: `COACH_FIREREPORTED`/`COACH_RESIGNREPORTED`, `NumContractOffers`,
+`PersuadeAttempts`, `CurrentJobSecurityPercentageRank`). Nothing below is
+invented — each rule maps to a specific line in `movement.js`.
+
+Every move is decided by TWO independent questions, never one — a coach can
+be desirable and still unwilling (Ryan Day), or willing and still
+undesirable (a 0-2 coordinator nobody wants). **Both must be true for a move
+to surface.**
+
+**Reads as:** *push* = a reason to leave the CURRENT job. *pull* = a reason
+the DESTINATION wants them. A move needs at least one real push; pulls alone
+never move a happy coach.
+
+#### CFB coach → NFL
+
+*Push (willingness — would they actually go?)*
+1. **On the hot seat** (`CurrentJobSecurityStatus == HotSeat`) → strong push.
+   Over half of CFB coordinators sit here, so this is common, not rare.
+2. **Shaky security** (`Low`) → moderate push.
+3. **Coordinator, not a head coach** → push — an NFL coordinator job is a
+   step up from a college coordinator job in a way an NFL HC job usually
+   isn't a step up from a great college HC job.
+4. **The better their CURRENT program** (`TeamPrestige`), **the LESS willing
+   they are** — this is a brake, not a push, and it's deliberately moderate
+   (not so strong it disqualifies every top coach — real blue-blood coaches
+   do leave).
+5. **Age 60+** → brake. Less likely to uproot for a ground-up rebuild.
+
+*Pull (desirability — would the NFL want them?)*
+1. **Elite prestige within their own position** (top 10-30% of college
+   HCs/coordinators).
+2. **A national name** — raw prestige score compared against the WHOLE
+   league, not just their position. This is what separates a marquee HC from
+   a merely-excellent coordinator; without it the model can't tell them
+   apart (both sit at the 100th percentile of their own cohort).
+3. **High coach level.**
+4. **A long track record of winning seasons.**
+5. **Running a big program** *raises* desirability even as it *lowers*
+   willingness (rule 4 above) — the tension is the whole point. The NFL
+   wants the coach at the blue blood; that coach is the least likely to
+   leave. What actually surfaces is the coach 3rd-8th on the desirability
+   list who's also unhappy or insecure enough to go.
+
+#### NFL coach → CFB
+
+*Push (willingness — would they actually go?)*
+1. **Currently a free agent** (`ContractStatus == FreeAgent`) → the single
+   strongest push there is. An unemployed coach needs a job.
+2. **Was fired** (`COACH_LASTTEAMFIRED` is a real team index, not the
+   "never fired" sentinel) → push, independent of #1 (a fired coach who
+   already landed elsewhere is a different case than one still out of work).
+3. **Low standing in the NFL** (bottom third of their position's level
+   cohort) → push. Nothing left to lose in the league that just passed on
+   them.
+4. **Too well-regarded in the NFL** (top 15%) → strong brake, the mirror of
+   #3. A coach the league still rates highly has no real reason to drop down
+   a level.
+5. **Coordinator, not a head coach** → push — a college HEAD COACH job is a
+   genuine promotion for an NFL coordinator, unlike for a sitting NFL HC.
+6. **Age 62+** → brake.
+
+*Pull (desirability — would a college program want them?)*
+1. **NFL coaching experience itself** — a generous flat baseline. College
+   programs hire NFL pedigree even off a bad stint; the credential carries
+   real weight on the recruiting trail independent of the record.
+2. **A winning NFL record** (55%+ over 10+ games) → bonus.
+3. **A losing NFL record** (≤40%) → a smaller penalty than you'd expect,
+   for the same reason as #1 — pedigree survives a bad record better than a
+   coordinator's résumé would.
+4. **Well-regarded level** → bonus, on top of the flat baseline.
+
+#### Which JOB is likely to open (no direction has real vacancies — see
+§3.6a's opening constraint; this is what stands in for "there's an opening")
+
+*NFL jobs — inferred, since Madden has no direct "hot seat" field:*
+1. **Weak incumbent** (bottom quartile of their position's level cohort) —
+   the dominant signal, since it's the only one directly available.
+2. **Incumbent has a losing record** (≤40% over 10+ games).
+3. **Incumbent has been fired before**, anywhere in their career.
+4. **Contract expiring** (≤1 year remaining).
+5. A separate **attractiveness** score (good roster + high team rank) marks
+   which of the vulnerable jobs a candidate would actually want, so a
+   likely-to-open BAD job doesn't rank ahead of an unlikely-to-open GOOD one.
+
+*CFB jobs — read directly, CFB is much better instrumented here:*
+1. **`CurrentJobSecurityPercentage`** (0-100, real, populated) is the
+   dominant term by design — CFB tells you the hot-seat number directly
+   instead of making you infer it.
+2. **Contract expiring** (≤1 year remaining) → makes a change cheap for the
+   school, so it adds on top of the security number.
+3. **Weak incumbent** (bottom quartile of level) → secondary signal, same
+   role as the NFL side but weighted lower since the direct security number
+   already carries most of the signal.
+4. A **literal vacancy** (a team with no coach in that slot at all) is
+   maximal vulnerability — nothing to displace.
+5. Same **attractiveness** pairing as the NFL side, using `TeamPrestige`
+   (0-10, real, populated across all 139 schools) instead of an inferred
+   roster score.
+
+### 3.7a Head-coach hiring window (locked decision, built)
+
+**Locked product decision**: a `HeadCoach` is only placed via Mode B if the
+destination team's job would realistically be open — "right after Super Bowl
+week." OC/DC hires are **not** gated by this rule.
+
+This closes part of Q7 concretely rather than leaving it a general worry.
+Implemented in [`lib/carousel/timing.js`](lib/carousel/timing.js), reading the
+Madden save's own `SeasonInfo` table — verified live: `CurrentStage`
+(`PreSeason`/`NFLSeason`/`OffSeason`) plus four boolean flags
+(`IsCoachDemandReleasePeriodActive`, `IsStaffHiringPeriodActive`,
+`IsStaffHiringCreateOfferPeriodActive`, `IsStaffHiringEvaluateOfferPeriodActive`)
+that are **literally the flags Madden's own Staff Hiring / Coach Demand
+Release UI is gated by**. Rather than guess a week number, `isHeadCoachHiringWindow`
+requires `CurrentStage === 'OffSeason'` and at least one of those four flags —
+the real coaching-carousel window mapped onto the exact mechanism the game
+uses to represent it.
+
+`assertHeadCoachHiringAllowed(position, seasonInfo, config)` is the actual
+gate, deliberately split out as a **pure decision function** (no I/O) from
+`enforceHeadCoachHiringWindow(maddenFile, position, config)` (the live-save
+wrapper `placeOnTeam.js`'s `planTeamPlacement` calls) — so the branching logic
+itself is directly unit-testable with a fixture, not only through a live save.
+`config.allowOffWindowHeadCoachHire` is an explicit, named override for
+testing/exploration; there is no silent bypass.
+
+**Verified against the real save as a sanity check that the gate isn't a
+no-op**: the sample save is currently `NFLSeason`, week 2 of the regular
+season — i.e., genuinely NOT the hiring window. An unguarded HC placement
+(Marcus Freeman → Giants) is correctly **blocked** with a clear message
+naming the current state; the same call with the override succeeds as before.
+An OC/DC placement is confirmed **never** gated, regardless of the window.
+17 assertions in [`test/carouselTiming.spec.js`](test/carouselTiming.spec.js).
+
+**Confirmed against the save in the actual window** (2026-07-22): the user
+advanced `CAREER-JUL06-10h10m34a-AUTOSAVE` into the real offseason and the
+live read shows `CurrentStage=OffSeason`, `IsStaffHiringPeriodActive=true`
+(the other three flags false) — `isHeadCoachHiringWindow` correctly returns
+`true`. This was the open verification gap: the gate had only been exercised
+in the blocked (mid-season) case and via the manual override; now it's
+confirmed to open correctly on genuine offseason data too. Still unobserved:
+whether `IsCoachDemandReleasePeriodActive`
+firing *alone*, without `IsStaffHiringPeriodActive`, represents an earlier
+sub-window worth distinguishing — this save shows the hiring flag directly,
+so that combination hasn't been seen yet.
+
+
+### 3.7 Placement mode — free agent by default (Q7)
+
+**Decision: an injected coach must be a coach the destination game's own hiring
+system can find and hire, right now.** We are adding a person to the league, not
+scripting a specific job. Two modes, with the first as the default:
+
+**Mode A — Free-agent injection (default).** Write the coach into the destination
+save with:
+- `ContractStatus` = `FreeAgent` (name-mapped: CFB value 7 / Madden value 1)
+- `TeamIndex` = the destination's unassigned sentinel — Madden **32**, CFB **255**
+- `PrevTeamIndex` = same sentinel; `SeasonsWithTeam` = 0
+- `ContractLength` / `ContractYearsRemaining` = 0
+- no `Team.<slot>` reference written — by definition they hold no job
+
+The destination's `StaffHiringEval` / `CoachCarousel*` then treats them as an
+available candidate. This is why the CFB save's 68 blank `Level = 0`,
+`TeamIndex = 255`, `CoachPrestige = Dminus` shells matter: they are exactly the
+shape of a hireable-but-unemployed CFB coach, so they double as both a template
+and a set of landing slots (V8).
+
+**Mode B — Direct placement (explicit user choice).** The user names the team and
+job. Write `Coach.TeamIndex`, `Coach.Position`, **and** the reciprocal
+`Team.HeadCoach`/`OffensiveCoordinator`/`DefensiveCoordinator` reference
+(mandatory, per Q8), plus a live contract (`ContractStatus` = `Signed`,
+`ContractLength` 3–5, `ContractYearsRemaining` = `ContractLength`). The displaced
+incumbent must be explicitly moved to the free-agent pool, not left dangling.
+
+**Implication for the write timing.** Mode A is deliberately timing-tolerant: a
+free agent is valid in any week, so the carousel does not have to thread a
+specific offseason window. Mode B is not — placing a coach into an occupied seat
+mid-window is exactly the case the game's own evaluator is most likely to undo.
+This is the main reason Mode A is the default, and it substantially de-risks
+Phase 4.
+
+**What still needs checking (V7)**: that a free-agent-injected coach actually
+*appears* in the destination's hiring UI and gets picked up on an advance —
+i.e. that no additional flag (`IsCreated`, `CareerAssistant`, `OriginalPosition`,
+a minimum `Level`) gates eligibility. Note the CFB filler shells all sit at
+`Level = 0`, so a nonzero level is unlikely to be required, but the reverse —
+whether a *too-good* free agent is ignored — is worth watching.
+
 ---
 
 ## 4. Verification plan (in-game, after this roadmap is locked)
@@ -700,16 +1085,18 @@ and the team-select screen.
 (CFB blobs contain no head loadout) and #3 renders correctly. If #1 renders
 fine, the head is being resolved from somewhere else and §3.5 can be simplified.
 
-**V3 — Level scale sanity (closes Q1).**
-Move four CFB coaches spanning the distribution — a p50 HC (Level 41), a p90 HC
-(67), the max HC (87), and a p50 OC (33) — using `w = 0.75`.
-*Look at*: where each lands in Madden's Coach Central level display relative to
-real NFL coaches; whether the 87 lands near the league's best without exceeding
-50; whether the OC lands among Madden OCs (p50 = 6) rather than among head coaches.
-*Means*: if the p50 OC arrives above Madden's OC p90 (11), raise the percentile
-weight `w`. If the max HC pins at 50 and compresses the tail, lower it.
-**Do this before any other tuning** — every downstream synthesis (salary,
-LegacyScore, prestige, archetype tier) keys off the mapped level.
+**V3 — Level + XP sanity (confirms §3.1 / §3.1a).**
+Move four CFB coaches spanning the distribution — a median HC (Level 41 → Madden
+23, XP 47,329), a p90 HC (67 → 43, 90,033), the max HC (87 → 46, 96,563), and a
+median OC (36 → 7, 14,203).
+*Look at*: where each lands in Coach Central relative to real NFL coaches; that
+the OC lands among Madden OCs rather than among head coaches; and critically
+**that advancing one week does not immediately re-level anyone** — that is the
+test that the derived XP agrees with the written Level.
+*Means*: a coach who jumps a level on the first advance means the XP curve fit is
+off and needs refitting from the destination save. **Do this before any other
+tuning** — every downstream synthesis (salary, LegacyScore, prestige, archetype
+tier) keys off the mapped level.
 
 **V4 — Contract-status name mapping.**
 Write one coach with a name-mapped `ContractStatus` and one with a raw numeric
@@ -729,25 +1116,25 @@ unassigned CFB offensive names, plus Madden `Pistol`/`Tampa2`/`Quarters4_3`.
 re-derive the pointer table on a *different* save/patch to confirm R2 (pointer
 instability).
 
-**V6 — Team wiring round-trip.**
-Move a coach into a Madden team as HC: write `Coach.TeamIndex`,
-`Coach.Position`, **and** `Team.HeadCoach`. Then repeat writing only
-`Coach.TeamIndex`.
+**V6 — Team wiring regression check (Q8 already decided: write both).**
+Mode B placement into a Madden team as HC, writing `Coach.TeamIndex`,
+`Coach.Position` **and** `Team.HeadCoach`.
 *Look at*: does the team show the new coach; does the previous HC vanish or
 duplicate; does advancing a week re-assign anyone.
-*Means*: determines whether the reciprocal `Team.*` reference is mandatory (it
-almost certainly is) and whether the displaced coach must be explicitly moved to
-the FA pool (`TeamIndex` 32 / 255) rather than left dangling.
+*Means*: confirms the both-pointers write is correct, and settles the remaining
+sub-question — whether the displaced incumbent must be explicitly moved to the FA
+pool (`TeamIndex` 32 / 255) or whether the game re-homes them itself.
 
-**V7 — Does the destination game's own carousel fight us?**
-Inject a coach, then advance through the destination's hiring window
+**V7 — Does the destination's hiring system pick up an injected free agent?**
+Mode A inject (per §3.7), then advance through the destination's hiring window
 (CFB `CoachCarouselStartEvent` / `StaffHiringEval`; Madden `StaffHiringPeriodStartEvent`).
-*Look at*: whether the injected coach survives, gets re-signed, gets fired, or
-gets overwritten.
-*Means*: decides whether the carousel must write during a specific offseason week
-(the likely answer), and whether `ContractStatus`/`ContractYearsRemaining` need
-particular values to be left alone. **This is the single highest-risk unknown for
-Phase 3 automation.**
+*Look at*: does the coach **appear in the hiring/candidate UI**, and do they get
+hired on an advance.
+*Means*: this is now a positive test, not a survival test — per Q7 the intent is
+that the game hires them. If they never appear, some eligibility flag is missing
+(`IsCreated`, `CareerAssistant`, `OriginalPosition`, or a `Level` floor) and
+needs identifying. Also worth watching the inverse: whether a *very high level*
+free agent is skipped by AI teams that can't afford them.
 
 **V8 — Blank-shell landing slots (Madden→CFB).**
 Write an incoming NFL coach into one of CFB's 68 `Level=0` / `TeamIndex=255`
@@ -761,12 +1148,16 @@ purpose-built for this.
 
 ## 5. Open questions
 
-**Q1 — Level scale conversion.** *Partly answered.* Schema bounds are exactly
-2:1 (CFB `[0..100]`, MAD `[1..50]`) but observed distributions are not, and
-diverge by position (CFB OC p50 33 vs Madden OC p50 6). §3.1 proposes a
-position-conditioned percentile map blended `w=0.75` with the linear anchor.
-**Still open**: the value of `w`, and whether Madden's thin per-position samples
-(37/46/44) support percentile mapping at all. → **V3**.
+**Q1 — Level scale conversion.** **CLOSED on paper; V3 confirms in-game.** Schema
+bounds are exactly 2:1 (CFB `[0..100]`, MAD `[1..50]`) but observed distributions
+are not, and diverge by position (CFB OC p50 33 vs Madden OC p50 6). §3.1 settles
+on a position-conditioned **pure** percentile map (`W = 1.0`) with the
+destination pool **winsorized at p95**; a sweep over `W ∈ {1.0, 0.9, 0.75, 0.5}`
+showed the linear anchor actively degrades coordinator mapping, so it was
+dropped. Rank is preserved within ~7 percentile points at every landmark across
+all three positions. Madden's thin per-position samples (35/40/36 non-zero) turned
+out to be workable *because* winsorizing removes the outlier sensitivity that
+made them look unusable. → **V3** to confirm it looks right in Coach Central.
 
 **Q2 — Zero vs. synthesized `COACH_*` grades on CFB→Madden.** *Sharpened.* CFB is
 all-zero across 497 coaches; Madden's schema **default is 50** and its observed
@@ -813,27 +1204,34 @@ is a reference, 477/497 populated one row each, into the CFB-only
 `ActiveTalentTree` table — an incoming coach probably needs a fresh empty tree
 row created rather than a null reference. All three need an in-game read.
 
-**Q7 (new) — Do the games' own carousel/hiring systems overwrite injected
-coaches?** CFB has a full native carousel (`CoachCarouselStartEvent`,
-`StaffHiringEval`, `CoachRetirementEval`) and a `ContractStatus.PendingNFL`
-member; Madden has `StaffHiringPeriodStartEvent`, `CoachCentralEval`,
-`DemandReleaseCoachStartEvent`. Writing a coach mid-window may be undone on the
-next advance. → **V7**. Highest-risk unknown for automation.
+**Q7 — Do the games' own carousel/hiring systems overwrite injected coaches?**
+**DECIDED — they shouldn't, and that is the design intent.** An injected coach is
+a coach who *exists in the game*. The goal is that the destination game's own
+carousel picks them up and hires them **now**, not that we force them into a seat
+and hope nothing touches them. This makes free-agent injection the **default
+mode** and reframes the native hiring systems from a threat into the mechanism.
+See §3.7. Residual verification is V7, but it is no longer a gate on the design —
+it is a check that the injected coach is *visible to* and *selectable by* the
+hiring evaluator.
 
-**Q8 (new) — Is the reciprocal `Team.HeadCoach`/`OC`/`DC` reference mandatory?**
-`Coach.TeamIndex` and `Team.<slot>` are two independent pointers at the same
-relationship. Writing only one probably leaves an inconsistent save. → **V6**.
+**Q8 — Is the reciprocal `Team.HeadCoach`/`OC`/`DC` reference mandatory?**
+**DECIDED — always write both.** `Coach.TeamIndex` and `Team.<slot>` both get
+written on any direct placement, no experiment needed. Cheap, and it removes an
+entire class of inconsistent-save error. V6 downgraded from a gate to a
+regression check.
 
-**Q9 (new) — Are the scheme *pointer* values stable across saves and patches?**
-Madden's observed pointers fall in two bands (`104xxx` and `122xxx`), which looks
-like base-game vs. title-update assets. If pointers move between saves, the
-derive-at-load design in §3.3 is mandatory rather than merely prudent. → **V5**,
-run against a second save.
+**Q9 — Are the scheme *pointer* values stable across saves and patches?**
+**DEFERRED.** Work with the pointer values as they read today. The derive-at-load
+design in §3.3 stays (it costs nothing and is how the table was built in the
+first place), but patch-drift handling is not a Phase 1 concern. Revisit if a
+title update visibly breaks scheme assignment.
 
-**Q10 (new) — `ExperiencePoints` curve.** CFB p50 XP is 7,050 at Level 35;
-Madden's is 21,646 at Level 10. Same field range `[0..1000000]`, entirely
-different curves. Copying XP would fight the mapped Level. §3.1 re-derives it,
-but the exact destination curve needs fitting from the destination save.
+**Q10 — `ExperiencePoints`.** **CLOSED.** The two games use the field for
+different things entirely — Madden cumulative (Level is a clean function of XP,
+R² = 0.9972, ~2,040/level), CFB spendable talent-tree currency (R² = 0.4998; a
+Level 87 coach holds 112 XP). XP is derived from the mapped level on the way into
+Madden and set to a flat starting pool on the way into CFB. Full model and the
+balanced table in §3.1 / §3.1a.
 
 **Enum ordering — resolved.** In this schema family, enum **member names are
 stable** where a concept is shared, but **numeric values are not**
@@ -849,38 +1247,181 @@ loaded saves and refuse to run if a patch changed one.
 
 ## 6. Phased build plan
 
-### Phase 0 — Shared core & Person identity
+### Phase 0 — Shared core & Person identity — **DONE**
 **Goal.** Extract `lib/saveIO.js` (openers, schema constants, `safe`,
 `biggestTableByName`); build `lib/carousel/person.js`, `context.js`,
 `lifecycle.js`; read-only coach enumeration from both saves.
+
+**Shipped:**
+- [`lib/saveIO.js`](lib/saveIO.js) — `openCfbSave`, `openMaddenSave` (new;
+  extracted from `writeCareerFile`'s inline open), `defaultCfbSavesDir`,
+  `defaultMaddenSavesDir`, the schema-override constants, `safe`, and a new
+  `safeRef` (verified `getValueByKey` returns a useless raw bitstring for
+  reference-typed fields like `OffensiveScheme` — `getReferenceDataByKey` is
+  the real pointer accessor), plus `biggestTableByName`. `lib/pipeline.js`
+  requires these back; zero behavior change (diff is a pure move — same open
+  calls, same error strings, same `{cfbFile, ratingFields}` shape).
+- [`lib/carousel/lifecycle.js`](lib/carousel/lifecycle.js) — `STAGES = ['pool',
+  'selection', 'mapped', 'staged', 'written']`, mirroring
+  `rosetta/lifecycle.js`'s tagged-plain-array convention exactly.
+- [`lib/carousel/context.js`](lib/carousel/context.js) — `createCarouselContext`,
+  services/environment only, two-save-aware (holds both the source and
+  destination open files, unlike Rosetta's single-save context).
+- [`lib/carousel/person.js`](lib/carousel/person.js) — `extractPerson`. **One
+  correction found while implementing**: re-verifying the Coach∩Player
+  intersection directly against both live schemas (not just the field-name
+  diff in FINDINGS.md) showed `Position` does NOT belong in Person even
+  though the name is shared — CFB/Madden `Coach.Position` uses
+  `CoachPosition`/`StaffPosition` (job title) while `Player.Position` uses
+  `PositionE` (playing position) in **both** games. Copying it through Person
+  would silently turn a future retired player's playing position into a
+  coaching title. `PERSON_FIELDS` is **18** fields (the 19 shared names minus
+  `Position`); each role facet owns its own `position` instead. This is
+  exactly the Phase-5 trap the roadmap flagged conceptually — now fixed at
+  the root rather than deferred.
+- [`lib/carousel/coachFacet.js`](lib/carousel/coachFacet.js) — schema-driven
+  (not hardcoded) extraction of every non-Person Coach field, split into
+  `raw` (scalars + enums, via `safe`) and `refs` (reference pointers, via
+  `safeRef`) — verified against a live save that a `Scheme`-typed field reads
+  back as a garbage bitstring through `getValueByKey` but a correct
+  `{tableId, rowNumber}` through `getReferenceDataByKey`.
+- [`lib/carousel/coachPool.js`](lib/carousel/coachPool.js) — `listCoaches(file,
+  sourceGame)`, the Pool stage: reads the largest `Coach` table, extracts every
+  non-empty row as `{person, coach}`, tags the array `'pool'`.
+- [`lib/carousel/index.js`](lib/carousel/index.js) — front door, one export per
+  piece, no run-everything entry point.
+- [`test/carouselPerson.spec.js`](test/carouselPerson.spec.js) — 19 assertions:
+  `PERSON_FIELDS` shape, cross-game round-trip fidelity (identical source
+  values from a CFB-shaped and a Madden-shaped fake record produce identical
+  Person output apart from `sourceGame`/`sourceRow`), missing-field safety,
+  invalid-`sourceGame` rejection, and `coachFacet`'s raw/refs split. Wired into
+  `npm test`; full suite (9 spec files, 400 assertions) green.
+
+**Verified live** (read-only, against the same two sample saves used
+throughout FINDINGS.md — not part of the automated suite since the paths are
+personal): `listCoaches` returns 497 CFB coaches / 127 Madden coaches — exact
+match to every earlier probe's record count — with correctly grouped Person
+data and a correctly resolved `OffensiveScheme` pointer (`16433:111496`, the
+same pointer probe07 mapped to `OFF_SPREAD`).
+
 **Prereqs.** None. All research needed is in FINDINGS.
-**Done when.** `carousel-list-coaches` returns every coach from both saves as a
-`Person + CoachFacet`, with a unit test asserting round-trip fidelity of the 19
-shared Person fields. `npm test` still green — `pipeline.js` behaviour unchanged.
 **Blocking questions.** None.
 
-### Phase 1 — The map layer (no writes)
+### Phase 1 — The map layer (no writes) — **DONE**
 **Goal.** `coachFieldMap.js` (§2 as data), `enumBridge.js`, `levelScale.js`,
 `archetypeMap.js`, `schemeLookup.js` (derived at load), `synthesis.js`.
-Plus a **dry-run diff report**: pick a coach, pick a destination, print every
-field with its action and resulting value.
-**Prereqs.** Phase 0.
-**Done when.** A CFB coach can be fully mapped to a Madden coach record *on
-paper*, with every one of the 156 fields accounted for and no field silently
-defaulted. Startup assertion for the nine identical enums. Tests for the
-enum-bridge drift cases (`ContractStatus.FreeAgent` 7→1) and the scheme
-pointer→name derivation.
-**Blocking questions.** None — the dry run is exactly how V1/V3/V5 get set up.
 
-### Phase 2 — CFB → NFL, one way
-**Goal.** Actually write a coach into a Madden save. Destination-row allocation
-(343 free slots), `Team.<slot>` reciprocal wiring, displaced-coach handling,
-backup-before-write.
-**Prereqs.** Phase 1. **Q1 (V3), Q2 (V1), Q5 (V2), Q8 (V6) resolved.**
-**Done when.** A CFB head coach appears correctly in Madden's Coach Central with
-a sane level, a rendered face, a valid scheme, and the team shows them as HC —
-and the save reloads cleanly and sims a season.
-**Blocking questions.** Q1, Q2, Q5, Q8. Q3 can ship with the Pythagorean estimate.
+**Shipped**, all under [`lib/carousel/map/`](lib/carousel/map/):
+- [`coachFieldMap.js`](lib/carousel/map/coachFieldMap.js) — the full 156-field
+  table transcribed as data. Two self-checks, not just a docstring claim: a
+  require-time assertion (exactly 156 entries, no duplicates, 102/35/19
+  presence split), and `assertMatchesLiveSchema(cfbFile, maddenFile)` — a real,
+  callable cross-check against whichever saves are actually open, satisfying
+  the roadmap's own R3 mitigation ("startup assertion... refuse to write on
+  mismatch") rather than leaving it aspirational. **Transcribing this caught a
+  real bug**: `PrevPosition` was listed twice in the roadmap's own markdown
+  (§2.2 and §2.9, same action, redundant) — fixed in both the doc and the data.
+- [`enumBridge.js`](lib/carousel/map/enumBridge.js) — `crossEnum`. Implements
+  the one rule everything hangs on (name, never value) more simply than
+  drafted: since `getValueByKey` returns an enum's member **name**, and the
+  write side accepts that same name string back, any member whose name is
+  shared needs no alias at all — the destination schema's own enum resolves
+  it. `aliasMap`/`fallback` only handle names with no counterpart at all
+  (CFB's `PendingNFL`, `PendingHire`, etc.).
+- [`levelScale.js`](lib/carousel/map/levelScale.js) — position-conditioned
+  percentile mapping (§3.1's `pctOf`/`valueAt`/`winsorize`, all pure and unit
+  tested) plus `synthesizeExperiencePoints` (§3.1a): Madden's XP is fit live
+  from whichever destination save is open (quadratic least-squares on
+  (Level, XP) pairs — refit every run, never the one-save coefficients from
+  research), CFB's is a flat configured starting pool.
+- [`archetypeMap.js`](lib/carousel/map/archetypeMap.js) — both directions from
+  §3.2's tables, seeded via `rosetta/rng` + `rosetta/identity` for
+  determinism, exactly as specified.
+- [`schemeLookup.js`](lib/carousel/map/schemeLookup.js) — the static
+  CFB↔Madden `BaseScheme` name table from §3.3, plus `buildSchemeIndex` (ports
+  `research/probe07`'s Team↔Coach join into reusable code — derived from
+  whichever save is open, never hardcoded) and `resolveSchemeNameForCoach`
+  (added during implementation: reverse-resolves one specific coach's own raw
+  scheme value back to a name, which the original design hadn't separated
+  from "build the whole save's index").
+- [`synthesis.js`](lib/carousel/map/synthesis.js) — `CoachPrestigeScore`/
+  `CoachPrestige` (live P70/P40 percentile draw per position cohort, never
+  hardcoded), `CurrentJobSecurityPercentage`=80, `CoachPoints`=0,
+  `SpecialtyType` derivation, `TeamBuilding`/`TradingTendency` defaults,
+  `CoachBackstory` both directions, `neutralIfZero`, and `LegacyScore` (added
+  during implementation — drawn at the *same* percentile as the coach's
+  mapped Level, so the two quality signals stay coherent rather than
+  independent guesses).
+- [`test/carouselMap.spec.js`](test/carouselMap.spec.js) — 67 assertions
+  covering every module above with fixtures (no real save needed).
+
+**The "dry-run diff report"** ended up living in Phase 2's orchestration
+function (`moveCoachCfbToMadden({..., config: {dryRun: true}})`, see below)
+rather than as a separate printer — it computes and returns the full mapped
+field bag and chosen destination without writing anything, which is what the
+goal actually needed; there's no separate pretty-printed report yet.
+
+**Prereqs.** Phase 0.
+**Blocking questions.** None. (Two things were deferred, not blocked: Q2/Q5 are
+about whether the *values* Phase 1 computes are right in-game, not whether the
+map layer itself works — it does, verified structurally and by the live write
+test in Phase 2 below.)
+
+### Phase 2 — CFB → NFL, one way (Mode A) — **DONE**
+**Goal.** Actually write a coach into a Madden save.
+
+**Shipped:**
+- [`lib/carousel/map/index.js`](lib/carousel/map/index.js) —
+  `mapCoachCfbToMadden`, computing every one of the ~95 Madden fields a Mode-A
+  coach needs from a live CFB Coach record. Guarded by `assertPlannedAction`
+  calls that cross-check every hardcoded field-handling assumption in this
+  function against `coachFieldMap.js`'s declared action at require time — this
+  caught a real drift during implementation (`CareerTies` was being zeroed
+  here but is declared `COPY` in the field map) before it ever ran against a
+  save.
+- [`lib/carousel/place.js`](lib/carousel/place.js) — `findFreeAgentSlot`: Mode
+  A's destination selection (§3.7). Prefers an existing free-agent Coach row
+  at the same position (so the coach inherits that row's already-valid
+  head/portrait — appearance synthesis, §3.5, isn't built yet, so
+  `mapCoachCfbToMadden` deliberately leaves those fields unset), falling back
+  to any free agent, then a genuinely empty row.
+- [`lib/carousel/write.js`](lib/carousel/write.js) — `writeCoachFields`
+  (direct property assignment, matching `writeCareerFile`'s established
+  pattern exactly; skips any field left `undefined` rather than writing it)
+  and `saveAs` (`file.save(outputPath)` — never the source path in place).
+- [`lib/carousel/index.js`](lib/carousel/index.js) — `moveCoachCfbToMadden`,
+  the full orchestration: open → map → place → write → save, with a
+  `config.dryRun` mode that stops before writing.
+
+**Mode A only** — no `Team.<slot>` reciprocal wiring, no displaced-coach
+handling, no salary/contract beyond "free agent." That's Mode B (direct
+placement into a named team/job), explicitly deferred: the roadmap's own text
+recommended shipping Mode A first since it's timing-tolerant (§3.7), and nothing
+here blocks adding Mode B later as an additional placement path.
+
+**Verified live**, end to end, against a **copy** of the real Madden save
+(never the original — `research/` convention extended to this phase: write
+only to a scratch-directory copy):
+- Dry run: CFB Level 64 HC → mapped to Madden Level 41, a real free-agent
+  HeadCoach row (row 42) chosen as the destination, correct field bag computed.
+- Real write: same coach written to a copy, `file.save()`'d, then the output
+  file **re-opened as a fresh `FranchiseFile.create()` call** (no in-memory
+  state carried over) and every field read back matched what was written —
+  `Position="HeadCoach"`, `Level=41`, `ExperiencePoints=84695` (from the live
+  XP fit), `Archetype="DevelopmentWizard"` ↔ `CoachBackstory="TeamBuilder"`
+  (consistent per the synthesis rule), `ContractStatus="FreeAgent"`,
+  `TeamIndex=32`, `COACH_SPECIALTY` copied verbatim, `OffensiveScheme` a real
+  Madden bitstring (borrowed from a live Madden coach via `schemeLookup`, not
+  garbage), `COACH_RATING=50`, `YearsCoaching` correctly clamped. The file
+  re-parsed cleanly, which is itself a strong signal the binary structure
+  wasn't corrupted by the write.
+
+**Prereqs.** Phase 1.
+**Blocking questions.** Q2 and Q5 are about whether the *computed values* are
+right in-game (V1, V2) — not about whether the write mechanism works, which is
+now verified. Q3 ships with a hardcoded 0 for Madden's career W/L fields
+(honestly flagged in code, not silently guessed) pending that read of
+`CareerCoachStats`.
 
 ### Phase 3 — NFL → CFB
 **Goal.** The reverse direction: 13-value archetype expansion, prestige-P70,
@@ -895,12 +1436,14 @@ gets hired by or assigned to a school, and survives an advance.
 **Goal.** Move from "user moves one coach" to "run the carousel": propose moves
 (a top CFB HC gets an NFL job; a fired NFL HC returns to college), multi-coach
 batches, deterministic seeding, an offseason-timing model.
-**Prereqs.** Phases 2 + 3. **Q7 (V7) resolved — this phase is blocked on it.**
+**Prereqs.** Phases 2 + 3. V7 confirms the hiring pickup, but per Q7 the design
+now *relies on* the games' own carousels rather than working around them.
 **Done when.** One command produces a coherent, reproducible carousel across both
 saves that survives an advance in both games.
-**Blocking questions.** Q7 is a hard gate. If the games' own hiring evaluators
-overwrite injected coaches, automation must be restricted to a specific offseason
-week, and that constraint has to be discovered before the UX is designed.
+**Blocking questions.** None hard. Q7's resolution (inject as free agents; let
+the native carousel hire them) removed what was previously this phase's gate —
+Mode A is valid in any week, so the automation does not have to discover and
+thread a specific offseason window before the UX can be designed.
 
 ### Phase 5 — Retired player → coach
 **Goal.** `Person + PlayerFacet` → `Person + CoachFacet`. Derive `Position` from
@@ -920,16 +1463,16 @@ recognisable face and a plausible level.
 
 | # | risk | severity | evidence | mitigation |
 |---|---|---|---|---|
-| R1 | **The game's own hiring/carousel evaluator overwrites injected coaches** | **critical** | CFB has 6 `CoachCarousel*` tables + `StaffHiringEval`; Madden has `StaffHiringPeriod*`, `CoachCentralEval` | V7 before Phase 4. Restrict writes to a verified offseason week; treat automation as gated |
-| R2 | **Scheme pointer values are save/patch-specific** | high | Madden pointers span two bands (`104xxx`, `122xxx`) — likely base vs. title update. Target asset tables aren't in the save at all | Derive the pointer→name map at load from the live saves (§3.3). Never hardcode. Fail loudly if derivation yields fewer than N pointers |
+| R1 | **An injected coach is invisible to the destination's hiring system** | medium *(was critical — reframed by Q7)* | CFB has 6 `CoachCarousel*` tables + `StaffHiringEval`; Madden has `StaffHiringPeriod*`, `CoachCentralEval` | Mode A injection (§3.7) makes the native carousel the *mechanism*, not the threat. Risk is now "they never show up in the candidate pool", not "they get overwritten". V7 |
+| R2 | **Scheme pointer values are save/patch-specific** | low *(deferred per Q9)* | Madden pointers span two bands (`104xxx`, `122xxx`) — likely base vs. title update. Target asset tables aren't in the save at all | Derive the pointer→name map at load from the live saves (§3.3) — costs nothing and is how the table was built. Patch-drift handling deferred; revisit if an update visibly breaks scheme assignment |
 | R3 | **Schema drift on game patches** | high | Both games are new; the app already carries a `schemaOverride` to `data/schemas/CFB27_809_0.gz` because the auto-detected `468/2` schema was insufficient | Startup assertion on the 9 byte-identical enums and on Coach field presence. Version the field map. Refuse to write on mismatch rather than corrupting |
 | R4 | **Zeroed `COACH_*` grades tank Madden's sim** | high | CFB is all-zero; Madden's default and p50 are both **50**. A zeroed coach is far outside Madden's distribution | V1. Default to 50-flat rather than 0 until proven otherwise — 0 is the *riskier* default, not the safe one |
 | R5 | **Enum value drift silently writes wrong data** | high | `ContractStatus.FreeAgent` 7 vs 1; `Retired` 8 vs 2; `CoachBackstory.Count_` 13 vs 4 | The enum-bridge rule, enforced by making raw-value writes impossible in the writer's API. V4 |
 | R6 | **Faces don't carry** | medium | CFB coach `CharacterVisuals` contains **no head loadout**; three non-overlapping head namespaces | Synthesize from a baked destination-side catalog (§3.5), the pattern `appearanceCatalog.js` already proved for players |
-| R7 | **Level conversion produces cartoonish coaches** | medium | CFB OC p50 = 33 vs Madden OC p50 = 6 — a naive map is 5× off | Position-conditioned mapping + V3 before anything else is tuned |
-| R8 | **Broken Team↔Coach wiring corrupts the save** | medium | Two independent pointers describe one relationship (`Coach.TeamIndex`, `Team.<slot>`) | V6. Always write both. Mandatory backup-before-write; the app already has a save-as flow (`pick-save-location`) to follow |
+| R7 | **Level conversion produces cartoonish coaches** | low *(mitigated in §3.1)* | CFB OC p50 = 33 vs Madden OC p50 = 6 — a naive map is 5× off; one outlier Madden OC at Lvl 49 would otherwise define the ceiling | Position-conditioned pure-percentile map, destination winsorized at p95, monotonic. Rank preserved within ~7 percentile points at every landmark. V3 confirms |
+| R8 | **Broken Team↔Coach wiring corrupts the save** | low *(decided per Q8)* | Two independent pointers describe one relationship (`Coach.TeamIndex`, `Team.<slot>`) | Always write both, no exceptions. Mode A sidesteps it entirely (no job → no `Team.<slot>`). Mandatory backup-before-write; the app already has a save-as flow (`pick-save-location`) to follow |
 | R9 | **`Position` sentinel collision** | medium | CFB `NumCollegeCoaches` = 3 = `SpecialTeams` | Whitelist HC/OC/DC only; reject everything else at the map layer |
-| R10 | **Thin Madden sample distorts every percentile rule** | medium | 127 filled coaches; 37 HC / 46 OC / 44 DC. Prestige P70 shifts 609→1190 depending on cohort | Always position-matched cohorts; blend percentile with a linear anchor; validate against a second Madden save |
+| R10 | **Thin Madden sample distorts every percentile rule** | medium | 127 filled coaches; 37 HC / 46 OC / 44 DC. Prestige P70 shifts 609→1190 depending on cohort | Always position-matched cohorts; winsorize the destination pool at p95 so one outlier can't define the ceiling; validate against a second Madden save |
 | R11 | **CFB "free agent" coaches are blank shells, not coaches** | low | All 68 have `Level=0`, `SpecialtyType=Any`, `CoachPrestige=Dminus`, `TeamIndex=255` | Never treat CFB FAs as a source pool. They are good *destination* slots — V8 |
 | R12 | **Shared ≠ populated** | low but pervasive | `TeamBuilding` 497/497 `Balanced`; `TradingTendency` 497/497 `DoesNotTrade`; `CoachBackstory` 496/497 `Motivator`; `LegacyScore`, `ContractSalary`, all `COACH_*` grades zero in CFB | §2 marks every such field `SYNTH` explicitly. Never infer "shared field → safe copy" |
 | R13 | **Offset-encoded ints read back raw** | low | `Weight` schema `[150..512]` reads as 10–151 (offset +160); `AlmaMater` schema `[1100..1300]` reads as a 0–150 TeamIndex | Read and write through the same library API; never hand-compute from schema bounds. `pipeline.js:decodeWeight` is the precedent |
@@ -948,7 +1491,16 @@ node research/probe05-schemes.js           # table inventory + scheme pointer in
 node research/probe06-basescheme.js        # named BaseScheme vocabulary, both games, auto-aligned
 node research/probe07-scheme-crossref.js   # pointer -> BaseScheme name, joined via Team
 node research/probe08-visuals-level.js     # CharacterVisuals, Level ladders, prestige percentiles
+node research/probe09-level-xp.js          # Level<->XP curve in each game (Q10)
+node research/probe10-balanced-table.js    # the balanced CFB->Madden Level+XP table
 node research/check-coverage.js            # asserts section 2 accounts for all 156 fields
+```
+
+`probe10` accepts `W=` (percentile weight, default 1.0) and `WINSOR=` (destination
+top-tail clip, default 0.95) to re-run the sweep behind the §3.1 decision:
+
+```bash
+W=0.75 node research/probe10-balanced-table.js
 ```
 
 Override save paths with `CFB_SAVE=... MAD_SAVE=... node research/probeNN-*.js`.
