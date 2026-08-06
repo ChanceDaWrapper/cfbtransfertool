@@ -1,6 +1,14 @@
 node_modules/
 dist/
+# Standalone FixCoachCrash build output (electron-builder writes dist/, pkg
+# writes here). ~120 MB of .exe/.zip per build -- regenerate with
+# `npm run build:fixtool`, never commit.
+dist-fixtool/
 .claude/
+
+# Shell redirect accident (`2>&1` under PowerShell creates a literal file
+# named "&1"). Ignored so a stray one can never be committed.
+&1
 
 # Raw real-player dumps used only to rebuild data/overall_formula.json
 # offline (tools/fit_overall_formula.js in the sibling CLI project) --
@@ -13,3 +21,22 @@ data/real_draft_classes*.json
 #   node tools/harness/scorecard.js capture <cfbSave> [maddenSave] (current)
 tools/harness/golden-master.json
 tools/harness/scorecard-baseline.json
+
+# Probe OUTPUT (research/probeNN-*.js write here). Regenerate by re-running
+# the probe that produced it; nothing in lib/ or the app reads any of it at
+# runtime. Ignored because this directory is ~57 MB and most of that is
+# EXTRACTED GAME ART decoded out of EA's own asar bundles (portraits/,
+# portraits-all/ -- 48 MB alone), which must not end up in this repo's
+# history: it's redistribution of someone else's assets, and once committed
+# it's permanent short of a history rewrite.
+#
+# The probe SCRIPTS themselves (research/*.js) stay tracked -- they're the
+# reproducible source, and they're small.
+#
+# NOTE: nine small schema/enum dumps under research/out/ were committed
+# before this rule existed (~674 KB total: coach-schema, coach-enums,
+# schemes, etc). .gitignore does not retroactively untrack anything, so
+# those nine remain tracked and their edits will still show in git status --
+# which is fine and intended; they're tiny, already in history, and useful
+# as reference. Only NEW files here are ignored.
+research/out/
