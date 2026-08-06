@@ -29,7 +29,7 @@ const assert = require('assert');
 
 const { deriveCurve, transform } = require('../lib/rosetta/translation/powerCurve');
 const { categoryFor } = require('../lib/rosetta/translation/powerCurveCategories');
-const { defaultPowerCurveAnchors, defaultPositionStrength, mergeConfig } = require('../lib/defaults');
+const { defaultPowerCurveAnchors, defaultPositionStrength, mergeConfig, activeConfig } = require('../lib/defaults');
 const { calibratePlayers, generateClass, GLOBAL_STRENGTH_BASELINE } = require('../lib/pipeline');
 
 let passed = 0;
@@ -154,7 +154,7 @@ check('deterministic WR Awareness', again[0].Madden_AwarenessRating, byPos.WR.Ma
 // globalStrength:1.0 (for the spec-fidelity section above), so build this
 // section's base config WITHOUT that pin -- otherwise "omitted" wouldn't be.
 const { globalStrength: _pinnedGS, ...powerCurveNoGS } = specConfig.powerCurve;
-const shippedGlobalStrength = mergeConfig(null).powerCurve.globalStrength;
+const shippedGlobalStrength = activeConfig(mergeConfig(null), 'nfl').powerCurve.globalStrength;
 const explicitShipped = calibratePlayers([porter, bentley], {
   config: { ...specConfig, powerCurve: { ...powerCurveNoGS, globalStrength: shippedGlobalStrength } }, log: () => {},
 });
@@ -346,7 +346,7 @@ const staleArmlegCfg = mergeConfig({
   powerCurve: { anchors: { armleg: { x1: 99, y1: 97, x2: 80, y2: 78 } } },
 });
 check('stale armleg anchor survives merge (mergeConfig is shallow)',
-  'armleg' in staleArmlegCfg.powerCurve.anchors, true);
+  'armleg' in staleArmlegCfg.profiles.nfl.powerCurve.anchors, true);
 const staleOut = calibratePlayers([porter], {
   config: {
     general: { seed: 'spec', classSize: 10 }, translation: { strategy: 'powercurve' },
