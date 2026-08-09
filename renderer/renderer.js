@@ -1420,7 +1420,62 @@ function updateWriteEnabled() {
   $('writeBtn').disabled = !(players.length && maddenPath && (outMode === 'edit' ? true : !!outputPath));
 }
 
-const DRAFT_FILE_SLOTS = 402;  // the file's fixed total slot count
+// The file's total slot count is fixed PER GAME (Madden 26 = 402, Madden 27 =
+// 389 in the export our template was baked from), so it follows the selected
+// export target rather than being a constant. Seeded with M26's value and
+// replaced once the main process reports the real templates.
+let DRAFT_FILE_SLOTS = 402;
+let exportTarget = 'm26';
+let exportTargetInfo = {};   // key -> { label, slots }
+
+// Builds the game picker from whatever templates this build actually bundles.
+async function initExportTargets() {
+  const row = $('exportTargetRow');
+  if (!row) return;
+  let info;
+  try { info = await window.api.exportTargets(); } catch (e) { return; }
+  const targets = (info && info.targets) || [];
+  if (!targets.length) return;
+  exportTarget = localStorage.getItem('exportTarget') || info.defaultTarget || targets[0].key;
+  if (!targets.some((t) => t.key === exportTarget)) exportTarget = targets[0].key;
+
+  row.innerHTML = '';
+  for (const t of targets) {
+    exportTargetInfo[t.key] = t;
+    const label = el('label', 'radio');
+    const input = document.createElement('input');
+    input.type = 'radio';
+    input.name = 'exportTarget';
+    input.value = t.key;
+    input.checked = t.key === exportTarget;
+    input.addEventListener('change', () => {
+      if (!input.checked) return;
+      exportTarget = t.key;
+      localStorage.setItem('exportTarget', t.key);
+      applyExportTarget();
+    });
+    label.appendChild(input);
+    label.appendChild(document.createTextNode(' ' + t.label));
+    row.appendChild(label);
+  }
+  applyExportTarget();
+}
+
+// Reflects the chosen target in the slot count, the hint, and the warning text.
+function applyExportTarget() {
+  const t = exportTargetInfo[exportTarget];
+  if (t && Number.isFinite(t.slots)) DRAFT_FILE_SLOTS = t.slots;
+  const slotEl = $('exportSlotCount');
+  if (slotEl) slotEl.textContent = String(DRAFT_FILE_SLOTS);
+  const hint = $('exportTargetHint');
+  if (hint) {
+    hint.textContent = t
+      ? `Builds a ${t.label} draft-class file (${DRAFT_FILE_SLOTS} slots). Pick the game you'll import into — `
+        + 'the two file formats are not interchangeable.'
+      : '';
+  }
+  updateExportDraftEnabled();
+}
 const DRAFT_FILE_DRAFTED = 224; // 7 rounds x 32 -- below this, even drafted rounds get unconverted fillers
 function updateExportDraftEnabled() {
   const btn = $('exportDraftFileBtn');
@@ -1451,7 +1506,7 @@ $('exportDraftFileBtn').addEventListener('click', async () => {
   const st = $('exportDraftFileStatus');
   st.textContent = 'Building…'; st.className = 'inline-status';
   $('exportDraftFileBtn').disabled = true;
-  const res = await window.api.exportDraftClassFile();
+  const res = await window.api.exportDraftClassFile(exportTarget);
   if (res.ok) {
     st.textContent = `Done — ${res.count} players → ${res.path}`;
     st.className = 'inline-status ok';
@@ -1982,7 +2037,18 @@ $('coachProposeBtn').addEventListener('click', coachPropose);
 function renderCoachPlanSummary() {
   const box = $('coachPlanSummary');
   if (!coachSummary) { box.textContent = ''; return; }
-  let txt = `${coachSummary.total} move(s) · ${coachSummary.included} ready · ${coachSummary.blocked} blocked `
+  let txt = '';
+  // Which two builds this plan was actually computed against. Detected from
+  // the saves themselves, never picked by the user -- a save states its own
+  // year and title update, so asking would only add a way to be wrong. Shown
+  // because "which Madden was this?" was the first question every bug report
+  // needed answered, and nothing surfaced it.
+  if (coachSummary.cfbVersion || coachSummary.maddenVersion) {
+    const cfb = coachSummary.cfbVersion ? coachSummary.cfbVersion.label : 'unknown CFB save';
+    const mad = coachSummary.maddenVersion ? coachSummary.maddenVersion.label : 'unknown Madden save';
+    txt += `Detected: ${cfb} → ${mad}\n`;
+  }
+  txt += `${coachSummary.total} move(s) · ${coachSummary.included} ready · ${coachSummary.blocked} blocked `
     + `· ${coachSummary.toneGuessed} tone-guessed`;
   if (coachSummary.visualsFree !== null && !coachSummary.visualsOk) {
     txt += ` — WARNING: only ${coachSummary.visualsFree} free face slots for ${coachSummary.visualsNeeded} needed.`;
@@ -2196,6 +2262,7 @@ function renderCoachTonesTable() {
   ALL_RATING_COLUMNS = (META.allRatingColumns || []).map((c) => ({ key: c.key, label: c.label, num: true }));
 
   rebuildAllPages();
+  await initExportTargets();
   onConfigChanged();
   updateCoachSavesSummary();
   updateCoachDirectionUI();
