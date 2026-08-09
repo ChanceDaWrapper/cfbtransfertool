@@ -33,15 +33,29 @@ function seasonInfo(overrides) {
 // ---------------------------------------------------------------------
 check('mid-regular-season (the sample save\'s actual state) is NOT the hiring window',
   isCoachHiringWindow(seasonInfo()), false);
-check('offseason alone, with no hiring/release flag active, is still NOT the window',
-  isCoachHiringWindow(seasonInfo({ currentStage: 'OffSeason' })), false);
-check('PreSeason is never the window even if a flag is somehow set',
-  isCoachHiringWindow(seasonInfo({ currentStage: 'PreSeason', isStaffHiringPeriodActive: true })), false);
+
+// WIDENED (2026-08-07). The offseason as a whole now qualifies. This case --
+// OffSeason with none of the four flags set -- is the exact state a real
+// user's dynasty reported from CFB's draft-results week
+// (CurrentOffseasonStage=3, every flag false), which the old rule refused.
+check('offseason alone, with no hiring/release flag active, IS now the window',
+  isCoachHiringWindow(seasonInfo({ currentStage: 'OffSeason' })), true);
+
+// A hiring period is now sufficient on its own, whatever stage is reported --
+// the stage and the flags are independent ways in, not a conjunction.
+check('PreSeason + an active hiring flag now opens the window',
+  isCoachHiringWindow(seasonInfo({ currentStage: 'PreSeason', isStaffHiringPeriodActive: true })), true);
+// ...but a plain PreSeason/in-season save with nothing set stays closed, which
+// is what keeps this gate from being a no-op.
+check('PreSeason with nothing set stays closed',
+  isCoachHiringWindow(seasonInfo({ currentStage: 'PreSeason', currentWeekType: 'PreSeason' })), false);
 
 for (const flag of ['isCoachDemandReleasePeriodActive', 'isStaffHiringPeriodActive',
   'isStaffHiringCreateOfferPeriodActive', 'isStaffHiringEvaluateOfferPeriodActive']) {
   check(`offseason + ${flag} opens the window`,
     isCoachHiringWindow(seasonInfo({ currentStage: 'OffSeason', [flag]: true })), true);
+  check(`${flag} alone opens the window regardless of stage`,
+    isCoachHiringWindow(seasonInfo({ [flag]: true })), true);
 }
 
 // ---------------------------------------------------------------------
@@ -49,12 +63,17 @@ for (const flag of ['isCoachDemandReleasePeriodActive', 'isStaffHiringPeriodActi
 // ---------------------------------------------------------------------
 check('describeWindow names the actual stage/week when not the offseason',
   describeWindow(seasonInfo()), 'not the offseason (currently NFLSeason, week 2 / RegularSeason)');
-check('describeWindow confirms an open window',
-  describeWindow(seasonInfo({ currentStage: 'OffSeason', isStaffHiringPeriodActive: true })),
+check('describeWindow confirms an open offseason window',
+  describeWindow(seasonInfo({ currentStage: 'OffSeason', currentWeekType: 'OffSeason', isStaffHiringPeriodActive: true })),
+  'the offseason (OffSeason)');
+check('describeWindow names a hiring period that fires outside the offseason',
+  describeWindow(seasonInfo({ isStaffHiringPeriodActive: true })),
   'the coach hiring/demand-release window is active');
-check('describeWindow distinguishes "offseason but wrong stage" from "not offseason at all"',
-  describeWindow(seasonInfo({ currentStage: 'OffSeason' })),
-  'offseason, but outside the coach hiring/demand-release window');
+// The old "offseason, but outside the window" refusal no longer exists --
+// that state now passes, and describing it as a refusal would be a lie.
+check('a bare offseason describes as open, not as a refusal',
+  describeWindow(seasonInfo({ currentStage: 'OffSeason', currentWeekType: 'OffSeason' })),
+  'the offseason (OffSeason)');
 
 // ---------------------------------------------------------------------
 // CFB's own carousel window. Verified against a real CFB save
@@ -109,6 +128,10 @@ try {
 } catch (e) {
   check('the thrown message explains the current state', e.message.includes(describeWindow(closedWindow)), true);
   check('the thrown message names the override', e.message.includes('allowOffWindowHeadCoachHire'), true);
+  // The raw flags ride along so a blocked user's screenshot is self-diagnosing
+  // rather than costing a round trip of "what does your save say?".
+  check('the thrown message carries the raw season flags',
+    /stage=NFLSeason .*staffHiring=false/.test(e.message), true);
 }
 
 console.log(`\n  Carousel timing spec: ${passed} assertions passed.`);
