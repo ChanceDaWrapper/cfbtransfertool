@@ -1337,6 +1337,14 @@ async function loadPool(sourceType) {
   if (sourceType === 'save' && res.ok) {
     updateCoachSavesSummary();
     cfbScanResult = null; // stale -- a new CFB save invalidates any prior scan
+    // A plan (and the version-detection it carries) describes the OLD save,
+    // not this one -- without this, the game-switch mismatch chip could keep
+    // showing a comparison against whichever save was last proposed, long
+    // after a different one was loaded. Same staleness rule as the scan
+    // result just above, extended to the fields that display detected version.
+    coachPlan = null; coachSummary = null;
+    if (typeof renderCoachPlanSummary === 'function') renderCoachPlanSummary();
+    if (typeof renderHubGameStatus === 'function') renderHubGameStatus();
     loadCoachTonesPage();
   }
 }
@@ -1385,6 +1393,15 @@ async function selectMaddenSave() {
   updateWriteEnabled();
   updateCoachSavesSummary();
   maddenScanResult = null; // stale -- a new Madden save invalidates any prior scan
+  // Same reasoning as cfbScanResult above: a plan (and the detected-version
+  // fields the game-switch mismatch chip reads) describes whichever save was
+  // last PROPOSED, not whichever is now loaded. Left uncleared, switching
+  // Madden saves without re-proposing could leave the Dashboard comparing the
+  // new setting against an old save's detected version and showing a false
+  // mismatch.
+  coachPlan = null; coachSummary = null;
+  if (typeof renderCoachPlanSummary === 'function') renderCoachPlanSummary();
+  if (typeof renderHubGameStatus === 'function') renderHubGameStatus();
   return file;
 }
 $('pickMadden').addEventListener('click', selectMaddenSave);
@@ -1439,10 +1456,14 @@ let exportTargetInfo = {};   // key -> { label, slots }
 // reports it; this setting only warns when the two disagree. Letting a
 // preference override a file's own identity would be a way to corrupt a save,
 // not a feature.
-function setExportTarget(key, { persist = true } = {}) {
+function setExportTarget(key) {
   if (!exportTargetInfo[key]) return;
   exportTarget = key;
-  if (persist) localStorage.setItem('exportTarget', key);
+  // Deliberately NOT persisted -- the app always opens on Madden 26 (see
+  // initExportTargets). A remembered choice from an earlier session is what
+  // caused a real, confusing bug: flip to 27 near the end of a session, close
+  // the app, and the NEXT session silently opened already set to 27 with no
+  // save loaded to justify it -- indistinguishable from a misdetection.
   // Keep every radio for this value in sync, in both locations.
   for (const input of document.querySelectorAll('input[name="exportTarget"], input[name="hubGame"]')) {
     input.checked = input.value === key;
@@ -1501,7 +1522,9 @@ async function initExportTargets() {
   if (!targets.length) return;
 
   for (const t of targets) exportTargetInfo[t.key] = t;
-  exportTarget = localStorage.getItem('exportTarget') || info.defaultTarget || targets[0].key;
+  // Always Madden 26 at startup -- see setExportTarget's header for why this
+  // is intentionally NOT read from localStorage.
+  exportTarget = info.defaultTarget || targets[0].key;
   if (!targets.some((t) => t.key === exportTarget)) exportTarget = targets[0].key;
 
   buildGameRadios(exportRow, 'exportTarget', targets);
