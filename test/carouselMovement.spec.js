@@ -224,4 +224,60 @@ const hotSeat49 = scoreCfbJobVulnerability({ ...hotSeatSmall, incumbentJobSecuri
 check('within one status band, the raw percentage still separates jobs',
   hotSeat0.score > hotSeat49.score);
 
-console.log(`\n  Carousel movement spec: ${passed} assertions passed.`);
+// ---------------------------------------------------------------------
+// CANDIDATE READING -- blank filler shells must never be proposed.
+//
+// A Madden Coach table carries rows that are not `isEmpty` but hold no
+// coach: empty name, Level 0, no career, ContractStatus FreeAgent. The real
+// sample save has exactly one (row 109).
+//
+// readCfbCandidates had always skipped these; readNflCandidates did not, and
+// the omission was invisible because a blank shell SCORES WELL -- the
+// willingness model rewards a coach with no losses and no history, so an
+// empty row looks like an unblemished free agent. On a real batch it was
+// proposed and committed: a nameless level-0 coach was hired at Maryland and
+// Scott Satterfield fired to make room. The job-security rank transferred
+// correctly, so nothing downstream complained; the dynasty just quietly
+// gained an empty-named coach.
+// ---------------------------------------------------------------------
+async function testCandidateFiltering() {
+  const { readNflCandidates, readCfbCandidates } = require('../lib/carousel/movement');
+
+  const rec = (index, fields) => {
+    const r = { index, isEmpty: false, ...fields };
+    r.getValueByKey = function (k) { return Object.prototype.hasOwnProperty.call(this, k) ? this[k] : undefined; };
+    r.getReferenceDataByKey = () => null;
+    return r;
+  };
+  const fileWith = (records) => ({
+    getAllTablesByName: (n) => (n === 'Coach' ? [{
+      name: 'Coach', header: { tableId: 1, recordCapacity: records.length },
+      records, readRecords: async () => {},
+    }] : []),
+  });
+  const fixtureCtx = { madTeams: new Map(), cfbTeams: new Map() };
+
+  const real = { Position: 'HeadCoach', Name: 'R. Coach', Level: 20, Age: 50, TeamIndex: 32, ContractStatus: 'FreeAgent', CareerWins: 40, CareerLosses: 30 };
+  const blank = { Position: 'HeadCoach', Name: '', FirstName: '', LastName: '', Level: 0, Age: 0, TeamIndex: 0, ContractStatus: 'FreeAgent', CareerWins: 0, CareerLosses: 0 };
+
+  const nfl = await readNflCandidates(fileWith([rec(0, real), rec(1, blank)]), fixtureCtx);
+  checkEq('the real NFL coach is a candidate', nfl.length, 1);
+  checkEq('and it is the named one, not the shell', nfl[0].sourceRow, 0);
+
+  // A level-0 row is the shell signature regardless of what else it carries;
+  // a genuine coach always has a level.
+  const nflAllBlank = await readNflCandidates(fileWith([rec(0, blank)]), fixtureCtx);
+  checkEq('a table of only shells yields no NFL candidates', nflAllBlank.length, 0);
+
+  // The CFB side must keep behaving exactly as it always has.
+  const cfb = await readCfbCandidates(fileWith([
+    rec(0, { Position: 'HeadCoach', Name: 'C. Coach', Level: 30, TeamIndex: 5 }),
+    rec(1, { Position: 'HeadCoach', Name: '', Level: 0, TeamIndex: 255 }),
+  ]), fixtureCtx);
+  checkEq('CFB candidate reading is unchanged: shell excluded', cfb.length, 1);
+  checkEq('and keeps the real coach', cfb[0].sourceRow, 0);
+}
+
+testCandidateFiltering().then(() => {
+  console.log(`\n  Carousel movement spec: ${passed} assertions passed.`);
+}).catch((e) => { console.error(e.stack); process.exit(1); });
