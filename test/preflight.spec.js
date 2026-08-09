@@ -22,7 +22,7 @@
 
 const assert = require('assert');
 const {
-  inspectCfbSave, formatRefusal, assertCfbTransferReady,
+  inspectCfbSave, formatRefusal, assertCfbTransferReady, tableLayoutMismatch,
   CFB_COACH_FATAL_FIELDS, CFB_COACH_WARN_FIELDS,
   CFB_TEAM_FATAL_FIELDS, CFB_TEAM_WARN_FIELDS,
 } = require('../lib/carousel/preflight');
@@ -155,6 +155,81 @@ const healthy = () => fakeSave({
   });
   check('an unreadable schema is reported, not thrown', r.ok, false);
   check('and says so clearly', r.fatal.some((f) => f.includes('no readable definition')), true);
+}
+
+// --------------------------------------------------------------------
+// 7. TABLE LAYOUT MISMATCH -- a save from a NEWER game build than the
+//    schema Pipeline ships.
+//
+//    From a real report. A user's dynasty had a Coach table declaring 138
+//    members while every CFB 27 schema available declares 137. The franchise
+//    library refuses to bind a schema whose member count disagrees with the
+//    table header and silently substitutes a generic one whose fields are
+//    named Field_0..Field_137 -- so all 497 coaches in the save read back
+//    completely blank, with no error anywhere. The carousel then reported
+//    "0 candidates" going out and "no disposable Coach row available" coming
+//    in, neither of which points at the actual cause.
+//
+//    This is distinct from the missing-FIELD checks above: the schema LIST
+//    still has every field name, so those checks all pass. Only the table's
+//    own declared width reveals it.
+// --------------------------------------------------------------------
+function sizedSave({ coachMembers, teamMembers } = {}) {
+  const widths = { Coach: coachMembers, Team: teamMembers };
+  return {
+    getAllTablesByName: (n) => (['Coach', 'Team', 'StaffPersonContractOffer'].includes(n)
+      ? [{ name: n, header: { recordCapacity: 100, tableId: 1, ...(widths[n] !== undefined ? { numMembers: widths[n] } : {}) } }]
+      : []),
+    schemaList: { getSchema: (n) => (n === 'Coach' ? { attributes: ALL_COACH.map((f) => ({ name: f })) }
+      : n === 'Team' ? { attributes: ALL_TEAM.map((f) => ({ name: f })) } : null) },
+  };
+}
+
+{
+  // Matching width: passes, exactly as before this check existed.
+  const okSave = sizedSave({ coachMembers: ALL_COACH.length, teamMembers: ALL_TEAM.length });
+  check('a save whose table width matches passes', inspectCfbSave(okSave).ok, true);
+  check('and raises no warning', inspectCfbSave(okSave).warnings.length, 0);
+  check('tableLayoutMismatch reports null when widths agree',
+    tableLayoutMismatch(okSave, 'Coach'), null);
+
+  // The real case: Coach one member wider than the schema knows about.
+  const newer = sizedSave({ coachMembers: ALL_COACH.length + 1, teamMembers: ALL_TEAM.length });
+  check('tableLayoutMismatch reports both numbers',
+    tableLayoutMismatch(newer, 'Coach'), { declared: ALL_COACH.length + 1, known: ALL_COACH.length });
+  const r = inspectCfbSave(newer);
+  check('a wider Coach table is FATAL', r.ok, false);
+  check('and is reported once', r.fatal.length, 1);
+  check('the message gives both field counts',
+    /has \d+ fields, but the version of College Football 27 Pipeline supports has \d+/.test(r.fatal[0]), true);
+  check('the message points at a game update, not a broken dynasty',
+    /game has been updated/.test(r.fatal[0]), true);
+  assert.throws(() => assertCfbTransferReady(newer), /Coach" table has/,
+    'a save from a newer game build must be refused');
+  passed++;
+
+  // A NARROWER table is equally unreadable -- the check must not assume the
+  // save is always the newer of the two (a user on an older build than the
+  // one Pipeline was made for hits this in reverse).
+  const older = sizedSave({ coachMembers: ALL_COACH.length - 1, teamMembers: ALL_TEAM.length });
+  check('a narrower Coach table is also fatal', inspectCfbSave(older).ok, false);
+
+  // Team is deliberately only a WARNING: its layout has been observed to
+  // disagree by one member on saves whose Coach table reads perfectly, and
+  // the carousel reads only a handful of Team fields. Refusing there would
+  // block dynasties that work.
+  const teamOnly = sizedSave({ coachMembers: ALL_COACH.length, teamMembers: ALL_TEAM.length + 1 });
+  const tr = inspectCfbSave(teamOnly);
+  check('a Team-only width mismatch does NOT refuse the transfer', tr.ok, true);
+  check('but it does warn', tr.warnings.length, 1);
+
+  // A header with no numMembers at all (older library, or a fixture) must be
+  // treated as "cannot tell", never as a mismatch -- silence beats a false
+  // refusal on a save that is actually fine.
+  const unknown = sizedSave({});
+  check('an unknown table width is not treated as a mismatch',
+    tableLayoutMismatch(unknown, 'Coach'), null);
+  check('and such a save still passes', inspectCfbSave(unknown).ok, true);
 }
 
 console.log(`\n  Preflight spec: ${passed} assertions passed.`);
