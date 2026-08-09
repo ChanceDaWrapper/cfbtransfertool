@@ -1428,37 +1428,86 @@ let DRAFT_FILE_SLOTS = 402;
 let exportTarget = 'm26';
 let exportTargetInfo = {};   // key -> { label, slots }
 
-// Builds the game picker from whatever templates this build actually bundles.
-async function initExportTargets() {
-  const row = $('exportTargetRow');
-  if (!row) return;
-  let info;
-  try { info = await window.api.exportTargets(); } catch (e) { return; }
-  const targets = (info && info.targets) || [];
-  if (!targets.length) return;
-  exportTarget = localStorage.getItem('exportTarget') || info.defaultTarget || targets[0].key;
-  if (!targets.some((t) => t.key === exportTarget)) exportTarget = targets[0].key;
+// ONE setting, two places it is shown. The Dashboard's "Which Madden are you
+// playing?" and the Export card's game radios are two views of the same value
+// -- picking either updates both, so they can never disagree about what the
+// app is building.
+//
+// Scope note: this decides what the app BUILDS (draft-class file format, which
+// Saves folder a dialog opens in). It does NOT decide what a save IS. A
+// franchise save states its own year, so the coach carousel reads that and
+// reports it; this setting only warns when the two disagree. Letting a
+// preference override a file's own identity would be a way to corrupt a save,
+// not a feature.
+function setExportTarget(key, { persist = true } = {}) {
+  if (!exportTargetInfo[key]) return;
+  exportTarget = key;
+  if (persist) localStorage.setItem('exportTarget', key);
+  // Keep every radio for this value in sync, in both locations.
+  for (const input of document.querySelectorAll('input[name="exportTarget"], input[name="hubGame"]')) {
+    input.checked = input.value === key;
+  }
+  applyExportTarget();
+  renderHubGameStatus();
+  if (typeof renderCoachPlanSummary === 'function' && coachSummary) renderCoachPlanSummary();
+}
 
+// Renders one radio row for the game picker into `row`, under `groupName`.
+function buildGameRadios(row, groupName, targets) {
+  if (!row) return;
   row.innerHTML = '';
   for (const t of targets) {
-    exportTargetInfo[t.key] = t;
     const label = el('label', 'radio');
     const input = document.createElement('input');
     input.type = 'radio';
-    input.name = 'exportTarget';
+    input.name = groupName;
     input.value = t.key;
     input.checked = t.key === exportTarget;
-    input.addEventListener('change', () => {
-      if (!input.checked) return;
-      exportTarget = t.key;
-      localStorage.setItem('exportTarget', t.key);
-      applyExportTarget();
-    });
+    input.addEventListener('change', () => { if (input.checked) setExportTarget(t.key); });
     label.appendChild(input);
     label.appendChild(document.createTextNode(' ' + t.label));
     row.appendChild(label);
   }
+}
+
+// The Dashboard chip: says what the app is set to build for, and flags a
+// mismatch against whatever Madden save is actually loaded.
+function renderHubGameStatus() {
+  const chip = $('hubGameStatus');
+  if (!chip) return;
+  const t = exportTargetInfo[exportTarget];
+  if (!t) { chip.textContent = '—'; chip.className = 'status-chip empty'; return; }
+  const detected = coachSummary && coachSummary.maddenVersion ? coachSummary.maddenVersion : null;
+  if (detected && typeof detected.year === 'number') {
+    const wantYear = exportTarget === 'm27' ? 27 : 26;
+    if (detected.year !== wantYear) {
+      chip.textContent = `Set to ${t.label}, but the loaded save is ${detected.label}`;
+      chip.className = 'status-chip err';
+      return;
+    }
+  }
+  chip.textContent = t.label;
+  chip.className = 'status-chip ok';
+}
+
+// Builds both game pickers from whatever templates this build actually bundles.
+async function initExportTargets() {
+  const exportRow = $('exportTargetRow');
+  const hubRow = $('hubGameSelect');
+  if (!exportRow && !hubRow) return;
+  let info;
+  try { info = await window.api.exportTargets(); } catch (e) { return; }
+  const targets = (info && info.targets) || [];
+  if (!targets.length) return;
+
+  for (const t of targets) exportTargetInfo[t.key] = t;
+  exportTarget = localStorage.getItem('exportTarget') || info.defaultTarget || targets[0].key;
+  if (!targets.some((t) => t.key === exportTarget)) exportTarget = targets[0].key;
+
+  buildGameRadios(exportRow, 'exportTarget', targets);
+  buildGameRadios(hubRow, 'hubGame', targets);
   applyExportTarget();
+  renderHubGameStatus();
 }
 
 // Reflects the chosen target in the slot count, the hint, and the warning text.
@@ -2047,6 +2096,16 @@ function renderCoachPlanSummary() {
     const cfb = coachSummary.cfbVersion ? coachSummary.cfbVersion.label : 'unknown CFB save';
     const mad = coachSummary.maddenVersion ? coachSummary.maddenVersion.label : 'unknown Madden save';
     txt += `Detected: ${cfb} → ${mad}\n`;
+    // The transfer always follows the SAVE, never the setting -- but if the two
+    // disagree the user has almost certainly loaded the wrong file, and saying
+    // so here is cheaper than finding out in-game.
+    const detected = coachSummary.maddenVersion;
+    const wantYear = exportTarget === 'm27' ? 27 : 26;
+    if (detected && typeof detected.year === 'number' && detected.year !== wantYear) {
+      const t = exportTargetInfo[exportTarget];
+      txt += `NOTE: the app is set to ${t ? t.label : exportTarget}, but this save is ${detected.label}. `
+        + 'The transfer follows the save, not the setting.\n';
+    }
   }
   txt += `${coachSummary.total} move(s) · ${coachSummary.included} ready · ${coachSummary.blocked} blocked `
     + `· ${coachSummary.toneGuessed} tone-guessed`;
