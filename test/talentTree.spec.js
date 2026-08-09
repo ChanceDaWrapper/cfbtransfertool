@@ -280,6 +280,39 @@ async function testCloneTalentCategory() {
     check('destCoach is left untouched', dest.GamedayTalents, 'PRE_EXISTING_SENTINEL');
   }
 
+  // Case 2b: THE MULTI-COACH CORRUPTION BUG. The donor's array row is
+  // NOT empty, but its arraySize is 0 -- which is exactly how every real
+  // Madden 26 coach's WearAndTearTalents looks (0 of 136 populated).
+  //
+  // The old code passed the isEmpty test, claimed a fresh row, wrote
+  // `arraySize = 0` into a row that was already all zeros, cloned nothing,
+  // and pointed the coach at it. That row still read as EMPTY, so the next
+  // coach in the batch claimed it for PlaysheetTalents and wrote a real tree
+  // into it -- leaving coach N's WearAndTear and coach N+1's Playsheet
+  // sharing one array row. 66 rows were shared across a real 6-coach batch.
+  // One coach alone never showed it, which is why it survived every
+  // single-transfer test.
+  //
+  // The fix must claim NOTHING and leave destCoach alone.
+  {
+    const donor = makeRecord(1, { WearAndTearTalents: REF(5603, 5) });
+    const dest = makeRecord(2, { WearAndTearTalents: 'PRE_EXISTING_SENTINEL' });
+    // A live row (not isEmpty) whose arraySize is 0 -- the real shape.
+    const donorArr = makeRecord(5, { arraySize: 0 });
+    const arrTable = makeTable(5603, 'Talent[]', [donorArr], [], 40);
+    const file = makeFile({ 5603: arrTable });
+    const alloc = createRowAllocator(file);
+
+    const result = await cloneTalentCategory(alloc, donor, dest, 'WearAndTearTalents');
+    check('arraySize-0 donor category -> cloned:0', result.cloned, 0);
+    check('and reports arraySize 0', result.arraySize, 0);
+    check('destCoach is left untouched, NOT pointed at a claimed row',
+      dest.WearAndTearTalents, 'PRE_EXISTING_SENTINEL');
+    // The heart of it: nothing may be taken from the free pool, or the row
+    // gets handed to the next coach while this one still references it.
+    check('NO row was claimed from the array table', alloc.stats(), {});
+  }
+
   // Case 3: a real, partial clone -- 3 slots, one of them null (a gap in
   // the donor's own array, which happens in real saves).
   {
