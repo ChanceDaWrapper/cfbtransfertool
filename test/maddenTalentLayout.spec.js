@@ -75,8 +75,25 @@ const TALENT_ATTR = (name) => ({ name, type: 'Talent[]' });
 {
   check('picks only Talent[] fields', talentArrayFieldNames({
     attributes: [TALENT_ATTR('GamedayTalents'), { name: 'Level', type: 'int' }, TALENT_ATTR('PlaysheetTalents')],
-  }), ['GamedayTalents', 'PlaysheetTalents']);
+  }), ['PlaysheetTalents', 'GamedayTalents']);
   check('no schema yields no categories', talentArrayFieldNames(null), []);
+
+  // ORDER IS NOT COSMETIC, and this is a regression guard for a real defect.
+  // createRowAllocator hands out free rows in claim order, so the order these
+  // categories come back in decides which rows each category's talents land
+  // in. Returning them in SCHEMA order (Gameday first) instead of the order
+  // talentTree.js had always cloned them (Playsheet first) silently changed
+  // every Madden 26 write while every unit test still passed -- it was only
+  // caught by diffing a written save against one produced by the 0.2.3 build,
+  // where six tables differed with identical row counts.
+  check('canonical order is Playsheet-first, whatever the schema says',
+    talentArrayFieldNames({
+      attributes: [TALENT_ATTR('WearAndTearTalents'), TALENT_ATTR('GamedayTalents'), TALENT_ATTR('PlaysheetTalents')],
+    }), ['PlaysheetTalents', 'GamedayTalents', 'WearAndTearTalents']);
+  check('an unrecognised category follows the known ones',
+    talentArrayFieldNames({
+      attributes: [TALENT_ATTR('SomethingNew'), TALENT_ATTR('GamedayTalents')],
+    }), ['GamedayTalents', 'SomethingNew']);
 }
 
 // ---------------------------------------------------------------------
@@ -108,8 +125,8 @@ async function m26() {
   const L = await describeTalentLayout(f);
   check('M26 kind', L.kind, 'coachDirect');
   check('M26 has no holder field', L.holderField, null);
-  check('M26 categories', L.categories, ['GamedayTalents', 'PlaysheetTalents', 'WearAndTearTalents']);
-  check('M26 required matches the old hardcoded rule', L.requiredCategories, ['GamedayTalents', 'PlaysheetTalents']);
+  check('M26 categories, in canonical clone order', L.categories, ['PlaysheetTalents', 'GamedayTalents', 'WearAndTearTalents']);
+  check('M26 required matches the old hardcoded rule', L.requiredCategories, ['PlaysheetTalents', 'GamedayTalents']);
   check('M26 live coach count', L.liveCoaches, 136);
   check('M26 gameday rate', L.rates.GamedayTalents, { populated: 135, live: 136 });
   check('M26 weartear is universally empty', L.rates.WearAndTearTalents, { populated: 0, live: 136 });
@@ -153,8 +170,8 @@ async function m27() {
   check('M27 holder table id', L.holderTableId, HOLD);
   // Read off the HOLDER's schema, not the Coach's -- the Coach schema only
   // declares the abstract base type, so the categories are unknowable there.
-  check('M27 categories come from the holder schema', L.categories, ['GamedayTalents', 'PlaysheetTalents']);
-  check('M27 required', L.requiredCategories, ['GamedayTalents', 'PlaysheetTalents']);
+  check('M27 categories come from the holder schema', L.categories, ['PlaysheetTalents', 'GamedayTalents']);
+  check('M27 required', L.requiredCategories, ['PlaysheetTalents', 'GamedayTalents']);
   check('M27 rates', L.rates.GamedayTalents, { populated: 105, live: 106 });
 
   const withHolder = f.getTableById(4168).records[0];
