@@ -18,6 +18,12 @@
 // somewhere Madden's Import Draft Class browser will find it -- falling back
 // to alongside the input if that folder isn't there.
 //
+// The output name can be ANYTHING -- a plain name with no path keeps the
+// default directory above and just renames the file; a full path saves it
+// wherever you point it. Either way it always ends up starting with
+// "CAREERDRAFT-" (Madden's importer only lists files named that), adding the
+// prefix automatically if you didn't type it.
+//
 // See lib/draftClassConvert.js for what actually differs between the two
 // formats and how each gap is filled.
 
@@ -48,6 +54,22 @@ Examples:
   node tools/convertDraftClass.js "CAREERDRAFT-MYCLASS" "CAREERDRAFT-M27" --to m27
 `);
   process.exit(msg ? 1 : 0);
+}
+
+// A typed answer with no directory in it (just a name) keeps the SAME
+// directory `fallbackFullPath` was already going to use -- confirmed as a
+// real bug before this existed: typing a bare name resolved it against
+// whatever the terminal's CURRENT WORKING DIRECTORY happened to be (the
+// project folder itself, when launched via the Desktop shortcut), not the
+// Saves folder the default was pointing at, so the file landed somewhere
+// the user would never think to look. `convertDraftClassFile` still adds the
+// CAREERDRAFT- prefix if it's missing either way -- that part already
+// worked -- this only fixes WHERE a bare name lands, not naming itself.
+function resolveOutputPath(typed, fallbackFullPath) {
+  if (!typed) return fallbackFullPath;
+  return path.dirname(typed) === '.'
+    ? path.join(path.dirname(fallbackFullPath), typed)
+    : typed;
 }
 
 // Where the default OUTPUT path lands when the caller doesn't name one: the
@@ -186,10 +208,10 @@ async function interactive() {
         console.log(`  Will convert to: ${to.toUpperCase()}\n`);
 
         const out = defaultOutputPath(input, to);
-        const rawOut = await ask(`Output file [${out}]: `);
+        const rawOut = await ask(`Output file name -- type anything, or a full path to save elsewhere [${out}]: `);
         if (rawOut === null) return;
         const chosen = rawOut.trim().replace(/^"(.*)"$/, '$1');
-        const outputPath = chosen || out;
+        const outputPath = resolveOutputPath(chosen, out);
 
         console.log('');
         try { runOne(input, outputPath, to); }
@@ -208,9 +230,17 @@ async function interactive() {
   }
 }
 
+module.exports = { resolveOutputPath, defaultOutputPath };
+
 // ---------------------------------------------------------------------
-// Entry point: interactive with no arguments, direct with any.
+// Entry point: interactive with no arguments, direct with any. Guarded so
+// requiring this file (test/convertDraftClass.spec.js does, to reach
+// resolveOutputPath directly) doesn't launch the picker or read argv --
+// this only runs when the file is the process's actual entry point, i.e.
+// `node tools/convertDraftClass.js`.
 // ---------------------------------------------------------------------
+if (require.main !== module) return;
+
 const args = process.argv.slice(2);
 if (args.includes('-h') || args.includes('--help')) usage();
 
@@ -230,7 +260,11 @@ if (!args.length) {
 
   try {
     const inferredTarget = target || (peek(input)?.from === 'm26' ? 'm27' : 'm26');
-    const output = positional[1] || defaultOutputPath(input, inferredTarget);
+    const dflt = defaultOutputPath(input, inferredTarget);
+    // Same rule the interactive picker applies: a bare filename with no
+    // directory in it keeps the default's directory rather than resolving
+    // against whatever the shell's CWD happens to be at invocation time.
+    const output = resolveOutputPath(positional[1], dflt);
     runOne(input, output, target);
   } catch (e) {
     console.error(`\nConversion failed: ${e.message}\n`);
