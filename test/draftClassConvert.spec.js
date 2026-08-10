@@ -28,6 +28,7 @@ function check(label, got, want) {
 function ok(label, cond) { assert.ok(cond, label); passed++; }
 
 const bufFor = (key) => zlib.gunzipSync(fs.readFileSync(TEMPLATE_PATHS[key]));
+const M27_ABILITY_OFFSETS = [202, 204, 206, 208, 210, 242];
 const jsonOf = (pl) => {
   try { return JSON.parse(pl.json.raw.toString('utf8').replace(/\0+$/, '')); } catch (e) { return null; }
 };
@@ -117,14 +118,54 @@ const m27 = dcf.parseDraftClassFile(m27Buf);
   check('every head exists in a real M27 export', foreignHeads, 0);
   check('skin tone survives the head swap for every player', toneKept, headed);
 
-  // The M27-only ability block has no M26 source, so it must stay the
-  // template's position-matched values rather than being zeroed or invented.
-  let abilityKept = 0;
-  for (let i = 0; i < n; i++) {
-    const t = m27.players[i].binary.raw; const o = out.players[i].binary.raw;
-    if ([202, 204, 206, 208, 210, 242].every((off) => t[off] === o[off])) abilityKept++;
+  // The M27-only ability block has no M26 source at all, so it must come from
+  // a donor who shares the CONVERTED player's position -- not whatever the
+  // template originally had at that numeric slot, which is a different thing
+  // whenever the arriving player's position differs from the slot's original
+  // occupant (the common case; see the gear/glove check below for why this
+  // was 93% wrong before donor selection existed).
+  //
+  // Checked by SET MEMBERSHIP rather than reverse-matching a single donor
+  // index: build, per position, the set of ability-byte tuples the real M27
+  // template actually has for that position, then confirm every converted
+  // player's tuple is one of them. Set membership is collision-proof where a
+  // reverse byte-pattern lookup would not be (two donors of the same or
+  // different position can share identical bytes).
+  const abilityTupleOf = (raw) => M27_ABILITY_OFFSETS.map((off) => raw[off]).join(',');
+  const realTuplesByPosition = new Map();
+  for (const p of m27.players) {
+    const pos = dcf.getPosition(p);
+    if (!realTuplesByPosition.has(pos)) realTuplesByPosition.set(pos, new Set());
+    realTuplesByPosition.get(pos).add(abilityTupleOf(p.binary.raw));
   }
-  check('the M27-only ability block is left as the template\'s', abilityKept, n);
+  let abilityMatchesRealPosition = 0;
+  for (let i = 0; i < n; i++) {
+    const pos = dcf.getPosition(out.players[i]);
+    const tuple = abilityTupleOf(out.players[i].binary.raw);
+    if ((realTuplesByPosition.get(pos) || new Set()).has(tuple)) abilityMatchesRealPosition++;
+  }
+  check('every converted player\'s ability block is one their OWN position really has in M27',
+    abilityMatchesRealPosition, n);
+
+  // The historical, concrete example: gloves are position-specific gear (every
+  // WR/HB/CB/TE in the template wears them; QB/K/P never do), so this is a
+  // direct check that gear donors are truly position-matched rather than
+  // merely present.
+  const wearsGloves = (pl) => {
+    const o = jsonOf(pl);
+    const onField = (o && o.loadouts || []).find((l) => l.loadoutType === 'PlayerOnField');
+    return !!(onField && onField.loadoutElements || []).some((el) => el.itemAssetName && /glove/i.test(el.itemAssetName));
+  };
+  const qbSlots = out.players.filter((p) => dcf.getPosition(p) === 'QB');
+  ok('QB slots exist to check', qbSlots.length > 0);
+  check('no converted QB wears gloves (the historical bug\'s own example)',
+    qbSlots.filter(wearsGloves).length, 0);
+
+  // Gear stats are real, not a no-op report.
+  ok('at least some gear was actually carried over from the source player',
+    report.gearStats.translated > 0);
+  ok('most players kept at least some of their own gear',
+    report.gearStats.playersWithRealGear >= n * 0.9);
 
   ok('the result re-serializes byte-identically', dcf.serializeDraftClassFile(out).equals(buffer));
 }
