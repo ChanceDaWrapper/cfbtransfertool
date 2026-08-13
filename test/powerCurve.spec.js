@@ -9,7 +9,7 @@
 //      points AND ORIGINAL spec per-position strengths -- passed explicitly,
 //      not read from lib/defaults.js. This proves the MATH (powerCurve.js +
 //      powerCurveCategories.js) and the WIRING (calibratePlayers ->
-//      PowerCurveTranslator -> makePowerCurveAdjuster) still correctly
+//      createTranslator -> makePowerCurveAdjuster) still correctly
 //      implement the documented model, independent of whatever the app's
 //      shipped defaults currently are.
 //

@@ -11,7 +11,7 @@
 // (college/rookie reference distributions, physical scale, frame providers)
 // it would have read from. That engine was abandoned before any of its
 // translation math shipped, and both it and its calibration/ support code
-// have been removed (see lib/rosetta/translation/rosettaTranslator.js).
+// have been removed (see the history note in lib/rosetta/translation/index.js).
 // The five categories that existed only to validate that removed code
 // (calibrationBuilder, twoAnchorMath, twoAnchorTranslation, twoAnchorVsV1,
 // identityPreservation) are gone with it. What remains below still exercises
