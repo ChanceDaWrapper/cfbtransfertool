@@ -402,9 +402,21 @@ const SHIPPED_CATEGORY_EXPECTED = {
   KickReturnRating: 'techmod',  // spec: copy-raw (removed; was unlisted)
   PersonalityRating: 'techmod', // spec: copy-raw (removed; was unlisted)
   BCVisionRating: 'techhvy',    // spec: techmod
+  // The one blocking rating in the light bucket, on purpose. Pinned BOTH ways
+  // below so it can't drift back to matching its neighbours by "tidying".
+  ImpactBlockingRating: 'techmod',
 };
 for (const [rating, cat] of Object.entries(SHIPPED_CATEGORY_EXPECTED)) {
   check(`shipped bucket ${rating}`, CATEGORY_OF[rating], cat);
+}
+// The other side of the ImpactBlocking pin: every OTHER blocking rating stays
+// heavy. Without this, "fix the inconsistency" could move all of them into the
+// light bucket and still satisfy the assertion above, quietly lifting every
+// lineman in the class rather than just the interior-overall contribution
+// ImpactBlocking was singled out for.
+for (const r of ['RunBlockRating', 'RunBlockPowerRating', 'RunBlockFinesseRating',
+  'PassBlockRating', 'PassBlockPowerRating', 'PassBlockFinesseRating', 'LeadBlockRating']) {
+  check(`${r} stays Technical (Heavy)`, CATEGORY_OF[r], 'techhvy');
 }
 // No rating is ever left uncategorized (no copy-raw / ARMLEG concept remains).
 check('CATEGORY_STRENGTH_KIND has exactly 4 buckets (armleg removed)',

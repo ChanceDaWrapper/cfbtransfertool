@@ -8,6 +8,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Changed
+- **Impact Blocking now compresses as a light technical rating instead of a
+  heavy one.** It's the only blocking rating treated this way, on purpose:
+  run/pass/lead blocking are technique — hand placement, footwork, leverage,
+  picking up a stunt — which is exactly what a rookie lineman has least of.
+  Impact blocking is the finishing hit once he's already engaged, and that
+  carries into the NFL far better. Measured on a 240-player class, the rating
+  comes across about 7 points higher, which Madden recomputes as roughly +1.7
+  overall for a fullback, +1.4 a center, +1.1 a left guard, +0.9 a right
+  guard and +0.3 a tight end. No other position's overall reads this rating,
+  so nobody else moves in game.
+  - Note the Draft Class page's Est. Overall column won't show this — that
+    estimate is anchored to the player's college overall and absorbs the
+    change. The exported ratings are what differ, and Madden recalculates
+    overall from those when you import.
+  - You can put it back on the Rating Categories page (set Impact Blocking to
+    Technical (Heavy)); a value you set yourself is never overwritten.
 - **The app installs about 1 MB smaller.** The original "V1" rating engine and
   its two calibration data files have been removed. V1 was unreachable — the
   engine picker has only ever offered Power Curve and Dice Roll, and the app
