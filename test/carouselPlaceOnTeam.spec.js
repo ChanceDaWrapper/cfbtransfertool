@@ -8,7 +8,7 @@
 
 const assert = require('assert');
 const { findMaddenTeam, findIncumbent, displaceIncumbent } = require('../lib/carousel/placeOnTeam');
-const { findDisposableSlot } = require('../lib/carousel/place');
+const { findDisposableSlot, synthesizeContractSalary } = require('../lib/carousel/place');
 
 let passed = 0;
 function check(label, got, want) {
@@ -179,6 +179,67 @@ const file1 = fakeFile({ teamRecords: [pseudoTeam, giantsTeam], coachRecords: []
   // excludeRowIndex (the original single-row guard) and excludeRows compose.
   const composed = await findDisposableSlot(slotFile, 'HeadCoach', { excludeRowIndex: 3, excludeRows: [4] });
   check('excludeRowIndex and excludeRows both apply', composed.record.index, 5);
+
+  // -------------------------------------------------------------------
+  // synthesizeContractSalary -- shared by the Madden and CFB placement
+  // paths (it lived duplicated in both until it moved into place.js).
+  //
+  // It had NO coverage at all before this: replacing its return value with
+  // a constant left all 39 specs green, which is how a rule that decides
+  // what salary gets written into a real save was going unverified.
+  // -------------------------------------------------------------------
+  const salaryFile = (coaches) => fakeFile({ teamRecords: [], coachRecords: coaches });
+  const coach = (index, position, salary, level, status = 'Signed') =>
+    fakeRecord(index, { Position: position, ContractSalary: salary, Level: level, ContractStatus: status });
+
+  // Median of the nearest-level peers, NOT the mean -- the whole point is
+  // that one absurd contract cannot drag the number with it. Peers at
+  // levels 4/5/6 with salaries 10/12/1000 must yield 12, not ~340.
+  const outlier = salaryFile([
+    coach(0, 'HeadCoach', 10, 4), coach(1, 'HeadCoach', 12, 5), coach(2, 'HeadCoach', 1000, 6),
+  ]);
+  check('takes the median of near-level peers, so one huge contract cannot skew it',
+    await synthesizeContractSalary(outlier, 'HeadCoach', 5), 12);
+
+  // Only peers at the SAME position count.
+  const mixed = salaryFile([
+    coach(0, 'HeadCoach', 100, 5), coach(1, 'OffensiveCoordinator', 7, 5), coach(2, 'HeadCoach', 100, 5),
+  ]);
+  check('ignores other positions', await synthesizeContractSalary(mixed, 'HeadCoach', 5), 100);
+
+  // Only SIGNED peers count -- an unsigned coach's salary is not a market rate.
+  const unsigned = salaryFile([
+    coach(0, 'HeadCoach', 100, 5), coach(1, 'HeadCoach', 5, 5, 'FreeAgent'), coach(2, 'HeadCoach', 100, 5),
+  ]);
+  check('ignores coaches who are not Signed', await synthesizeContractSalary(unsigned, 'HeadCoach', 5), 100);
+
+  // Zero/absent salaries are not evidence and must not be averaged in.
+  const zeros = salaryFile([
+    coach(0, 'HeadCoach', 0, 5), coach(1, 'HeadCoach', 50, 5), coach(2, 'HeadCoach', 50, 5),
+  ]);
+  check('ignores zero salaries', await synthesizeContractSalary(zeros, 'HeadCoach', 5), 50);
+
+  // Nothing to learn from -> 0, which callers read as "leave it alone".
+  // Returning an invented number here is what the function exists to avoid.
+  check('returns 0 when the save has no signed peer at this position',
+    await synthesizeContractSalary(salaryFile([coach(0, 'HeadCoach', 80, 5, 'FreeAgent')]), 'HeadCoach', 5), 0);
+  check('returns 0 when nobody plays the requested position',
+    await synthesizeContractSalary(salaryFile([coach(0, 'OffensiveCoordinator', 80, 5)]), 'HeadCoach', 5), 0);
+  // (A zero-capacity Coach table is deliberately NOT tested: biggestTableByName
+  // returns null for one, so this would crash -- but a real save always has a
+  // populated Coach table, and a missing one is a broken-save problem that
+  // belongs to preflight, not to salary synthesis.)
+
+  // Level proximity actually drives the pick: the same pool queried at a low
+  // vs high level leans toward the peers nearest that level.
+  const spread = salaryFile([
+    coach(0, 'HeadCoach', 10, 1), coach(1, 'HeadCoach', 20, 2), coach(2, 'HeadCoach', 30, 3),
+    coach(3, 'HeadCoach', 800, 20), coach(4, 'HeadCoach', 900, 21), coach(5, 'HeadCoach', 1000, 22),
+  ]);
+  const lowEnd = await synthesizeContractSalary(spread, 'HeadCoach', 1);
+  const highEnd = await synthesizeContractSalary(spread, 'HeadCoach', 22);
+  check('a low-level coach draws from low-level peers', lowEnd < 100, true);
+  check('a high-level coach draws from high-level peers', highEnd > 500, true);
 
   console.log(`\n  Carousel placeOnTeam spec: ${passed} assertions passed.`);
 })().catch((e) => { console.error(e); process.exit(1); });
