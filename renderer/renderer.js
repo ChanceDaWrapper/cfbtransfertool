@@ -127,10 +127,11 @@ function countSectionDiffs() {
   // boost card both live on this same Rating Translation page (Phase 2) but
   // were invisible to this count until now -- edit either and the "modified"
   // badge never moved.
+  // Only `spread` counts -- classStrength and debuff are inert as of the
+  // 2026-08-11g rewrite and have no UI, so counting them would let the
+  // "modified" badge light up over a value the user cannot see or change.
   if (cfg.diceRoll && d.diceRoll) {
-    for (const k of ['classStrength', 'debuff', 'spread']) {
-      if ((cfg.diceRoll[k] ?? null) !== (d.diceRoll[k] ?? null)) translation++;
-    }
+    if ((cfg.diceRoll.spread ?? null) !== (d.diceRoll.spread ?? null)) translation++;
   }
   if (cfg.overallBoost && d.overallBoost) {
     for (const k of ['enabled', 'points']) {
@@ -284,6 +285,9 @@ function onConfigChanged() {
   renderWarnings();
   updateUflStartBadge();
   updateDashboardMissionCards();
+  // The custom-player hint is league-dependent and the league radio lives
+  // outside that card, so it has to refresh here rather than only on re-render.
+  if (typeof updateCustomPlayerHint === 'function') updateCustomPlayerHint();
 }
 
 /* ---------------- numeric knob helper ---------------- */
@@ -438,12 +442,20 @@ function buildTranslationPage() {
       markResultsStale();
     })));
 
-  // Power-Curve-only cards (its knobs do nothing under Dice Roll) vs the
-  // Dice Roll card -- exactly one side is shown, so nobody tunes a dial that
-  // silently has no effect on the engine they actually picked.
+  // The Power-Curve cards now apply to BOTH engines and are always shown.
+  //
+  // They used to be hidden under Dice Roll, correctly: Dice Roll was a
+  // completely separate conversion and none of these dials reached it. As of
+  // the 2026-08-11g rewrite Dice Roll RUNS Power Curve for its base ratings and
+  // only adds a luck slide on top, so these are precisely the controls that
+  // tune it -- hiding them would leave Dice Roll users with no way to tune
+  // anything at all, which is the opposite of the original intent.
+  //
+  // The Dice Roll card is still engine-specific: its one live setting (how much
+  // luck) genuinely does nothing under Power Curve.
   $('diceRollControls').style.display = isDiceRoll ? '' : 'none';
   for (const id of ['powerCurveGlobalStrengthCard', 'powerCurveControls', 'strengthControls', 'globalTranslationControls']) {
-    $(id).style.display = isDiceRoll ? 'none' : '';
+    $(id).style.display = '';
   }
 
   // CONFIG_HARDENING_ROADMAP.md Phase 2: the boost is UFL-only but
@@ -478,30 +490,20 @@ function buildTranslationPage() {
   if (isDiceRoll) {
     const dr = $('diceRollSettings');
     dr.innerHTML = '';
-    // The mechanism differs by league, not just the value (pipeline.js):
-    // NFL rolls/forces a class-strength TIER via classStrength; UFL uses a
-    // FIXED debuff via diceRoll.debuff and never reads classStrength at all
-    // -- showing the Class Strength dropdown on UFL was a real dead control
-    // (CONFIG_HARDENING finding #2).
-    if (!isUfl) {
-      dr.appendChild(knob('Class Strength', D['diceRoll.classStrength'],
-        selectInput(cfg.diceRoll.classStrength || '', [
-          ['', 'Auto (roll each generation)'],
-          ['veryWeak', 'Very Weak'],
-          ['weak', 'Weak'],
-          ['normal', 'Normal'],
-          ['strong', 'Strong'],
-          ['veryStrong', 'Very Strong'],
-        ], (v) => { cfg.diceRoll.classStrength = v; })));
-    } else {
-      dr.appendChild(knob('Fixed Class Debuff', D['diceRoll.debuff'],
-        numberInput(cfg.diceRoll.debuff ?? -0.05, { step: 0.01, min: -0.5, max: 0.2 },
-          (v) => { cfg.diceRoll.debuff = v; })));
-    }
-    dr.appendChild(knob('Player Roll Spread', D['diceRoll.spread'],
+    // Class Strength (NFL) and Fixed Class Debuff (UFL) were both removed here
+    // on 2026-08-11g. They described a class-wide debuff, which the rewrite
+    // deleted: the luck slide is zero-centred, so a Dice Roll class averages
+    // out to the same strength as a Power Curve one by construction instead of
+    // by tuning. Their config keys still exist so old saved files and shared
+    // presets load cleanly, but nothing reads them -- and a control that
+    // silently does nothing is worse than no control, which is the same
+    // reasoning that removed the UFL Class Strength dropdown originally.
+    dr.appendChild(knob('Luck', D['diceRoll.spread'],
       numberInput(cfg.diceRoll.spread ?? 1, { step: 0.1, min: 0, max: 2 },
         (v) => { cfg.diceRoll.spread = v; })));
-    return; // nothing below this point applies to Dice Roll
+    // NO early return any more. Everything below -- the curves, the
+    // per-position strengths, the global dial -- now drives Dice Roll's base
+    // ratings too, so it all has to render for both engines.
   }
 
   /* --- global class strength (Level 1) --- */
@@ -895,11 +897,146 @@ function buildAdvancedPage() {
     checkboxInput(cfg.draftValue.generationalEnabled, (v) => { cfg.draftValue.generationalEnabled = v; })));
 }
 
+/* ---------------- custom players ----------------
+ * Rows the user types in, appended to the pool at generation time (main.js's
+ * generate-class handler). Everything here is presentation: validation and
+ * donor lookup both live in lib/customPlayers.js and are reached over IPC, so
+ * the form can never disagree with what generation will actually accept.
+ *
+ * Stored on cfg.customPlayers, a SESSION key -- see defaults.js for why it is
+ * deliberately not per-league tuning. */
+function customPlayers() {
+  if (!Array.isArray(cfg.customPlayers)) cfg.customPlayers = [];
+  return cfg.customPlayers;
+}
+
+function renderCustomPlayers() {
+  const host = $('customPlayerList');
+  if (!host) return;
+  host.innerHTML = '';
+  const list = customPlayers();
+
+  const badge = $('customPlayerCount');
+  if (badge) badge.textContent = list.length ? String(list.length) : '';
+
+  list.forEach((entry, i) => {
+    const row = el('div', 'custom-player-row');
+
+    const first = el('input');
+    first.type = 'text'; first.placeholder = 'First name'; first.value = entry.firstName || '';
+    first.addEventListener('input', () => { entry.firstName = first.value; scheduleSave(); checkCustomPlayer(i); });
+
+    const last = el('input');
+    last.type = 'text'; last.placeholder = 'Last name'; last.value = entry.lastName || '';
+    last.addEventListener('input', () => { entry.lastName = last.value; scheduleSave(); checkCustomPlayer(i); });
+
+    const pos = el('select');
+    for (const p of (META.positions || [])) {
+      const o = el('option', null, p); o.value = p;
+      if (p === entry.position) o.selected = true;
+      pos.appendChild(o);
+    }
+    pos.addEventListener('change', () => { entry.position = pos.value; scheduleSave(); checkCustomPlayer(i); });
+
+    // College overall, not Madden overall. The label says so, and the hint
+    // under the card says why -- this is the single most misreadable field
+    // in the form.
+    const ovr = el('input');
+    ovr.type = 'number'; ovr.min = 1; ovr.max = 99; ovr.placeholder = 'College OVR';
+    ovr.value = entry.overall === undefined || entry.overall === null ? '' : entry.overall;
+    ovr.addEventListener('input', () => {
+      entry.overall = ovr.value === '' ? '' : Number(ovr.value);
+      scheduleSave(); checkCustomPlayer(i);
+    });
+
+    const del = el('button', 'ghost small', 'Remove');
+    del.type = 'button';
+    del.addEventListener('click', () => {
+      list.splice(i, 1);
+      scheduleSave();
+      renderCustomPlayers();
+    });
+
+    const note = el('div', 'custom-player-note');
+    note.id = `customPlayerNote${i}`;
+
+    for (const n of [first, last, pos, ovr, del]) row.appendChild(n);
+    host.appendChild(row);
+    host.appendChild(note);
+    checkCustomPlayer(i);
+  });
+  updateCustomPlayerHint();
+}
+
+// Asks main to validate one row against the loaded pool. Async and
+// fire-and-forget: a stale reply for a row the user has since deleted or
+// re-typed must not overwrite a newer note, so each reply re-checks that its
+// own note element still exists and that the entry hasn't changed underneath
+// it.
+async function checkCustomPlayer(i) {
+  const entry = customPlayers()[i];
+  const note = $(`customPlayerNote${i}`);
+  if (!entry || !note) return;
+  const stamp = JSON.stringify(entry);
+  note.textContent = '';
+  note.className = 'custom-player-note';
+  // Don't nag about a row the user has only just started filling in.
+  if (!entry.firstName && !entry.lastName && !entry.overall) return;
+  let res;
+  try { res = await window.api.customPlayerCheck(entry); } catch (e) { return; }
+  const stillThere = customPlayers()[i];
+  if (!stillThere || JSON.stringify(stillThere) !== stamp) return;
+  const liveNote = $(`customPlayerNote${i}`);
+  if (!liveNote) return;
+  if (!res.ok) {
+    liveNote.className = 'custom-player-note bad';
+    liveNote.textContent = res.error;
+  } else if (res.pending) {
+    liveNote.className = 'custom-player-note';
+    liveNote.textContent = 'Load a pool to confirm this position exists in your dynasty.';
+  } else {
+    liveNote.className = 'custom-player-note ok';
+    liveNote.textContent = `Rating shape from ${res.donor}`;
+  }
+}
+
+// UFL takes the tier BELOW a full NFL cut, so a custom player good enough to
+// make the NFL class is simply not in the UFL one -- verified: a 95-overall
+// custom QB lands at rank 1 in NFL mode and is absent entirely in UFL mode on
+// the same pool. That reads as the feature being broken unless it is said out
+// loud, so it is said here, and only when it can actually bite.
+function updateCustomPlayerHint() {
+  const hint = $('customPlayerHint');
+  if (!hint) return;
+  const n = customPlayers().length;
+  if (!n) { hint.textContent = ''; return; }
+  if (cfg.league === 'ufl') {
+    hint.textContent = `UFL mode generates the tier BELOW the NFL cut. A custom player rated highly `
+      + `enough to make the NFL class won't appear in your UFL class at all -- give them a college `
+      + `overall low enough to fall past the first ${cfg.general.classSize} players, or add them in NFL mode.`;
+    hint.className = 'hint compact warn-text';
+  } else {
+    hint.textContent = `${n} custom player${n === 1 ? '' : 's'} will be added to the pool when you generate.`;
+    hint.className = 'hint compact';
+  }
+}
+
+function wireCustomPlayers() {
+  const btn = $('customPlayerAddBtn');
+  if (!btn) return;
+  btn.addEventListener('click', () => {
+    customPlayers().push({ firstName: '', lastName: '', position: 'QB', overall: 90 });
+    scheduleSave();
+    renderCustomPlayers();
+  });
+}
+
 function rebuildAllPages() {
   buildWeightsPage();
   buildTranslationPage();
   buildPhysicalPage();
   buildAdvancedPage();
+  renderCustomPlayers();
 }
 
 /* ---------------- section resets ---------------- */
@@ -1328,6 +1465,11 @@ async function loadPool(sourceType) {
     setPoolStatus(`${res.count} players loaded${label}`, 'ok');
     $('generateBtn').disabled = false;
     toast(`Pool loaded: ${res.count} players`);
+    // Custom-player notes are answered against the loaded pool, so every one
+    // of them is stale the moment a different pool arrives -- a row that said
+    // "load a pool to confirm" can now be checked, and a donor named from the
+    // previous dynasty is simply wrong for this one.
+    renderCustomPlayers();
   } else {
     setPoolStatus('Load failed', 'err');
     appendLog('ERROR: ' + res.error);
@@ -1809,6 +1951,16 @@ function renderResults() {
             ? `Fell ${d} round${d === 1 ? '' : 's'} later than CFB's own projection had them -- a steal.`
             : `Went ${-d} round${d === -1 ? '' : 's'} earlier than CFB's own projection had them -- a reach.`;
           td.appendChild(badge);
+        }
+      } else if (c.key === 'LastName') {
+        // Tag user-added players so they're findable among 402 rows. On the
+        // last name rather than the first so the two name columns still sort
+        // and read normally, and the tag sits at the end of the full name.
+        td.textContent = v ?? '';
+        if (p.IsCustomPlayer) {
+          const tag = el('span', 'custom-player-tag', 'CUSTOM');
+          tag.title = 'You added this player by hand. They were ranked and converted like every other prospect.';
+          td.appendChild(tag);
         }
       } else if (c.key === 'Height') {
         td.textContent = formatHeight(v);
@@ -2343,6 +2495,7 @@ function renderCoachTonesTable() {
 
   ALL_RATING_COLUMNS = (META.allRatingColumns || []).map((c) => ({ key: c.key, label: c.label, num: true }));
 
+  wireCustomPlayers();
   rebuildAllPages();
   await initExportTargets();
   onConfigChanged();

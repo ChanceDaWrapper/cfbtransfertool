@@ -29,7 +29,7 @@ const assert = require('assert');
 
 const { deriveCurve, transform } = require('../lib/rosetta/translation/powerCurve');
 const { categoryFor } = require('../lib/rosetta/translation/powerCurveCategories');
-const { defaultPowerCurveAnchors, defaultPositionStrength, mergeConfig, activeConfig } = require('../lib/defaults');
+const { defaultPowerCurveAnchors, defaultPositionStrength, mergeConfig, activeConfig, ALL_MIGRATIONS } = require('../lib/defaults');
 const { calibratePlayers, generateClass, GLOBAL_STRENGTH_BASELINE } = require('../lib/pipeline');
 
 let passed = 0;
@@ -41,7 +41,26 @@ function check(label, got, want) {
 // ===========================================================================
 // 1. Engine fidelity -- original model spec, pinned independent of defaults.
 // ===========================================================================
-const SPEC_ANCHORS = defaultPowerCurveAnchors(); // anchor points are unchanged from spec
+// The ORIGINAL model spec's Sec 5 anchor points -- hardcoded, exactly like
+// SPEC_STRENGTH below and for the same reason.
+//
+// These used to be read from defaultPowerCurveAnchors(), on the assumption
+// that anchors were spec-fixed while only per-position strengths were product-
+// tuned. That assumption expired on 2026-08-11, when `physical` was retuned
+// from near-identity (99->99, 80->79) to real compression (99->94, 80->72)
+// after EA's own Madden 27 draft classes showed college athleticism was
+// crossing over untouched. Reading the live default made this section silently
+// re-baseline against whatever product tuning had done -- the exact
+// self-referential failure the file header warns about, and it turned a
+// deliberate retune into a spec-fidelity failure.
+//
+// Section 2 below locks the SHIPPED values; this section proves the ENGINE.
+const SPEC_ANCHORS = {
+  physical: { x1: 99, y1: 99, x2: 80, y2: 79 },
+  techmod: { x1: 99, y1: 90, x2: 80, y2: 73 },
+  techhvy: { x1: 99, y1: 87, x2: 80, y2: 68 },
+  mental: { x1: 97, y1: 77, x2: 86, y2: 62 },
+};
 const CURVES = Object.fromEntries(Object.entries(SPEC_ANCHORS).map(([k, a]) => [k, deriveCurve(a)]));
 // The ORIGINAL model spec's Sec 6 position strengths -- hardcoded here, not
 // read from lib/defaults.js, precisely so retuning the shipped defaults
@@ -134,7 +153,31 @@ const specConfig = {
   // proves engine fidelity against the ORIGINAL spec's numbers, independent
   // of both lib/defaults.js's shipped default AND the baseline stacked on
   // top of the dial at calculation time.
-  powerCurve: { globalStrength: 1 / GLOBAL_STRENGTH_BASELINE, ratingCategory: {}, ratingTweaks: {} },
+  // `anchors` pinned to the spec's own curves for the same reason as
+  // everything else in this object. Missing it was a real gap: when `physical`
+  // was retuned on 2026-08-11 this section started failing, not because the
+  // engine drifted but because it was silently measuring the shipped product
+  // tuning. Section 2 is where shipped anchors belong.
+  // Declares itself already-migrated. The 2026-08-11 physical-anchor migration
+  // rewrites a config still sitting on the pre-retune curve -- which is exactly
+  // the curve this section pins on purpose -- so without this marker the
+  // migration would helpfully "upgrade" the spec fixture out from under the
+  // fidelity proof.
+  // Both retune migrations, not just the first -- SPEC_ANCHORS.physical is
+  // {99,99,80,79}, which is EXACTLY the pre-any-retune stale value the SECOND
+  // migration also checks for (a profile can be stale relative to either
+  // retune). Missing this marker re-triggered the migration against this
+  // deliberately-pinned fixture and silently overwrote it with the live
+  // shipped anchor -- caught by this test failing after the second retune
+  // landed, which is exactly the self-referential trap this file's own header
+  // warns about.
+  migrations: [...ALL_MIGRATIONS],
+  powerCurve: {
+    anchors: SPEC_ANCHORS,
+    globalStrength: 1 / GLOBAL_STRENGTH_BASELINE,
+    ratingCategory: {},
+    ratingTweaks: {},
+  },
 };
 const out = calibratePlayers([porter, bentley], { config: specConfig, log: () => {} });
 const byPos = Object.fromEntries(out.map((p) => [p.CFB_Position, p]));
@@ -294,12 +337,29 @@ check('WR-only exception leaves QB completely untouched', exceptionQB.Madden_Thr
 // (RBs were landing way too low under the original spec-tuned defaults; WR
 // needed harder compression than the spec's split allowed). These
 // intentionally diverge from SPEC_STRENGTH above for several positions.
+//
+// HB raised again 2026-08-11b (0.5/0.6 -> 0.7/0.7) -- see
+// defaultPositionStrength's own HB comment. Not a drift, a second deliberate
+// retune: `physical` went back to near-identity to fix speed realism, so HB's
+// technical/mental compression had to pick up the slack or its overall
+// reproduces the exact "too high" complaint the FIRST retune fixed.
+//
+// WR lowered 2026-08-11e (1.0/1.0 -> 0.85/0.85) after a 99-overall college
+// receiver came out near 70. WR had been the only skill position at a bare
+// 1.0, which stacked with the raised global baseline into the harshest
+// treatment in the class.
+//
+// TE lowered 2026-08-11f (0.9/0.75 -> 0.55/0.55), then that boost REMOVED
+// ENTIRELY 2026-08-12 on a report that tight ends were now coming out too
+// high (1.0/1.0) -- which itself overcorrected the other way (high 70s
+// average -> mid 60s). 2026-08-12b splits the difference: 0.775 is exactly
+// halfway between the removed 0.55 boost and neutral 1.0.
 const SHIPPED = defaultPositionStrength();
 const SHIPPED_EXPECTED = {
   QB: { tech: 0.75, mental: 1 },
-  HB: { tech: 0.5, mental: 0.6 },
-  WR: { tech: 1.0, mental: 1.0 },
-  TE: { tech: 0.9, mental: 0.75 },
+  HB: { tech: 0.7, mental: 0.7 },
+  WR: { tech: 0.85, mental: 0.85 },
+  TE: { tech: 0.775, mental: 0.775 },
   LT: { tech: 1.0, mental: 1.0 }, LG: { tech: 1.0, mental: 1.0 }, C: { tech: 1.0, mental: 1.0 },
   RG: { tech: 1.0, mental: 1.0 }, RT: { tech: 1.0, mental: 1.0 },
   LE: { tech: 0.9, mental: 0.9 }, RE: { tech: 0.9, mental: 0.9 }, DT: { tech: 0.9, mental: 1.0 },
@@ -313,6 +373,21 @@ for (const [pos, { tech, mental }] of Object.entries(SHIPPED_EXPECTED)) {
   check(`shipped default ${pos} tech`, SHIPPED[pos].tech, tech);
   check(`shipped default ${pos} mental`, SHIPPED[pos].mental, mental);
 }
+
+// GLOBAL_STRENGTH_BASELINE belongs in THIS section (shipped, product-tuned)
+// but had no assertion at all until 2026-08-11d. Every other test in this file
+// deliberately CANCELS it out (they pass globalStrength: 1 / BASELINE so the
+// effective value is a clean 1.0), which is correct for proving engine
+// fidelity -- but it meant the shipped value itself was completely unpinned:
+// changing it broke nothing. Verified by sabotage, reverting it from 1.56 to
+// 1.155 passed the entire file before this check existed.
+//
+// It is the single strongest class-wide dial in Power Curve (it scales every
+// position's technical AND mental compression at once), so it is exactly the
+// value most worth locking against silent drift.
+check('shipped GLOBAL_STRENGTH_BASELINE', GLOBAL_STRENGTH_BASELINE, 1.56);
+check('...and it compresses rather than inflating (must exceed 1.0)',
+  GLOBAL_STRENGTH_BASELINE > 1.0, true);
 
 // Shipped rating->bucket defaults that were deliberately re-placed away from
 // the original spec's Sec 5 table (user placements, the BC Vision fix, and
@@ -352,7 +427,16 @@ const staleOut = calibratePlayers([porter], {
     general: { seed: 'spec', classSize: 10 }, translation: { strategy: 'powercurve' },
     positionStrength: { WR: { physical: 1.0, tech: SPEC_STRENGTH.WR.tech, mental: SPEC_STRENGTH.WR.mental } },
     positionExtraDrop: { WR: 0 },
-    powerCurve: { anchors: { armleg: { x1: 99, y1: 97, x2: 80, y2: 78 } } },
+    // globalStrength pinned to a true 1.0 EFFECTIVE value exactly as
+    // specConfig does, because this result is compared against specConfig's
+    // output below. Without it the two configs differ in a second variable
+    // (the hidden GLOBAL_STRENGTH_BASELINE) and the comparison stops being
+    // about the stale `armleg` anchor at all -- which is what this section
+    // actually tests. Caught when that baseline was retuned on 2026-08-11.
+    powerCurve: {
+      anchors: { armleg: { x1: 99, y1: 97, x2: 80, y2: 78 } },
+      globalStrength: 1 / GLOBAL_STRENGTH_BASELINE,
+    },
   }, log: () => {},
 })[0];
 check('generation ignores a stale armleg anchor (Catching still converts normally)',
@@ -416,5 +500,76 @@ check('Age invariant to rating-conversion tuning (WR93)', dB['WR93'].Age, dA['WR
 // config's globalStrength=0.3 and reclassification.
 check('sanity: the two configs really do convert WR93 Awareness differently',
   dA['WR93'].Madden_AwarenessRating !== dB['WR93'].Madden_AwarenessRating, true);
+
+// ===========================================================================
+// 3. Speed realism (2026-08-11b) -- end-to-end, real shipped config, no
+//    per-test overrides. A real report: on the shipped 2026-08-11 (first
+//    retune) config, only 2 of 51 WRs in a generated class exceeded 90 speed,
+//    against 25 of 42 in EA's own real Madden 27 classes. Root cause: the
+//    `physical` bucket compressed SpeedRating and StrengthRating with the
+//    SAME curve, so fixing overalls (which needed strength compressed) also
+//    crushed speed (which didn't). Locks the actual fix: a burner's speed
+//    should barely move from their college value, while their strength -- a
+//    skill position's least football-relevant physical trait -- compresses
+//    hard, using the SHIPPED config end to end (mergeConfig(null) ->
+//    activeConfig, not a hand-built override object), so this fails if
+//    anyone ever reverts the shipped defaults without updating this test.
+// ===========================================================================
+{
+  const shipped = activeConfig(mergeConfig(null), 'nfl');
+  shipped.general.seed = 'speed-realism';
+  shipped.general.classSize = 10;
+  shipped.translation.strategy = 'powercurve';
+
+  // A realistic elite WR profile: fast AND strong, same shape as the real
+  // report. Speed is deliberately 92, NOT a near-max 96-99 -- near the
+  // curve's top anchor almost any reasonable curve stays close to identity
+  // (that end barely moved between the over-compressed and fixed versions),
+  // so a near-max value can't actually distinguish them. 92 sits where the
+  // two anchors visibly diverge: the over-compressed curve maps it to 86
+  // (fails the >=90 check below), the fixed one to 91. This is also a more
+  // representative "fast, not a physical freak" CFB input than 96+ would be.
+  const burner = {
+    FirstName: 'Elite', LastName: 'Burner', OverallRating: 94, Position: 'WR',
+    Height: 73, Weight: 195, JerseyNum: 1, SchoolYear: 'Junior',
+    TraitDevelopment: 'College_Elite', AwardsScore: 0, CareerStats: null, ProjectRound: 1,
+    SpeedRating: 92, AccelerationRating: 91, AgilityRating: 90, ChangeOfDirectionRating: 89,
+    StrengthRating: 85, JumpingRating: 88, CatchingRating: 80, AwarenessRating: 75,
+  };
+  // The SHAPE of the shipped physical curve, pinned directly. The end-to-end
+  // player checks below use a SPD 92 input, which several different curves all
+  // map above 90 -- so they cannot distinguish "small hit" from "moderate hit"
+  // on their own (verified: reverting to the previous 96/82 curve passed every
+  // one of them). These two assertions are what actually encode the
+  // requirement: a small hit at the top, and no inflation anywhere.
+  const shippedPhysical = deriveCurve(defaultPowerCurveAnchors().physical);
+  check('a 99 physical takes only a small hit (lands at 97)',
+    transform(99, shippedPhysical, 1.0), 97);
+  check('the curve never RAISES a physical rating -- 80 must not inflate',
+    transform(80, shippedPhysical, 1.0) <= 80, true);
+  check('...nor in the middle of the range (85)',
+    transform(85, shippedPhysical, 1.0) <= 85, true);
+
+  const [out] = calibratePlayers([burner], { config: shipped, log: () => {} });
+
+  check('a fast college WR keeps most of their speed (within 6 of their CFB value)',
+    out.Madden_SpeedRating >= burner.SpeedRating - 6, true);
+  check('...specifically stays at or above 90 for a burner this fast',
+    out.Madden_SpeedRating >= 90, true);
+  check('the SAME WR\'s strength compresses meaningfully more than their speed did',
+    (burner.StrengthRating - out.Madden_StrengthRating) > (burner.SpeedRating - out.Madden_SpeedRating) + 3, true);
+
+  // Trench strength must NOT get the same harsh treatment -- categoryOverrides
+  // is deliberately scoped to skill positions only.
+  const lineman = {
+    FirstName: 'Big', LastName: 'Tackle', OverallRating: 90, Position: 'LT',
+    Height: 78, Weight: 320, JerseyNum: 70, SchoolYear: 'Senior',
+    TraitDevelopment: 'College_Star', AwardsScore: 0, CareerStats: null, ProjectRound: 1,
+    StrengthRating: 95, RunBlockRating: 82, PassBlockRating: 80, AwarenessRating: 70,
+  };
+  const [outLine] = calibratePlayers([lineman], { config: shipped, log: () => {} });
+  check('a tackle\'s strength stays close to their CFB value (unlike a WR\'s)',
+    outLine.Madden_StrengthRating >= lineman.StrengthRating - 6, true);
+}
 
 console.log(`\n  Power-Curve spec: ${passed} assertions passed.`);

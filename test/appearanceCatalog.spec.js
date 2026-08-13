@@ -66,4 +66,39 @@ const catalog = {
   check('baked catalog covers skin tones 1-7 with pairs', covered, 7);
 }
 
+// assignExact() -- honour the player's OWN CFB head when the destination game
+// ships it. CFB writes "<skin>_<facialHair>_<hairstyle>_<variant>"; Madden
+// writes the same string with a "gen_" prefix.
+//
+// This exists because substituting a same-tone head is NOT skin-neutral: a real
+// M27 report had a skin-5 tackle come out pale because the tone-5 head he was
+// handed rendered lighter than his own. Keeping his real head avoids the
+// substitution entirely.
+{
+  const a = createAppearanceAssigner(catalog);
+
+  const own = a.assignExact('2_H_N_02');
+  check('a CFB head the game ships is used verbatim', own && own.head, 'gen_2_H_N_02');
+  check('...paired with that head\'s own portrait', own && own.faceId, 3501);
+  check('...and is flagged as the player\'s own head', own && own.ownHead, true);
+  check('...with the tone read off the head itself', own && own.tone, 2);
+
+  check('a head the game does NOT ship returns null so the caller can fall back',
+    a.assignExact('9_B_N_99'), null);
+  check('a CFB player with no head at all returns null', a.assignExact(''), null);
+  check('a missing head field returns null', a.assignExact(undefined), null);
+  check('the "NoHead" sentinel CFB uses is not treated as a real head',
+    a.assignExact('NoHead'), null);
+
+  // The fallback must still work, and must still be tone-correct.
+  const sub = a.assign(7);
+  check('fallback still returns a same-tone pair', sub.head, 'gen_7_B_N_01');
+
+  // Own-head picks count toward reuse spreading, so a head used exactly once
+  // via assignExact isn't then handed out again by assign() as "least used".
+  const a2 = createAppearanceAssigner(catalog);
+  a2.assignExact('1_B_N_01');
+  check('an own-head pick is recorded in the usage stats', a2.stats().distinctPairs, 1);
+}
+
 console.log(`\n  Appearance catalog spec: ${passed} assertions passed.`);

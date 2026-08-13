@@ -12,7 +12,7 @@ const assert = require('assert');
 const {
   DEFAULT_CONFIG, SESSION_KEYS, TUNING_KEYS,
   mergeConfig, activeConfig, foldIntoProfile, classifyConfigFile,
-  isSchemaVersionCompatible, splitKnownTuningKeys, CONFIG_SCHEMA_VERSION,
+  isSchemaVersionCompatible, splitKnownTuningKeys, CONFIG_SCHEMA_VERSION, ALL_MIGRATIONS,
   enforceMinClassSize, MIN_CLASS_SIZE,
 } = require('../lib/defaults');
 
@@ -111,7 +111,19 @@ function touchEveryTuningKey(profile, marker) {
   // explicitly so the nested-object merge path in mergeInto is actually
   // exercised, not just the top-level "assign a leaf" path.
   orig.profiles.nfl.powerCurve.ratingCategory = { AwarenessRating: 'physical' };
-  orig.profiles.ufl.powerCurve.categoryOverrides = { QB: { AwarenessRating: 'techhvy' } };
+  // Spread ONTO the existing value, not a raw wholesale replace -- categoryOverrides
+  // ships a non-empty default since 2026-08-11b (StrengthRating -> techhvy for
+  // skill positions). A raw `=` here would discard those default entries from
+  // `orig` while mergeConfig's shallow-spread merge (mergeInto) re-adds them on
+  // the round trip, since it merges saved keys onto the default rather than
+  // replacing it outright -- making `orig` and `roundTripped` differ for a
+  // reason that has nothing to do with a real bug. This mirrors what an actual
+  // saved config looks like: a user who customizes ONE position's override
+  // still has every other position's shipped default sitting right next to it.
+  orig.profiles.ufl.powerCurve.categoryOverrides = {
+    ...orig.profiles.ufl.powerCurve.categoryOverrides,
+    QB: { AwarenessRating: 'techhvy' },
+  };
   orig.profiles.nfl.powerCurve.ratingTweaks = { SpeedRating: { extraDrop: 2, maxDrop: 5 } };
   orig.profiles.ufl.positionValue.QB = 22;
   orig.profiles.nfl.positionValue.HB = 33;
@@ -304,6 +316,278 @@ function touchEveryTuningKey(profile, marker) {
   // never had the bogus keys at all.
   const foldedClean = foldIntoProfile(mergeConfig(null), { league: 'ufl', ...cleanProfile });
   check('a bogus key never reaches the saved profile either', 'bogusFutureKey' in foldedClean.profiles.ufl, false);
+}
+
+// M27_FIELD_FIXES_ROADMAP.md Phase 2. mergeInto merges a saved object-valued
+// tuning key by iterating the DEFAULT's own sub-keys -- any key the DEFAULT
+// doesn't already have can never survive a round trip. positionCaps used to
+// default to only { K, P, LS }, so a user-set cap on any OTHER position (WR,
+// CB, ...) was silently dropped on the very next save/load, and the Position
+// Caps control appeared to do nothing for every position except
+// Kicker/Punter/Long Snapper. Fixed by seeding every position into the
+// default (blank = no cap) -- this section pins that fix directly, at the
+// exact layer the bug lived in, rather than only in generation-level probes.
+{
+  const flat = activeConfig(mergeConfig(null), 'nfl');
+  check('every position is present in the default so none can be dropped by mergeInto',
+    Object.keys(DEFAULT_CONFIG.profiles.nfl.positionCaps).length, 22);
+  check('a position with no shipped default cap starts blank (no cap), not absent',
+    flat.positionCaps.WR, '');
+
+  flat.positionCaps = { ...flat.positionCaps, WR: 10, CB: 8 };
+  const roundTripped = activeConfig(mergeConfig(flat), 'nfl');
+  check('a user-set cap on a position with no shipped default survives mergeConfig',
+    roundTripped.positionCaps.WR, 10);
+  check('...a second one does too, in the same round trip', roundTripped.positionCaps.CB, 8);
+  check('the shipped K/P/LS defaults are untouched by the fix',
+    roundTripped.positionCaps.K === 3 && roundTripped.positionCaps.P === 5 && roundTripped.positionCaps.LS === 3, true);
+
+  const folded = foldIntoProfile(mergeConfig(null), flat);
+  check('...and survives the canonical fold main.js actually uses at generation time',
+    folded.profiles.nfl.positionCaps.WR, 10);
+}
+
+// The Power-Curve physical retune -- TWO of them, same day (2026-08-11 then
+// 2026-08-11b) -- and the migrations that make each actually reach people.
+// Anchors live under a TUNING key, so a saved config's copy beats the new
+// default -- without a migration every existing user keeps stale numbers and
+// the retune ships to nobody. Same failure mode as the positionCaps bug above.
+{
+  const STALE_V1 = { x1: 99, y1: 99, x2: 80, y2: 79 }; // pre-any-retune
+  const STALE_V2 = { x1: 99, y1: 94, x2: 80, y2: 72 }; // first retune only
+  const STALE_V3 = { x1: 99, y1: 96, x2: 80, y2: 82 }; // second retune only
+  const FRESH = DEFAULT_CONFIG.profiles.nfl.powerCurve.anchors.physical;
+  const STALE_HB = { physical: 1, tech: 0.5, mental: 0.6 };
+  const FRESH_HB = DEFAULT_CONFIG.profiles.nfl.positionStrength.HB;
+  const otherCurves = {
+    techmod: { x1: 99, y1: 90, x2: 80, y2: 73 },
+    techhvy: { x1: 99, y1: 87, x2: 80, y2: 68 },
+    mental: { x1: 97, y1: 77, x2: 86, y2: 62 },
+  };
+  const savedWith = (physical, hb) => ({
+    profiles: {
+      nfl: {
+        powerCurve: { anchors: { physical, ...otherCurves } },
+        positionStrength: { HB: hb || { ...FRESH_HB } },
+      },
+      ufl: {},
+    },
+  });
+
+  // The second retune moved physical BACK toward near-identity (fixing speed
+  // realism after the first retune over-compressed it) -- so "compresses more
+  // than the pre-retune default" is no longer the invariant. What's true now:
+  // it stays close to identity, and it is NOT byte-identical to either stale
+  // shape (proving something actually shipped).
+  check('the shipped physical curve is close to identity (speed/agility barely move)',
+    FRESH.y1 >= 90 && FRESH.y1 <= 99, true);
+  check('...and differs from both prior stale values',
+    JSON.stringify(FRESH) !== JSON.stringify(STALE_V1) && JSON.stringify(FRESH) !== JSON.stringify(STALE_V2), true);
+  check('HB keeps some leniency but far less than before (0.5/0.6 -> higher)',
+    FRESH_HB.tech > STALE_HB.tech && FRESH_HB.mental > STALE_HB.mental, true);
+
+  // A config still on EITHER prior anchor value is upgraded straight to current.
+  for (const [label, stale] of [['pre-any-retune', STALE_V1], ['first-retune-only', STALE_V2], ['second-retune-only', STALE_V3]]) {
+    const upgraded = mergeConfig(savedWith({ ...stale }, { ...STALE_HB }));
+    checkDeepEqual(`a ${label} anchor is upgraded to current`,
+      upgraded.profiles.nfl.powerCurve.anchors.physical, FRESH);
+    checkDeepEqual(`...on the UFL profile too (${label})`,
+      upgraded.profiles.ufl.powerCurve.anchors.physical, FRESH);
+    checkDeepEqual(`a ${label} config's stale HB strength is upgraded too`,
+      upgraded.profiles.nfl.positionStrength.HB, FRESH_HB);
+  }
+
+  // Markers, not value comparisons. Value sniffing could never tell "never
+  // touched this" from "deliberately picked exactly that", so it would revert a
+  // user who genuinely wants the old numbers on every single load.
+  // ALL_MIGRATIONS rather than a hardcoded list: this section previously named
+  // its markers inline and silently broke every time a new migration shipped,
+  // because a config declaring only the OLD markers still gets the new one
+  // applied (correctly) and then fails an assertion that assumed otherwise.
+  const declaredAll = {
+    migrations: [...ALL_MIGRATIONS],
+    ...savedWith({ ...STALE_V1 }, { ...STALE_HB }),
+  };
+  checkDeepEqual('a config that ran EVERY migration keeps the old anchor if it wants it',
+    mergeConfig(declaredAll).profiles.nfl.powerCurve.anchors.physical, STALE_V1);
+  checkDeepEqual('...and the old HB strength too',
+    mergeConfig(declaredAll).profiles.nfl.positionStrength.HB, STALE_HB);
+  check('every migration marker is recorded so none runs twice',
+    ALL_MIGRATIONS.every((m) => mergeConfig(savedWith({ ...STALE_V1 }, { ...STALE_HB })).migrations.includes(m)), true);
+  check('a fresh install ships already-migrated on all of them',
+    ALL_MIGRATIONS.every((m) => DEFAULT_CONFIG.migrations.includes(m)), true);
+
+  // Only having run the FIRST migration does not protect against the second --
+  // a user in that state has NOT received the speed-realism fix yet, so it
+  // must still apply even though their anchor happens to equal STALE_V1 (the
+  // same value the second migration also treats as stale).
+  const onlyFirst = {
+    migrations: [ALL_MIGRATIONS[0]],
+    ...savedWith({ ...STALE_V1 }, { ...STALE_HB }),
+  };
+  checkDeepEqual('a config that only ran the FIRST migration still receives the later ones',
+    mergeConfig(onlyFirst).profiles.nfl.powerCurve.anchors.physical, FRESH);
+  // And the realistic upgrade path for anyone who ran an intermediate build.
+  const ranFirstTwo = {
+    migrations: ALL_MIGRATIONS.slice(0, 2),
+    ...savedWith({ ...STALE_V3 }, { physical: 1, tech: 0.7, mental: 0.7 }),
+  };
+  checkDeepEqual('a config from an intermediate build receives the newest migration',
+    mergeConfig(ranFirstTwo).profiles.nfl.powerCurve.anchors.physical, FRESH);
+
+  // The whole point of matching EXACTLY: someone who tuned this deliberately
+  // must not have their setting silently overwritten by an app update.
+  const custom = { x1: 99, y1: 95, x2: 80, y2: 85 };
+  checkDeepEqual('a user-customised physical curve is left completely alone',
+    mergeConfig(savedWith(custom)).profiles.nfl.powerCurve.anchors.physical, custom);
+  const oneOff = { x1: 99, y1: 97, x2: 80, y2: 78 }; // differs from FRESH by one number
+  checkDeepEqual('...even when it differs from the current default by one number',
+    mergeConfig(savedWith(oneOff)).profiles.nfl.powerCurve.anchors.physical, oneOff);
+  const customHb = { physical: 1, tech: 0.85, mental: 0.85 };
+  checkDeepEqual('a user-customised HB strength is left completely alone',
+    mergeConfig(savedWith({ ...FRESH }, customHb)).profiles.nfl.positionStrength.HB, customHb);
+
+  checkDeepEqual('a config already on the current curve is unchanged',
+    mergeConfig(savedWith({ ...FRESH })).profiles.nfl.powerCurve.anchors.physical, FRESH);
+
+  // Legacy flat configs predate every migration by definition.
+  checkDeepEqual('a legacy flat config is upgraded too',
+    mergeConfig({ powerCurve: { anchors: { physical: { ...STALE_V1 }, ...otherCurves } } })
+      .profiles.nfl.powerCurve.anchors.physical, FRESH);
+
+  // Only `physical` and HB moved -- the migration must not touch anything else.
+  const after = mergeConfig(savedWith({ ...STALE_V1 }, { ...STALE_HB })).profiles.nfl;
+  checkDeepEqual('the migration leaves techmod alone', after.powerCurve.anchors.techmod, otherCurves.techmod);
+  checkDeepEqual('the migration leaves techhvy alone', after.powerCurve.anchors.techhvy, otherCurves.techhvy);
+  checkDeepEqual('the migration leaves mental alone', after.powerCurve.anchors.mental, otherCurves.mental);
+  check('the migration leaves QB strength alone', after.positionStrength.QB.tech, DEFAULT_CONFIG.profiles.nfl.positionStrength.QB.tech);
+}
+
+// categoryOverrides ships non-empty since 2026-08-11b (StrengthRating ->
+// techhvy for skill positions -- see defaultPowerCurveAnchors' PART 2
+// comment). No migration marker needed for this one: unlike the anchor/HB
+// cases above, a saved config's categoryOverrides has (almost) never been
+// populated (there's no UI for it), so it round-trips as `{}`, and mergeInto
+// SPREADS an object-valued subkey rather than replacing it wholesale -- an
+// empty saved value can never clobber the new default's entries.
+{
+  const skillPositions = ['WR', 'CB', 'HB', 'FS', 'SS'];
+  const shipped = DEFAULT_CONFIG.profiles.nfl.powerCurve.categoryOverrides;
+  check('every skill position routes StrengthRating to techhvy by default',
+    skillPositions.every((p) => shipped[p] && shipped[p].StrengthRating === 'techhvy'), true);
+  check('trench positions are deliberately absent -- their strength stays on physical',
+    ['LT', 'RG', 'DT', 'MLB'].every((p) => shipped[p] === undefined), true);
+
+  // An old config that never had this key at all still receives it.
+  const noKey = mergeConfig({ profiles: { nfl: { powerCurve: {} }, ufl: {} } });
+  checkDeepEqual('a config missing categoryOverrides entirely receives the shipped default',
+    noKey.profiles.nfl.powerCurve.categoryOverrides, shipped);
+
+  // A config that explicitly customized ONE position keeps that customization
+  // AND still receives the shipped defaults for every position it never touched.
+  const partial = mergeConfig({
+    profiles: { nfl: { powerCurve: { categoryOverrides: { QB: { AwarenessRating: 'techhvy' } } } }, ufl: {} },
+  });
+  check('a customized position survives alongside the shipped defaults',
+    partial.profiles.nfl.powerCurve.categoryOverrides.QB.AwarenessRating, 'techhvy');
+  checkDeepEqual('...and every shipped-default position is still present',
+    skillPositions.map((p) => partial.profiles.nfl.powerCurve.categoryOverrides[p]),
+    skillPositions.map((p) => shipped[p]));
+}
+
+// The 2026-08-11f skill-position weight retune (WR and TE), and its migration.
+// This one is here because it SHIPPED BROKEN once: the WR change went out, the
+// reporter re-ran it, and their saved 1.0/1.0 silently beat the new default --
+// so the fix reached nobody who had ever opened the app. positionStrength is a
+// TUNING key, same trap as positionCaps and the physical anchor before it.
+{
+  const FRESH = DEFAULT_CONFIG.profiles.nfl.positionStrength;
+  const savedWithPS = (wr, te) => ({
+    profiles: {
+      nfl: { positionStrength: { WR: { physical: 1, ...wr }, TE: { physical: 1, ...te } } },
+      ufl: {},
+    },
+  });
+  const STALE_WR = { tech: 1.0, mental: 1.0 };
+  const STALE_TE = { tech: 0.9, mental: 0.75 };
+
+  check('shipped WR is more lenient than the bare 1.0 it used to be',
+    FRESH.WR.tech < 1.0 && FRESH.WR.mental < 1.0, true);
+
+  const upPS = mergeConfig(savedWithPS(STALE_WR, STALE_TE));
+  checkDeepEqual('a config on the old WR weights is upgraded',
+    upPS.profiles.nfl.positionStrength.WR, FRESH.WR);
+  checkDeepEqual('a config on the old TE weights is upgraded',
+    upPS.profiles.nfl.positionStrength.TE, FRESH.TE);
+  checkDeepEqual('...on the UFL profile too', upPS.profiles.ufl.positionStrength.WR, FRESH.WR);
+
+  // Deliberate choices survive, both via the marker and via a custom value.
+  const declaredPS = { migrations: [...ALL_MIGRATIONS], ...savedWithPS(STALE_WR, STALE_TE) };
+  checkDeepEqual('a config that already ran this migration keeps the old WR weights',
+    mergeConfig(declaredPS).profiles.nfl.positionStrength.WR, { physical: 1, ...STALE_WR });
+  const customWR = { tech: 0.6, mental: 0.7 };
+  checkDeepEqual('a user-customised WR weight is never touched',
+    mergeConfig(savedWithPS(customWR, STALE_TE)).profiles.nfl.positionStrength.WR, { physical: 1, ...customWR });
+
+  // Nothing else in positionStrength moves.
+  const afterPS = mergeConfig(savedWithPS(STALE_WR, STALE_TE)).profiles.nfl.positionStrength;
+  checkDeepEqual('the migration leaves QB alone', afterPS.QB, FRESH.QB);
+  checkDeepEqual('the migration leaves HB alone', afterPS.HB, FRESH.HB);
+  checkDeepEqual('the migration leaves CB alone', afterPS.CB, FRESH.CB);
+}
+
+// The 2026-08-12 TE boost removal. Needs its own marker even though it's the
+// SAME field the skill-weights migration above touches: SKILL_WEIGHTS_MIGRATION
+// already fired for anyone who ran 0.3.1 (it shipped the 0.55/0.55 boost this
+// migration removes), so a config on 0.55/0.55 would never be re-examined
+// without a fresh marker of its own.
+{
+  const FRESH = DEFAULT_CONFIG.profiles.nfl.positionStrength;
+  const savedWithTE = (te) => ({
+    profiles: { nfl: { positionStrength: { TE: { physical: 1, ...te } } }, ufl: {} },
+  });
+  const STALE_TE_BOOST = { tech: 0.55, mental: 0.55 };
+
+  check('shipped TE sits halfway between the removed boost and neutral',
+    FRESH.TE.tech === 0.775 && FRESH.TE.mental === 0.775, true);
+
+  const upTE = mergeConfig(savedWithTE(STALE_TE_BOOST));
+  checkDeepEqual('a config on the original TE boost lands on the halved value',
+    upTE.profiles.nfl.positionStrength.TE, FRESH.TE);
+  checkDeepEqual('...on the UFL profile too', upTE.profiles.ufl.positionStrength.TE, FRESH.TE);
+
+  const customTE = { tech: 0.6, mental: 0.65 };
+  checkDeepEqual('a user-customised TE weight is never touched',
+    mergeConfig(savedWithTE(customTE)).profiles.nfl.positionStrength.TE, { physical: 1, ...customTE });
+
+  checkDeepEqual('nothing else moves', mergeConfig(savedWithTE(STALE_TE_BOOST)).profiles.nfl.positionStrength.WR, FRESH.WR);
+}
+
+// 2026-08-12b: removing the TE boost entirely was itself an overcorrection,
+// so it's now halved instead of gone. This needs to reach someone who ALREADY
+// ran the removal-only build (TE_BOOST_REMOVAL_MIGRATION recorded, TE saved as
+// plain 1.0/1.0) -- a value-only check under that old marker would never fire
+// for them again, which is exactly the trap SKILL_WEIGHTS_MIGRATION vs.
+// TE_BOOST_REMOVAL_MIGRATION hit one section up.
+{
+  const FRESH = DEFAULT_CONFIG.profiles.nfl.positionStrength;
+  const ranRemovalOnly = {
+    migrations: ALL_MIGRATIONS.filter((m) => m !== 'teHalfBoost-2026-08-12b'),
+    profiles: {
+      nfl: { positionStrength: { TE: { physical: 1, tech: 1.0, mental: 1.0 } } },
+      ufl: { positionStrength: { TE: { physical: 1, tech: 1.0, mental: 1.0 } } },
+    },
+  };
+  checkDeepEqual('a config that only ran the removal migration is upgraded to the halved boost',
+    mergeConfig(ranRemovalOnly).profiles.nfl.positionStrength.TE, FRESH.TE);
+  checkDeepEqual('...on the UFL profile too', mergeConfig(ranRemovalOnly).profiles.ufl.positionStrength.TE, FRESH.TE);
+
+  const declaredAllTE = {
+    migrations: [...ALL_MIGRATIONS],
+    profiles: ranRemovalOnly.profiles,
+  };
+  checkDeepEqual('a config that already ran every migration keeps a deliberate plain 1.0/1.0',
+    mergeConfig(declaredAllTE).profiles.nfl.positionStrength.TE, { physical: 1, tech: 1.0, mental: 1.0 });
 }
 
 console.log(`\n  Config layer spec: ${passed} assertions passed.`);

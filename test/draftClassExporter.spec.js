@@ -13,7 +13,7 @@
 // coverage in the render band, 0 warnings.
 
 const assert = require('assert');
-const { buildDraftClassFile, TEMPLATE_SLOT_COUNT, extractRatings } = require('../lib/draftClassExporter');
+const { buildDraftClassFile, TEMPLATE_SLOT_COUNT, extractRatings, MADDEN_DEV_TRAIT_TO_RAW } = require('../lib/draftClassExporter');
 const {
   parseDraftClassFile, getPosition, getHeight, getWeight, getAge, getJersey,
   getArchetype, getDevTrait, getDraftRound, getDraftPick, getRatings, getCollegeIndex,
@@ -32,7 +32,13 @@ function ok(label, cond) { assert.ok(cond, label); passed++; }
 
 const POSITIONS = ['QB', 'HB', 'WR', 'TE', 'LT', 'LG', 'C', 'RG', 'RT', 'LE', 'RE', 'DT', 'LOLB', 'MLB', 'ROLB', 'CB', 'FS', 'SS', 'K', 'P'];
 const ARCHETYPES = ['QB_StrongArm', 'HB_ElusiveBack', 'WR_DeepThreat', 'DT_NoseTackle', 'CB_Zone'];
+// TraitDevelopment (CFB's own college-tier field, a source-data passthrough
+// the exporter must NOT write) and DevTrait (the Madden dev trait
+// assignDevTraits actually assigns, which the exporter must write) are
+// deliberately offset from each other below so the two can never coincide by
+// chance -- proving the export reads DevTrait, not TraitDevelopment.
 const DEV_TRAITS = ['Normal', 'College_Impact', 'College_Star', 'College_Elite'];
+const MADDEN_DEV_TRAITS = ['Normal', 'Star', 'Superstar', 'XFactor'];
 const SCHOOLS = ['Alabama', 'Clemson', 'Ohio State', 'Georgia', 'Texas', 'Not A Real School'];
 
 // Builds a synthetic class shaped like calibratePlayers' real output.
@@ -50,6 +56,7 @@ function makeSyntheticClass(n) {
       Height: 68 + (i % 15),
       Weight: 180 + (i % 150),
       TraitDevelopment: DEV_TRAITS[i % DEV_TRAITS.length],
+      DevTrait: MADDEN_DEV_TRAITS[(i + 1) % MADDEN_DEV_TRAITS.length],
       ProjectRound: i < 224 ? 1 + Math.floor(i / 32) : null, // ~224 drafted, rest undrafted
       DraftPick: i < 224 ? i + 1 : null,
       SkinTone: 1 + (i % 7),
@@ -145,7 +152,7 @@ function makeSyntheticClass(n) {
     if (getJersey(p) !== src.Jersey) mismatches++;
     if (getHeight(p) !== src.Height) mismatches++;
     if (getWeight(p) !== src.Weight) mismatches++;
-    if (getDevTrait(p).name !== src.TraitDevelopment) mismatches++;
+    if (getDevTrait(p).value !== MADDEN_DEV_TRAIT_TO_RAW[src.DevTrait]) mismatches++;
     if (getDraftRound(p) !== (src.ProjectRound ?? 63)) mismatches++;
     if (getDraftPick(p) !== (src.DraftPick ?? 0)) mismatches++;
     const ratings = getRatings(p);

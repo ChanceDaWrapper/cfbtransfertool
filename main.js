@@ -6,10 +6,14 @@ const {
   loadDepartedCsv, toCsv,
   defaultCfbSavesDir, defaultMaddenSavesDir,
 } = require('./lib/pipeline');
+// Per-year Saves lookup lives in saveIO (pipeline doesn't re-export it).
+const { maddenSavesDirForYear } = require('./lib/saveIO');
 const { buildDraftClassFile, TEMPLATE_SLOT_COUNT } = require('./lib/draftClassExporter');
+const { availableTargets, DEFAULT_TARGET, loadTemplateModel } = require('./lib/draftClassTemplate');
 const coachRun = require('./lib/carousel/run');
 const { setCfbToneOverridePath, setCoachToneOverride } = require('./lib/carousel/appearance');
 const { ConfigStore } = require('./lib/configStore');
+const { withCustomPlayers, normalizeCustomPlayer, buildCustomRow } = require('./lib/customPlayers');
 const {
   DEFAULT_CONFIG, DESCRIPTIONS, POSITIONS, POSITION_LABELS,
   PHYSICAL_RATINGS, RATING_LABELS, ALL_RATING_COLUMNS,
@@ -385,6 +389,28 @@ ipcMain.handle('pool-status', () => ({
   source: cachedPoolSource,
 }));
 
+// Checks one typed-in player against the CURRENTLY LOADED pool and reports
+// which real prospect would supply their rating shape. Exists so the two
+// failures that can only be known from the pool -- no player at that position
+// at all, and "whose ratings am I actually getting" -- surface in the form
+// instead of as a generation error minutes later.
+//
+// Deliberately tolerant of there being no pool yet: the form is reachable
+// before a save is loaded, and refusing to validate is not the same as
+// invalid. It reports `pending` and lets generation do the real check.
+ipcMain.handle('custom-player-check', (_e, spec) => {
+  try {
+    const normalized = normalizeCustomPlayer(spec);
+    if (!cachedPool) return { ok: true, pending: true, normalized };
+    // buildCustomRow does the donor lookup and throws the "no such position
+    // in this pool" error, which is the case worth surfacing early.
+    const row = buildCustomRow(normalized, cachedPool);
+    return { ok: true, pending: false, normalized, donor: row.CustomDonor };
+  } catch (e) {
+    return { ok: false, error: e.message || String(e) };
+  }
+});
+
 ipcMain.handle('generate-class', async (_e, config) => {
   if (!cachedPool) return { ok: false, error: 'No player pool loaded. Load a CFB save or CSV first.' };
   try {
@@ -402,7 +428,13 @@ ipcMain.handle('generate-class', async (_e, config) => {
     // entirely from the live (possibly unsaved) `config` passed in, so
     // unsaved edits are still reflected in generation exactly as before.
     const canonical = enforceMinClassSize(foldIntoProfile(configStore.load(), config));
-    const players = generateClass(cachedPool, canonical, sendLog);
+    // User-added players join the pool HERE rather than at extraction, for two
+    // reasons. The pool is extracted once and cached across many generations,
+    // so adding them at extraction would strand edits until the save was
+    // re-read; and withCustomPlayers returns a new array, so the cache is
+    // never mutated and repeat generations can't stack duplicates.
+    const pool = withCustomPlayers(cachedPool, canonical.customPlayers, sendLog);
+    const players = generateClass(pool, canonical, sendLog);
     lastGenerated = players;
     return { ok: true, players };
   } catch (e) {
@@ -426,16 +458,34 @@ ipcMain.handle('write-career', async (_e, { maddenPath, outputPath }) => {
 // a class smaller than that fills fewer slots and leaves the rest as the
 // bundled template's original prospects (see draftClassExporter.js). Only an
 // empty class is refused.
-ipcMain.handle('export-draft-class-file', async () => {
+// Which target games this build can actually emit -- driven by which templates
+// are bundled, so the UI can never offer one the exporter can't produce.
+ipcMain.handle('export-targets', () => ({
+  // Slot count comes from each bundled template itself, so the UI's "N players"
+  // can never drift from what the exporter actually emits.
+  targets: availableTargets().map((t) => {
+    let slots = null;
+    try { slots = loadTemplateModel(t.key).players.length; } catch (e) { /* unreadable -> omit */ }
+    return { ...t, slots };
+  }).filter((t) => t.slots !== null),
+  defaultTarget: DEFAULT_TARGET,
+}));
+
+ipcMain.handle('export-draft-class-file', async (_e, args = {}) => {
   if (!lastGenerated) return { ok: false, error: 'Generate a draft class first.' };
+  const target = args.target || DEFAULT_TARGET;
   let buffer;
+  let slotCount = TEMPLATE_SLOT_COUNT;
   try {
     // Build first so any error surfaces before we prompt for a save location.
-    buffer = buildDraftClassFile(lastGenerated, { log: sendLog });
+    buffer = buildDraftClassFile(lastGenerated, { log: sendLog, target });
+    slotCount = loadTemplateModel(target).players.length;
   } catch (e) {
     return { ok: false, error: e.message || String(e) };
   }
-  const defaultDir = defaultMaddenSavesDir();
+  // Default to the Saves folder of the game this file was built FOR, not just
+  // whichever Madden install is newest.
+  const defaultDir = maddenSavesDirForYear(target === 'm27' ? 27 : 26);
   const result = await dialog.showSaveDialog(mainWindow, {
     title: 'Export Madden draft-class file',
     defaultPath: path.join(defaultDir && fs.existsSync(defaultDir) ? defaultDir : '', 'CAREERDRAFT-CFBCLASS'),
@@ -454,7 +504,7 @@ ipcMain.handle('export-draft-class-file', async () => {
     return { ok: false, error: `Could not write file: ${e.message}` };
   }
   sendLog(`Exported draft-class file: ${outPath}`);
-  return { ok: true, path: outPath, count: Math.min(lastGenerated.length, TEMPLATE_SLOT_COUNT) };
+  return { ok: true, path: outPath, target, count: Math.min(lastGenerated.length, slotCount) };
 });
 
 ipcMain.handle('export-results', async (_e, { format }) => {

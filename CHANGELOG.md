@@ -5,6 +5,282 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased] - 0.3.1
+
+### Added
+- **Add your own players to a draft class.** On the Generate Class page you can
+  now type in players who aren't in your dynasty — a name, a position, and a
+  college overall. They're added to the prospect pool and then treated exactly
+  like everyone else: ranked against the real prospects, converted by whichever
+  rating engine you've picked, and given a dev trait the same way. So a player
+  lands where their talent actually puts them rather than at a slot they were
+  handed, and they show up in the exported draft-class file like any other pick.
+  - The overall you enter is a **college** overall, and college ratings always
+    convert downward — so enter it higher than the Madden rating you're aiming
+    for, generate, and check the Draft Class page (added players are tagged
+    there) to see where they landed.
+  - Their build, archetype and rating shape are copied from the closest real
+    player at the same position in your own dynasty, so a custom safety is
+    shaped like a safety instead of being invented from one number. If nobody
+    at that position is leaving, the app says so instead of guessing.
+  - In UFL mode the card warns that a highly-rated added player will be pulled
+    into the NFL tier and won't appear in your UFL class at all — UFL generates
+    the tier below the NFL cut.
+
+### Documentation
+- **Name your exported draft-class file with letters, numbers and dashes only.**
+  Spaces or punctuation in the name can make Madden bounce you back to the main
+  menu when importing — the file saves fine and may even import from the weekly
+  agenda's "select the rookies" screen, while failing from Draft Class → Edit.
+  This is now called out on the Export card itself and in both HOWTOs. The app
+  does not rename your file for you; renaming someone's export behind their back
+  is worse than telling them the rule.
+
+### Fixed
+- **A player's dev trait in the exported file now matches the one Pipeline
+  assigned and shows on the Draft Class page.** The exporter was writing each
+  player's own CFB college performance tier into the dev trait byte instead of
+  the Madden dev trait Pipeline actually rolled for them — so a player listed
+  as Star in Pipeline could come in as Superstar in-game (or any other
+  mismatch), entirely independent of what the app displayed or the Dev Trait
+  percentage targets were set to. The percentage targets now actually control
+  what lands in the file.
+- **Tight end tuning, twice in one day.** A fix for tight ends landing too low
+  (capping around 62) added a strong leniency boost; once the rest of that
+  day's tuning was accounted for, that boost turned out to be too generous
+  (class averaging in the high 70s), so it was removed entirely — which
+  overcorrected the other way (mid 60s). It's now reintroduced at half its
+  original strength, splitting the difference.
+- **Rating tuning updates now actually reach you.** Position weights are saved
+  with your settings, so an updated default was being silently overruled by
+  whatever your config already had — meaning a fix could ship and change nothing
+  for anyone who had opened the app before. Your saved values are now brought
+  forward automatically when they're still on a previous default. Anything you
+  deliberately changed yourself is left exactly as you set it.
+- **Players now keep their own face from College Football instead of being given
+  a stranger's.** Madden's head assets use the same names College Football does,
+  just with a `gen_` prefix — so a CFB player's actual head can be carried
+  straight across. About 70% of a class now keeps its real face; the rest still
+  fall back to a same-skin-tone substitute, as before.
+  - This also fixes skin tones that survived the portrait fix below. Swapping in
+    a "same tone" head is not actually skin-neutral: a skin-5 offensive tackle
+    was coming out pale because the tone-5 head he was handed renders lighter
+    than his own. Using his real head removes the guesswork entirely.
+  - Applies to both Madden 26 and Madden 27 exports.
+- **Madden 27 skin tones are fixed — profile pictures now match the player.**
+  Every Madden 27 export was giving players a headshot belonging to a different,
+  unrelated prospect, so a player's 3D model had the right skin while the
+  portrait next to it often didn't. Only about 1% of players happened to line up
+  by luck; it's now 100%.
+  - Cause: Madden 27 moved the portrait ID two bytes, and this app assumed it
+    had moved four, like every other field did. So it read the portrait from a
+    field that isn't the portrait, wrote a meaningless value back into that
+    field, and never touched the real one — leaving each player with whatever
+    headshot the template slot they replaced happened to carry.
+  - Madden 27 pairs every generic head with exactly one portrait (verified: 188
+    heads, 188 portraits, a perfect one-to-one match). Exports now use EA's own
+    pairing, so the headshot always belongs to the face being used.
+  - Madden 26 exports are completely unaffected — that field never moved there.
+- **The bundled Madden 27 template is now built from a current-build export**
+  (schema tag `9081279`, was `9074430`), so exported files match what Madden 27
+  writes today rather than an earlier patch. Slightly more face and equipment
+  variety comes with it. Confirmed against three separate real M27 exports that
+  the file structure did not change between those builds, and that nothing the
+  previous template used has been removed from the game.
+- **Madden 27 players now get abilities that match the position they actually
+  play.** M27's per-player file record carries a block of five extra values
+  with no Madden 26 equivalent. 0.3.0's changelog described these as "carried
+  over from a position-matched pro," but that was never actually implemented --
+  they were really just whatever was left over from the template slot each
+  generated player happened to overwrite, matching that player's real position
+  only 8.9% of the time on a real class (a quarterback could end up carrying a
+  right tackle's block). They're now explicitly copied from the same
+  position-matched donor equipment already uses, verified 100% position-matched
+  on the same class. Madden 26 exports are unaffected; that file format has no
+  such block to begin with.
+- **Position caps were silently ignored for every position except Kicker,
+  Punter, and Long Snapper.** Setting a cap on, say, Wide Receiver had no
+  effect and a class would still come out with far more WRs than requested.
+  The three positions that shipped a default cap were the only ones that could
+  ever hold a user-set value in storage -- every other position's cap was
+  discarded the moment the config was saved. Fixed at the storage layer so
+  every position can now hold a cap; this predates Madden 27 entirely and was
+  not part of the M27 restructure.
+
+### Changed
+- **Dice Roll is now a luck layer on top of Power Curve, not a separate engine.**
+  Picking Dice Roll runs the same conversion Power Curve does — so a player's
+  ratings still reflect how he actually plays — and then slides each player up
+  or down a little, producing steals and busts instead of one predictable list.
+  - The slide is even-handed: a class averages out to the same strength as a
+    Power Curve class. Previously Dice Roll applied its own separate cut on top
+    of the conversion, so even the best possible roll still made a player worse.
+  - About 40% of players come out exactly where Power Curve put them, most of
+    the rest move a point or two of overall, and a handful swing the full ~5.
+    Top of the board moves most, the deep class least — but never nothing, so a
+    late-round steal is still possible.
+  - Speed and agility barely move. A bust doesn't get slower; he fails to
+    develop technique and awareness.
+  - **Every rating setting now applies to both engines.** Position weights and
+    the rating curves are shared, so tuning a position fixes it everywhere
+    instead of needing the same change made twice in two places.
+  - The Rating Translation and Rating Categories pages now stay visible when
+    Dice Roll is selected — they were hidden before, correctly, because none of
+    those dials reached the old engine. They drive it now, so hiding them would
+    have left Dice Roll with nothing to tune.
+  - The Dice Roll "Class Strength" and UFL "Fixed Debuff" controls are gone —
+    they set a class-wide penalty that no longer exists. The remaining "Luck"
+    setting controls how far players move; set it to 0 and Dice Roll produces
+    exactly the same class as Power Curve.
+- **Tight ends get a targeted buff.** The best tight end in a class was coming
+  out around 62, against 74-78 in Madden's own draft classes. Same cause as
+  receivers below, one position over. Tight ends now get more leniency than any
+  other skill position, because Madden's tight end overall spreads its weight
+  across four separate ratings (speed, route running, catching in traffic,
+  awareness) — so an even drop across the board compounds on them harder than
+  on anyone else.
+- **Receivers get a small boost.** A 99-overall college receiver was coming out
+  around 70 — route running was losing 19 points and awareness 33. Wide receiver
+  was the only skill position with no leniency at all in its position weights,
+  which made it the hardest-hit group in the class once the class-wide
+  compression was deepened. Both engines now give receivers the same modest
+  break every other skill position already had; the top receiver in a class
+  lands around 77 instead of 74.
+- **Draft classes come in about 4 overalls lower across the board.** Both rating
+  engines were moved by the same amount so switching between them doesn't change
+  how strong a class is. Speed and agility are deliberately untouched, so this
+  doesn't undo the athleticism work — only technical and mental ratings compress
+  further. Note this now sits a little below Madden's own draft classes rather
+  than matching them, which is intentional: rookies come in with more room to
+  develop.
+- **Halfbacks no longer dominate the top of a Dice Roll class.** A class
+  imported into Madden 27 put four halfbacks in the top six overall (86, 85,
+  82, 81) while every other position topped out around 78-81. Halfbacks were
+  getting two separate leniency bonuses stacked on top of each other; one is
+  removed and the other reduced. They now land in line with receivers and
+  corners in the same class. Quarterbacks were checked at the same time and
+  left alone — they were already sitting where real Madden classes put them.
+- **Power Curve classes are less top-heavy.** A real imported class showed
+  around 15 players at 80+ overall, where Madden's own draft classes have none
+  to two. Technical and mental ratings now compress a bit more across the
+  board; speed and agility are untouched, so this doesn't undo the athleticism
+  fix below. On the reported save the class top drops from 83 to 82 and 80+
+  from 7 to 2 — inside Madden's real range.
+- **Physical ratings now take only a small hit.** A 99 speed comes across as a
+  97, a 90 as an 88 — a consistent light haircut rather than a real cut. The
+  previous curve also quietly *raised* mid-range physicals (an 80 became an 82),
+  which is why too many receivers were showing up at 90+ speed; that's gone, so
+  the share of genuinely fast receivers now matches Madden's own draft classes.
+- **Power Curve speed and agility are realistic again.** The fix above compressed
+  a shared bucket that covered speed, acceleration, agility and jumping
+  alongside strength and throw/kick power — bringing overalls down also
+  crushed athleticism, so a real burner could end up with barely above-average
+  speed. Speed/acceleration/agility/jumping are back to nearly their college
+  value (matching real Madden 27 classes, where a good chunk of receivers and
+  corners sit at 90+ speed); strength for skill positions now compresses
+  separately and much harder, since a receiver's or corner's raw strength
+  rating matters far less than their speed does. Linemen and defensive
+  linemen are unaffected — their strength was already realistic and stays
+  that way. Halfbacks pick up a little more overall compression on their own
+  ball-carrying skills to keep their overall in check now that their speed is
+  no longer doing that job.
+- **Power Curve classes come down to the size of a real Madden rookie class.**
+  College athleticism was crossing over essentially untouched — the physical
+  curve was very close to a straight copy — and because Madden's overall
+  formula leans hardest on speed, acceleration and agility for skill positions,
+  a halfback carrying his college 95s straight over posted an 86. Physical
+  ratings now genuinely compress. Calibrated against two real Madden 27 draft
+  classes exported from the game itself:
+
+  | | Madden's own classes | before | after |
+  |---|---|---|---|
+  | top overall | 79–82 | 88 | 81 |
+  | players at 80+ | 0–2 | 17 | 1 |
+  | players at 75+ | 20–26 | 84 | 20 |
+
+  Technical, mental and speed/agility curves are all unchanged. If you had
+  already tuned the physical curve yourself, your setting is kept.
+- **Dice Roll classes regress further from their college ratings.** Every
+  class-strength tier now cuts about 2% deeper. Because that cut scales with a
+  player's own overall, it comes off the top of the class hardest -- on a real
+  class the first round's key ratings fell about 1.3 points and the number of
+  first-rounders at 68+ dropped from 112 to 96, while the spread between the
+  first round and the late rounds held steady. Weak prospects are barely
+  touched, so the class gets less top-heavy rather than uniformly worse.
+- **Dice Roll position tuning.** Three positions were landing in the wrong place
+  relative to the rest of a class, so technique now takes a small per-position
+  adjustment: quarterbacks keep about 1 more point of it, halfbacks about 2, and
+  both safeties give up about 2 more. Nothing else moves -- awareness, physical
+  ratings and the speed/agility group are all untouched for these positions, and
+  every other position is completely unaffected.
+- **Linemen, edge rushers and quarterbacks keep more of their athleticism.** The
+  flat speed/acceleration/agility/change-of-direction cut applied to the trench
+  positions was the harshest rule in the engine -- it was taking 5 to 7 points
+  off those groups against 2 to 3 for skill players. It's now about 2 points
+  kinder in the bands where most ratings actually sit. It remains much steeper
+  than the skill-position cut, which is unchanged: a 300-pound guard still
+  shouldn't carry his college speed into the NFL.
+
+## [0.3.0] - 2026-08-06
+
+### Changed
+- **Dice Roll classes come out a little weaker, and the strong players now
+  land nearer the top of the board.** Two adjustments:
+  - Ratings take a flat trim on top of the roll -- about 2.5 points off
+    technical ratings and 3.5 off Awareness and Play Recognition, since
+    rookies process slowest of all. Physical ratings and the speed/agility
+    group are deliberately untouched: a college burner should still time fast.
+    Weak ratings (below 50) are also left alone, so a poor rating can't be
+    compounded further. In practice a class's headline ratings come down
+    roughly 2-3 points.
+  - Good rolls now concentrate much more at the top of the class. A first-round
+    pick lands in the favourable half of the roll about 70% of the time (was
+    49%), while a late pick stays near 22% -- so fewer high-rated players
+    survive deep into the class. It's still a roll either way: a late-round gem
+    remains possible, just rarer.
+- **Kick Power is now treated as a physical rating in Dice Roll**, matching how
+  every other part of the app already classifies it. It had been falling
+  through to the general rule, which would have stacked the new technical trim
+  onto a kicker's one defining trait.
+
+### Fixed
+- **Coach moves are now allowed at any point in the offseason.** The window
+  check previously demanded both an offseason save *and* one of the game's four
+  named hiring/demand-release flags being set that week. Plenty of perfectly
+  sensible spots fail that second test -- a dynasty sitting at draft-results
+  week is in the offseason with every flag off -- so the tool refused with
+  "offseason, but outside the coach hiring/demand-release window" while the
+  user was looking at their own offseason menu. The whole offseason now counts.
+  An active hiring period still works on its own too, whatever week the save
+  reports, so CFB's carousel (which runs at the end of the postseason, not in
+  the offseason) is unaffected. In-season and preseason saves are still blocked
+  unless you turn on "Allow coach hires outside the hiring window".
+- **A blocked coach move now reports the save's actual season flags** in the
+  error text, so a screenshot is enough to tell what stopped it.
+
+### Added
+- **Madden 27 draft-class export.** Pipeline can now build a draft class for
+  Madden 27 as well as Madden 26. Pick the game on the Export card -- the two
+  file formats are not interchangeable, so the choice decides the whole file:
+  its slot count (402 for M26, 389 for M27), its schema tag, and its internal
+  record layout. Your pick is remembered, and the save dialog defaults to that
+  game's own Saves folder.
+  - Madden 27 widened the per-player record (200 -> 244 bytes) and the first-name
+    field (17 -> 21), which shifts every following field by 4 bytes. Both games
+    are now read and written through one code path that adapts to whichever it
+    is looking at, detected from the file's own schema tag.
+  - M27's per-player ability/trait block -- five values M26 has no equivalent
+    for -- is carried over from a position-matched pro rather than invented, so
+    every exported player has plausible values for their position instead of a
+    blank slot.
+  - Faces and equipment are validated against the game being exported to, using
+    a real export of that game as the reference for what it actually ships. No
+    Madden 26-only asset can end up in a Madden 27 file (or the reverse), which
+    would otherwise show up in-game as a missing item or a broken face.
+  - Skin tone still lands correctly on Madden 27 even though its files no longer
+    store it as a separate value: it is carried by the head itself, which the
+    exporter picks to match.
+
 ## [0.2.3] - 2026-08-05
 
 ### Changed

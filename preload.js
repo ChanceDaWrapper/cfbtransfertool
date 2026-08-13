@@ -19,8 +19,10 @@ contextBridge.exposeInMainWorld('api', {
   extractPool: (opts) => ipcRenderer.invoke('extract-pool', opts),
   poolStatus: () => ipcRenderer.invoke('pool-status'),
   generateClass: (config) => ipcRenderer.invoke('generate-class', config),
+  customPlayerCheck: (spec) => ipcRenderer.invoke('custom-player-check', spec),
   writeCareer: (opts) => ipcRenderer.invoke('write-career', opts),
-  exportDraftClassFile: () => ipcRenderer.invoke('export-draft-class-file'),
+  exportDraftClassFile: (target) => ipcRenderer.invoke('export-draft-class-file', { target }),
+  exportTargets: () => ipcRenderer.invoke('export-targets'),
   exportResults: (opts) => ipcRenderer.invoke('export-results', opts),
   // coach carousel
   coachScan: (cfbPath) => ipcRenderer.invoke('coach-scan', cfbPath),

@@ -1,18 +1,9 @@
 {
   "name": "pipeline",
-  "version": "0.3.0",
+  "version": "0.3.1",
   "description": "Pipeline -- converts an EA SPORTS College Football 27 dynasty's departing players into a calibrated, projected Madden NFL 26 rookie draft class -- ratings conversion, draft declaration prediction, draft projection, dev traits, combine generation, and franchise-save export.",
   "main": "main.js",
-  "scripts": {
-    "start": "electron .",
-    "build": "electron-builder --win nsis",
-    "build:fixtool": "pkg tools/FixCoachCrash.js --config pkg.fixtool.json --targets node22-win-x64 --output \"dist-fixtool/FixCoachCrash.exe\"",
-    "test": "node test/powerCurve.spec.js && node test/bioFields.spec.js && node test/draftClassFile.spec.js && node test/draftClassM27.spec.js && node test/draftClassTargets.spec.js && node test/draftClassConvert.spec.js && node test/convertDraftClass.spec.js && node test/draftClassTemplate.spec.js && node test/appearanceCatalog.spec.js && node test/draftClassExporter.spec.js && node test/gearTranslation.spec.js && node test/agilitySize.spec.js && node test/draftBoard.spec.js && node test/collegeMatch.spec.js && node test/carouselPerson.spec.js && node test/carouselMap.spec.js && node test/carouselMapOrchestration.spec.js && node test/carouselMovement.spec.js && node test/carouselPlaceOnTeam.spec.js && node test/carouselPlaceOnCfbTeam.spec.js && node test/talentTree.spec.js && node test/cfbTalentTree.spec.js && node test/maddenTalentLayout.spec.js && node test/enumAlias.spec.js && node test/cfbEmploymentRecords.spec.js && node test/clearStaleTeamLoadouts.spec.js && node test/carouselAppearance.spec.js && node test/coachToneOverrides.spec.js && node test/validate.spec.js && node test/cfbNormalize.spec.js && node test/cfbJobSecurityRank.spec.js && node test/preflight.spec.js && node test/carouselTiming.spec.js && node test/carouselRun.spec.js && node test/gameVersion.spec.js && node test/population.spec.js && node test/diceRoll.spec.js && node test/config.spec.js"
-  },
   "author": "ChanceDaWrapper",
-  "contributors": [
-    "Sean Dwyer (seanpdwyer7) -- draft projection, declaration prediction, combine generation, and export enrichment adapted from cfb2madden; see NOTICE.md"
-  ],
   "license": "MIT",
   "repository": {
     "type": "git",
@@ -20,43 +11,6 @@
   },
   "dependencies": {
     "madden-franchise": "file:vendor/madden-franchise-4.3.0.tgz"
-  },
-  "devDependencies": {
-    "electron": "37.10.3",
-    "electron-builder": "^25.0.0"
-  },
-  "build": {
-    "appId": "com.chance.pipeline",
-    "productName": "Pipeline",
-    "asarUnpack": [
-      "renderer/assets/icon.ico"
-    ],
-    "files": [
-      "main.js",
-      "preload.js",
-      "lib/**/*",
-      "renderer/**/*",
-      "data/**/*",
-      "!data/real_draft_classes_veteran.json",
-      "!data/*.backup-*",
-      "schema/**/*",
-      "node_modules/**/*",
-      "NOTICE.md",
-      "README.md",
-      "LICENSE",
-      "CHANGELOG.md"
-    ],
-    "win": {
-      "target": "nsis",
-      "icon": "build/icon.ico"
-    },
-    "nsis": {
-      "oneClick": false,
-      "allowToChangeInstallationDirectory": true,
-      "createDesktopShortcut": true,
-      "createStartMenuShortcut": true,
-      "shortcutName": "Pipeline"
-    }
   },
   "allowScripts": {
     "electron@37.10.3": true

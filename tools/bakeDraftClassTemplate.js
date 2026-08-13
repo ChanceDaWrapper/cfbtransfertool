@@ -11,6 +11,11 @@
 // overwritten per generated player, so the specific players baked in here never
 // appear in real output.
 //
+// The output path is chosen from the file's OWN schema tag, so baking a Madden
+// 27 export writes the M27 asset and baking a Madden 26 export writes the M26
+// one -- there is no way to silently overwrite one game's template with the
+// other's.
+//
 // Usage:
 //   node tools/bakeDraftClassTemplate.js <path-to-a-real-exported-draft-class-file>
 
@@ -18,8 +23,7 @@ const fs = require('fs');
 const path = require('path');
 const zlib = require('zlib');
 const { verifyRoundTrip } = require('../lib/draftClassFile');
-
-const OUTPUT_PATH = path.join(__dirname, '..', 'data', 'draftClassTemplate.bin.gz');
+const { TEMPLATE_PATHS } = require('../lib/draftClassTemplate');
 
 function main() {
   const inputPath = process.argv[2];
@@ -39,14 +43,21 @@ function main() {
     process.exit(1);
   }
 
+  const outputPath = TEMPLATE_PATHS[model.format.key];
+  if (!outputPath) {
+    console.error(`REFUSING TO BAKE: no template slot for format "${model.format.key}".`);
+    process.exit(1);
+  }
+
   const gz = zlib.gzipSync(buf, { level: 9 });
-  fs.writeFileSync(OUTPUT_PATH, gz);
+  fs.writeFileSync(outputPath, gz);
 
   console.log(`Baked template from: ${inputPath}`);
+  console.log(`  format:     ${model.format.key}`);
   console.log(`  players:    ${model.header.playerCount}`);
   console.log(`  schema tag: ${model.header.schemaTag}`);
   console.log(`  original:   ${buf.length} bytes`);
-  console.log(`  compressed: ${gz.length} bytes -> ${OUTPUT_PATH}`);
+  console.log(`  compressed: ${gz.length} bytes -> ${outputPath}`);
   console.log('\nThe template is now bundled. The app builds draft-class files from it without');
   console.log('asking the user for a file. Re-run this tool against a fresh export only if the');
   console.log('bundled template needs to match a different Madden build (its schema tag above).');

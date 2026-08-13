@@ -252,6 +252,26 @@
             Weight or rating change affects the output on the Draft Class page —
             otherwise, generate once and write it into your franchise.
           </div>
+          <!-- Custom players. Added to the pool at generation time, then
+               scored/ranked/converted exactly like a real prospect -- see
+               lib/customPlayers.js for why they borrow a donor's rating shape
+               and why the entered overall is a COLLEGE overall. -->
+          <div class="field">
+            <label>Custom Players <span id="customPlayerCount" class="badge-count"></span></label>
+            <p class="hint compact">
+              Add someone who isn't in your dynasty. They join the pool as an ordinary prospect and
+              land wherever their talent puts them — no reserved slot. The overall you enter is a
+              <strong>college</strong> overall and converts down like everyone else's, so enter it
+              higher than the Madden rating you're aiming for, then check the Draft Class page and
+              adjust. Their build and rating shape are copied from the closest real player at the
+              same position.
+            </p>
+            <div id="customPlayerList" class="custom-player-list"></div>
+            <div class="btn-row">
+              <button id="customPlayerAddBtn" class="ghost small" type="button">+ Add Player</button>
+            </div>
+            <p class="hint compact" id="customPlayerHint"></p>
+          </div>
           <div id="settingsWarnings" class="warnings-stack"></div>
           <div class="btn-row">
             <button id="generateBtn" class="primary" disabled>Generate Draft Class</button>
@@ -266,6 +286,16 @@
         <p class="hint">Builds a Madden <em>Import Draft Class</em> file from your generated class — no franchise save needed.
           In Madden: <strong>Franchise → Manage Roster → Import Draft Class</strong> and pick this file. It replaces the
           whole rookie class (no duplicates), with correct faces, positions, sizes, ratings, archetypes, and dev traits.</p>
+        <!-- Reported by a user on the first public M27 build: a file named with
+             spaces/punctuation saved fine and even imported from the weekly
+             agenda, but bounced to the main menu from Draft Class -> Edit. The
+             app is deliberately NOT sanitising the name (that would silently
+             rename someone's file); it just says so where the naming happens. -->
+        <p class="hint compact"><strong>Name it with letters, numbers and dashes only.</strong>
+          Spaces or punctuation in the file name can make Madden kick you back to the main
+          menu when you import. <code>CAREERDRAFT-CFBCLASS2030</code> works;
+          <code>CAREERDRAFT-My Class (v2)</code> may not. The <code>CAREERDRAFT-</code>
+          prefix is added for you automatically.</p>
         <div class="field">
           <label>Game</label>
           <div class="radio-row" id="exportTargetRow">
@@ -383,10 +413,16 @@
       <div class="card" id="diceRollControls" style="display:none">
         <h2>Dice Roll</h2>
         <p class="hint compact">
-          Every generation rolls a strength for the whole class, then a
-          bust/gem roll for each player — the two combine into one delta that
-          nudges every rating. No category curves or per-position dials here;
-          this engine is its own self-contained model.
+          Dice Roll builds every player with the <strong>Power Curve</strong> settings
+          below — so ratings still reflect how the player actually plays — and then
+          rolls each player a little luck on top, up or down. Most players barely
+          move, a few swing several points, and the class as a whole comes out the
+          same strength as a Power Curve class. That's what turns a predictable
+          board into one with steals and busts.
+        </p>
+        <p class="hint compact">
+          Everything below this card applies to Dice Roll too. Tune the conversion
+          there; tune how much luck here.
         </p>
         <div class="knob-grid" id="diceRollSettings"></div>
       </div>
@@ -486,8 +522,9 @@
       </header>
 
       <div class="warning-box subtle" id="physicalEngineNotice" style="display:none">
-        These buckets only apply to the <strong>Power Curve</strong> engine. The Dice Roll
-        engine is currently selected, so nothing on this page affects your generated class.
+        These buckets apply to <strong>both</strong> engines. Dice Roll builds its base
+        ratings with Power Curve before rolling each player's luck, so changes here
+        affect your class either way.
       </div>
 
       <div class="card">

@@ -721,6 +721,51 @@ input[type="number"] { width: 90px; text-align: right; font-family: var(--mono);
   margin-left: 4px;
 }
 
+/* ---------- custom players ---------- */
+/* One row per typed-in player, with a note line underneath carrying the
+   donor confirmation or the validation error. The note is a sibling rather
+   than a child so it spans the full width and doesn't squeeze the inputs
+   when its text is long (the "no player at that position" message is a
+   full sentence). */
+.custom-player-list { margin-bottom: 10px; }
+.custom-player-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr 92px 110px auto;
+  gap: 8px;
+  align-items: center;
+  margin-bottom: 4px;
+}
+.custom-player-row input,
+.custom-player-row select { margin: 0; }
+.custom-player-note {
+  font-size: 11px;
+  color: var(--text-faint);
+  margin: 0 0 10px 2px;
+  min-height: 0;
+}
+.custom-player-note:empty { margin-bottom: 0; }
+.custom-player-note.ok { color: var(--text-dim); }
+.custom-player-note.bad { color: var(--red); }
+
+/* Amber, not red: the UFL/custom-player interaction is a surprise worth
+   reading, not an error -- nothing is broken and generation still works. */
+.hint.warn-text { color: var(--amber); }
+
+/* The generated-results marker for a user-added player. Deliberately a dim
+   accent rather than a warning colour -- a custom player is a normal thing
+   to have in the class, it just needs to be findable among 402 rows. */
+.custom-player-tag {
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  background: #2a1f47;
+  color: #c4a5ff;
+  padding: 1px 5px;
+  border-radius: 4px;
+  margin-left: 6px;
+  vertical-align: middle;
+}
+
 /* Plan-table Status cell: a blocked reason is a sentence, not a word. Let it
    wrap inside a bounded column instead of stretching the table until the
    actionable half sits off-screen behind a horizontal scrollbar. */
