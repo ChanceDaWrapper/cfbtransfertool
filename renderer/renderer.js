@@ -2,6 +2,26 @@
  * State lives here; all heavy lifting happens in the main process over IPC.
  * Config edits autosave (debounced) and regenerate marks results stale. */
 
+// FEATURE FLAGS -- declared first so nothing can read one before it exists.
+//
+// "Write to Madden Franchise" is not shipped. Its card renders as a locked
+// "Coming Soon" panel in index.html with every control marked `disabled`.
+//
+// That markup alone was NOT enough, and the gap was live: `disabled` is only
+// an initial state, and updateWriteEnabled() (plus the post-generate handler)
+// reassign writeBtn.disabled from real state. The Madden-save picker they key
+// off is SHARED with the Dashboard hub's picker -- which is deliberately not
+// locked, because the Coach Carousel needs it -- so the ordinary flow (pick a
+// Madden save on the Dashboard, generate a class) cleared the lock and left a
+// live "Write to Franchise" button under a "Coming Soon" badge. Pressing it
+// overwrites the franchise save IN PLACE, behind nothing but a confirm().
+//
+// The lock is a value now, and every path that enables the button consults it;
+// the click handler re-checks independently rather than trusting a flag three
+// other code paths reassign. Flip this to true to ship the feature -- the
+// enabling logic is already correct and needs no other change.
+const WRITE_TO_FRANCHISE_ENABLED = false;
+
 let META = null;        // { config, defaults, descriptions, positions, ... } from main
 let cfg = null;         // live editable config
 let players = [];       // last generated class
@@ -1322,6 +1342,8 @@ $('leagueResetProfile').addEventListener('click', async () => {
 });
 
 /* ---------------- dashboard: pool + generate + write ---------------- */
+// Write to Franchise is gated by WRITE_TO_FRANCHISE_ENABLED at the top of this
+// file -- see the note there for why the locked markup alone wasn't enough.
 let defaultDirs = { cfb: null, madden: null };
 let maddenPath = null, outputPath = null, outMode = 'edit';
 let cfbSavePath = null; // last CFB save picked -- shared with the Coach Carousel pages
@@ -1496,7 +1518,7 @@ async function generate() {
     setGenStatus(`${players.length} players generated`, 'ok');
     $('viewResultsBtn').disabled = false;
     $('regenerateBtn').disabled = false;
-    $('writeBtn').disabled = !maddenPath || (outMode === 'copy' && !outputPath);
+    updateWriteEnabled();
     updateExportDraftEnabled();
     renderResults();
     toast(`Generated ${players.length}-player class`);
@@ -1568,7 +1590,8 @@ $('pickOutput').addEventListener('click', async () => {
 });
 
 function updateWriteEnabled() {
-  $('writeBtn').disabled = !(players.length && maddenPath && (outMode === 'edit' ? true : !!outputPath));
+  $('writeBtn').disabled = !WRITE_TO_FRANCHISE_ENABLED
+    || !(players.length && maddenPath && (outMode === 'edit' ? true : !!outputPath));
 }
 
 // The file's total slot count is fixed PER GAME (Madden 26 = 402, Madden 27 =
@@ -1728,6 +1751,11 @@ $('exportDraftFileBtn').addEventListener('click', async () => {
 });
 
 $('writeBtn').addEventListener('click', async () => {
+  // Belt and braces. The button should be unclickable while the feature is
+  // locked, but this handler is the thing that overwrites a franchise save in
+  // place, so it refuses on its own rather than trusting a `disabled` flag
+  // that three other code paths reassign.
+  if (!WRITE_TO_FRANCHISE_ENABLED) return;
   const st = $('writeStatus');
   if (outMode === 'edit') {
     const sure = confirm(`This will OVERWRITE the franchise file in place:\n\n${maddenPath}\n\nMake sure you have a backup. Continue?`);
@@ -1745,7 +1773,7 @@ $('writeBtn').addEventListener('click', async () => {
     st.className = 'inline-status err';
     toast(res.error, true);
   }
-  $('writeBtn').disabled = false;
+  updateWriteEnabled();
 });
 
 /* ---------------- results table ---------------- */
