@@ -125,9 +125,12 @@ formulas, ridge regression, validated by held-out cross-validation against
 real Madden player data). It has no effect on generation logic -- see item 4
 above.
 
-`data/position_calibration.json` and `data/quantile_calibration.json` are
-used only by the legacy `v1` conversion engine (selectable but not exposed in
-the UI; see `POWERCURVE_ROADMAP.md`), kept as a dormant fallback/reference.
+`data/position_calibration.json` and `data/quantile_calibration.json` were the
+legacy `v1` conversion engine's reference data. That engine was removed in
+0.3.2 along with both files -- it had not been reachable from the UI since
+Power Curve shipped, but its ~1 MB of data was still going into every
+install. Recover them from git history if a future engine ever wants
+percentile mapping again.
 
 `data/schemas/CFB27_809_0.gz` is the full CFB 27 save schema used to read
 the dynasty save (Team/SeasonStats/CareerStats tables, needed for school
