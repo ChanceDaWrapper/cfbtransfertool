@@ -1,9 +1,18 @@
 {
   "name": "pipeline",
   "version": "0.3.1",
-  "description": "Pipeline -- converts an EA SPORTS College Football 27 dynasty's departing players into a calibrated, projected Madden NFL 26 rookie draft class -- ratings conversion, draft declaration prediction, draft projection, dev traits, combine generation, and franchise-save export.",
+  "description": "Pipeline -- converts an EA SPORTS College Football 27 dynasty's departing players into a calibrated, projected Madden NFL 26/27 rookie draft class -- ratings conversion, draft declaration prediction, draft projection, dev traits, combine generation, and franchise-save export.",
   "main": "main.js",
+  "scripts": {
+    "start": "electron .",
+    "build": "electron-builder --win nsis",
+    "build:fixtool": "pkg tools/FixCoachCrash.js --config pkg.fixtool.json --targets node22-win-x64 --output \"dist-fixtool/FixCoachCrash.exe\"",
+    "test": "node test/run.js"
+  },
   "author": "ChanceDaWrapper",
+  "contributors": [
+    "Sean Dwyer (seanpdwyer7) -- draft projection, declaration prediction, combine generation, and export enrichment adapted from cfb2madden; see NOTICE.md"
+  ],
   "license": "MIT",
   "repository": {
     "type": "git",
@@ -11,6 +20,43 @@
   },
   "dependencies": {
     "madden-franchise": "file:vendor/madden-franchise-4.3.0.tgz"
+  },
+  "devDependencies": {
+    "electron": "37.10.3",
+    "electron-builder": "^25.0.0"
+  },
+  "build": {
+    "appId": "com.chance.pipeline",
+    "productName": "Pipeline",
+    "asarUnpack": [
+      "renderer/assets/icon.ico"
+    ],
+    "files": [
+      "main.js",
+      "preload.js",
+      "lib/**/*",
+      "renderer/**/*",
+      "data/**/*",
+      "!data/real_draft_classes_veteran.json",
+      "!data/*.backup-*",
+      "schema/**/*",
+      "node_modules/**/*",
+      "NOTICE.md",
+      "README.md",
+      "LICENSE",
+      "CHANGELOG.md"
+    ],
+    "win": {
+      "target": "nsis",
+      "icon": "build/icon.ico"
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true,
+      "shortcutName": "Pipeline"
+    }
   },
   "allowScripts": {
     "electron@37.10.3": true
