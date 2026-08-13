@@ -7,6 +7,38 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+- **The app installs about 1 MB smaller.** The original "V1" rating engine and
+  its two calibration data files have been removed. V1 was unreachable — the
+  engine picker has only ever offered Power Curve and Dice Roll, and the app
+  rewrote any other saved choice back to Power Curve on startup — but its
+  reference data shipped in every install regardless. Nothing you can select
+  in the app has changed.
+- **Tight ends settled at half a boost.** After the back-and-forth in 0.3.1
+  (boost → too high → removed → too low), tight ends now sit exactly halfway
+  between, and your saved settings are brought forward automatically.
+
+### Fixed
+- **The two draft-class writers now share one implementation of Madden 27's
+  hidden ability block.** The exporter and the M26↔M27 converter each had
+  their own copy of that logic, and they disagreed about the block's shape —
+  one treated it as the whole record tail, the other as six specific bytes.
+  Measured across three real M27 exports and 388 donor/target pairs, both
+  produced byte-identical results, so nothing was actually broken; they agreed
+  only because of what the data happens to look like today. They now share one
+  implementation, so a future game patch can't make them silently diverge.
+- **Dev traits can no longer be written from the wrong vocabulary.** A
+  player's college performance tier and the Madden dev trait this app assigns
+  are stored in the same place but named differently by each game, and only
+  the college names existed in code — which is how 0.3.1's mismatched-dev-trait
+  bug happened in the first place. Both are now named, and either can be used
+  by name to get the right result.
+
+### Internal
+- `npm test` now runs every spec and reports all failures together, instead of
+  stopping at the first one. It also discovers spec files automatically, so a
+  new test can't sit in the repo looking covered while never running.
+
 ## [0.3.1] - 2026-08-12
 
 ### Added

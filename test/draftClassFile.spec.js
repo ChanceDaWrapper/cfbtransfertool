@@ -39,6 +39,7 @@ const {
   setArchetype,
   getDevTrait,
   setDevTrait,
+  DEV_TRAIT_NAME_TO_VALUE,
   getRatings,
   setRatings,
   RATING_OFFSETS,
@@ -360,11 +361,31 @@ const samplePlayers = [
   assert.throws(() => setJersey(p, 100), /out of range/, 'jersey > 99 should throw');
   passed++;
 
-  // dev trait by value and by name (enum identical to CFB)
+  // dev trait by value and by CFB tier name
   check('setDevTrait by value', getDevTrait(setDevTrait(p, 2)).name, 'College_Star');
   check('setDevTrait by name', getDevTrait(setDevTrait(p, 'College_Elite')).value, 3);
   check('setDevTrait writes offset 140', setDevTrait(p, 1).binary.raw[DEVTRAIT_OFFSET], 1);
   assert.throws(() => setDevTrait(p, 9), /unrecognized trait/, 'invalid dev trait should throw');
+  passed++;
+
+  // ONE BYTE, TWO VOCABULARIES. Offset 140 is read as a CFB college tier
+  // (College_Star) or as a Madden dev trait (Superstar) depending on which
+  // game's record you think you're holding. Writing the college tier where the
+  // Madden trait belonged is a bug that actually shipped -- a prospect the app
+  // listed as Star imported into Madden as a Superstar -- so both vocabularies
+  // are now accepted by name and must land on the same byte.
+  check('setDevTrait accepts a Madden dev trait name', getDevTrait(setDevTrait(p, 'Superstar')).value, 2);
+  check('...and reads back as that Madden name', getDevTrait(setDevTrait(p, 'Superstar')).maddenName, 'Superstar');
+  check('...while the same byte still reads as its CFB tier', getDevTrait(setDevTrait(p, 'Superstar')).name, 'College_Star');
+  check('Star -> 1', getDevTrait(setDevTrait(p, 'Star')).value, 1);
+  check('XFactor -> 3', getDevTrait(setDevTrait(p, 'XFactor')).value, 3);
+  // The one name both vocabularies share must agree, or the whole scheme is
+  // ambiguous. DEV_TRAIT_NAME_TO_VALUE throws at load time if they ever differ.
+  check('Normal means 0 in both vocabularies', getDevTrait(setDevTrait(p, 'Normal')).value, 0);
+  check('the two vocabularies are ordinally aligned',
+    ['Normal', 'Star', 'Superstar', 'XFactor'].map((n) => DEV_TRAIT_NAME_TO_VALUE[n]).join(','), '0,1,2,3');
+  check('...and the CFB tiers occupy those same values',
+    ['Normal', 'College_Impact', 'College_Star', 'College_Elite'].map((n) => DEV_TRAIT_NAME_TO_VALUE[n]).join(','), '0,1,2,3');
   passed++;
 
   // archetype: raw PlayerType value (direct copy) or by name

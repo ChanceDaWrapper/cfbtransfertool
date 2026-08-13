@@ -13,7 +13,8 @@
 // coverage in the render band, 0 warnings.
 
 const assert = require('assert');
-const { buildDraftClassFile, TEMPLATE_SLOT_COUNT, extractRatings, MADDEN_DEV_TRAIT_TO_RAW } = require('../lib/draftClassExporter');
+const { buildDraftClassFile, TEMPLATE_SLOT_COUNT, extractRatings } = require('../lib/draftClassExporter');
+const { DEV_TRAIT_NAME_TO_VALUE } = require('../lib/draftClassFile');
 const {
   parseDraftClassFile, getPosition, getHeight, getWeight, getAge, getJersey,
   getArchetype, getDevTrait, getDraftRound, getDraftPick, getRatings, getCollegeIndex,
@@ -152,7 +153,7 @@ function makeSyntheticClass(n) {
     if (getJersey(p) !== src.Jersey) mismatches++;
     if (getHeight(p) !== src.Height) mismatches++;
     if (getWeight(p) !== src.Weight) mismatches++;
-    if (getDevTrait(p).value !== MADDEN_DEV_TRAIT_TO_RAW[src.DevTrait]) mismatches++;
+    if (getDevTrait(p).maddenName !== src.DevTrait) mismatches++;
     if (getDraftRound(p) !== (src.ProjectRound ?? 63)) mismatches++;
     if (getDraftPick(p) !== (src.DraftPick ?? 0)) mismatches++;
     const ratings = getRatings(p);
