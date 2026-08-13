@@ -224,34 +224,63 @@ async function categoryDraftIndependence(exitRows) {
   };
 }
 
-// Proves the Translator seam (lib/rosetta/translation/) is actually wired
-// into the live public calibratePlayers() entry point, not just a disconnected
-// abstraction -- 'v1' and 'rosetta' strategies must produce byte-identical
-// output today, since RosettaTranslator currently just delegates to
-// V1Translator. Each run gets its own clone (see Legacy Bug #001 above --
-// otherwise this would conflate seam correctness with that mutation bug).
+// Proves the Translator seam (lib/rosetta/translation/) is actually wired into
+// the live public calibratePlayers() entry point, not just a disconnected
+// abstraction. Two properties, and BOTH are needed -- either alone can pass
+// while the seam is broken:
+//
+//   1. diceroll at spread 0 == powercurve, byte for byte. Dice Roll runs the
+//      Power-Curve conversion and then slides each player by an amount scaled
+//      by `spread`; at 0 the slide is a no-op, so any difference means the two
+//      strategies are not sharing the conversion they are supposed to share.
+//   2. diceroll at the shipped spread != powercurve. Without this, a seam that
+//      ignored `strategy` entirely and always returned Power Curve would pass
+//      property 1 perfectly.
+//
+// This replaces a 'v1' vs 'rosetta' comparison that became vacuous when both
+// strategies were removed in 0.3.2 (they now fall back to 'powercurve', so the
+// old check compared Power Curve against itself and could never fail).
+//
+// Each run gets its own clone (see Legacy Bug #001 above -- otherwise this
+// would conflate seam correctness with that mutation bug).
 async function categoryTranslatorSeam(exitRows) {
   const cloneRows = () => JSON.parse(JSON.stringify(exitRows));
-  const runWithStrategy = (strategy) => {
-    const players = calibratePlayers(cloneRows(), { config: { general: { seed: FIXED_SEED }, translation: { strategy } } });
+  const runWithStrategy = (strategy, diceRoll) => {
+    const config = { general: { seed: FIXED_SEED }, translation: { strategy } };
+    if (diceRoll) config.diceRoll = diceRoll;
+    const players = calibratePlayers(cloneRows(), { config });
     const dev = assignDevTraits(players, { general: { seed: FIXED_SEED } });
     for (const p of players) p.DevTrait = dev.get(p);
     return players;
   };
-  const v1 = await measure(() => runWithStrategy('v1'));
-  const rosetta = await measure(() => runWithStrategy('rosetta'));
-  const identical = JSON.stringify(v1.value) === JSON.stringify(rosetta.value);
+  const powerCurve = await measure(() => runWithStrategy('powercurve'));
+  const noLuck = await measure(() => runWithStrategy('diceroll', { spread: 0 }));
+  const withLuck = await measure(() => runWithStrategy('diceroll'));
+
+  const base = JSON.stringify(powerCurve.value);
+  const sharesConversion = base === JSON.stringify(noLuck.value);
+  const luckActuallyApplies = base !== JSON.stringify(withLuck.value);
+  const ok = sharesConversion && luckActuallyApplies;
+
+  const notes = [];
+  if (!sharesConversion) {
+    notes.push('Dice Roll at spread 0 did NOT reproduce Power Curve -- the two strategies are no longer sharing one conversion, so tuning Power Curve stops tuning Dice Roll.');
+  }
+  if (!luckActuallyApplies) {
+    notes.push('Dice Roll at the shipped spread produced the SAME class as Power Curve -- the strategy is being ignored and both selections run the same engine.');
+  }
 
   return {
     name: 'translatorSeam',
-    status: identical ? 'pass' : 'fail',
+    status: ok ? 'pass' : 'fail',
     metrics: {
-      v1RosettaIdentical: identical,
-      playerCount: v1.value.length,
-      v1RuntimeMs: v1.runtimeMs,
-      rosettaRuntimeMs: rosetta.runtimeMs,
+      sharesConversion,
+      luckActuallyApplies,
+      playerCount: powerCurve.value.length,
+      powerCurveRuntimeMs: powerCurve.runtimeMs,
+      diceRollRuntimeMs: withLuck.runtimeMs,
     },
-    notes: identical ? [] : ["The 'v1' and 'rosetta' translation strategies diverged -- RosettaTranslator should currently be a pure delegate to V1Translator with no translation math built yet."],
+    notes,
   };
 }
 

@@ -1061,17 +1061,9 @@ $('resetTranslation').addEventListener('click', () => resetSection(() => {
   // CONFIG_HARDENING_ROADMAP.md Phase 6: overallBoost's card (Phase 2) lives
   // on this same page and was missing from this reset entirely.
   cfg.overallBoost = JSON.parse(JSON.stringify(META.defaults.overallBoost));
-  // legacy/bell/ratingAdjustments/kpAwarenessCap have no UI of their own
-  // (V1-engine-only -- see main.js's own comment on why V1 has no card), so
-  // normal use can never cause them to differ from default. Reset anyway:
-  // they're real TUNING_KEYS members a hand-edited or imported file COULD
-  // set, they're conceptually part of "the conversion engine," same as
-  // everything else this button already covers, and "Reset" should mean
-  // reset rather than "reset everything that happens to have a control."
-  cfg.legacy = JSON.parse(JSON.stringify(META.defaults.legacy));
-  cfg.bell = JSON.parse(JSON.stringify(META.defaults.bell));
-  cfg.ratingAdjustments = JSON.parse(JSON.stringify(META.defaults.ratingAdjustments));
-  cfg.kpAwarenessCap = META.defaults.kpAwarenessCap;
+  // legacy/bell/ratingAdjustments/kpAwarenessCap used to be reset here too.
+  // They were the V1 engine's dials, had no UI of their own, and went away
+  // with that engine in 0.3.2 -- there is nothing left to reset.
 }));
 $('resetPhysical').addEventListener('click', () => resetSection(() => {
   // Rating Categories page: clears every global reclassification, every

@@ -1,8 +1,14 @@
 // Dependency-free regression test for bio-field passthrough (CharacterBodyType,
 // Height, Weight) through calibratePlayers -- separate from powerCurve.spec.js
-// because this is identical logic in BOTH the v1 and powercurve engines and has
-// nothing to do with rating conversion itself (curves/categories/strengths).
+// because this is identical logic in BOTH shipping engines and has nothing to
+// do with rating conversion itself (curves/categories/strengths).
 // Run with: node test/bioFields.spec.js (or npm test, which runs both files).
+//
+// The second engine here was 'v1' until 0.3.2 removed it. It is now 'diceroll',
+// which is the more useful pairing anyway: Dice Roll builds its output rows
+// through a different code path than Power Curve, so a bio field dropped from
+// one and not the other is exactly the kind of engine-dependent gap this file
+// exists to catch.
 //
 // Context (see FACES_AND_DRAFT_ROADMAP.md Phase 1): CharacterBodyType is a
 // field shared byte-identically between the CFB27 and Madden 26 schemas
@@ -34,7 +40,7 @@ function row(overrides) {
 
 const baseConfig = { general: { seed: 'bio-test', classSize: 10 } };
 
-for (const strategy of ['powercurve', 'v1']) {
+for (const strategy of ['powercurve', 'diceroll']) {
   const config = { ...baseConfig, translation: { strategy } };
 
   // 1. CharacterBodyType passes through unchanged for every real value.

@@ -72,8 +72,8 @@ function checkDeepEqual(label, got, want) {
 
 // 3. Round trip: canonical -> JSON -> mergeConfig must reproduce the
 // original exactly, including nested structures a shallow merge could lose
-// (anchors, ratingCategory, categoryOverrides, ratingTweaks,
-// ratingAdjustments). Touches at least one leaf inside EVERY TUNING_KEYS
+// (anchors, ratingCategory, categoryOverrides, ratingTweaks).
+// Touches at least one leaf inside EVERY TUNING_KEYS
 // section programmatically, rather than hand-picking a handful of fields --
 // a hand-picked list can't prove coverage of a key nobody remembered to
 // pick. (Confirmed the difference matters: an earlier hand-picked version of
