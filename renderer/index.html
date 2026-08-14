@@ -2,6 +2,26 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
+<!-- Everything this window needs is bundled; it never loads remote content
+     (main.js uses loadFile, and the renderer has no fetch/XHR at all). Saying
+     so explicitly means a stray remote script, an injected inline handler, or
+     any outbound request fails instead of running. Defence in depth on top of
+     contextIsolation:true / nodeIntegration:false.
+
+     script-src 'self' is the directive that matters here, and it stays strict:
+     no inline <script>, no eval, no remote origin.
+
+     style-src NEEDS 'unsafe-inline', and this was verified the hard way --
+     without it the page loads but the UI is broken. The renderer shows and
+     hides cards with `element.style.display = ...`, which CSP counts as an
+     inline style, so a strict style-src blocks every one of those writes: the
+     engine picker stops revealing its cards, pages stop switching. The risk it
+     gives up is CSS injection, which needs an injection point to begin with --
+     this renderer only ever uses innerHTML to clear ('' ), never to
+     interpolate, and puts all untrusted text (player names out of a save)
+     through textContent. -->
+<meta http-equiv="Content-Security-Policy"
+      content="default-src 'none'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self'; connect-src 'none'; form-action 'none'; base-uri 'none'">
 <title>Pipeline</title>
 <link rel="stylesheet" href="style.css">
 </head>

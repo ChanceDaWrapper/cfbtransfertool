@@ -14,6 +14,9 @@
     "Sean Dwyer (seanpdwyer7) -- draft projection, declaration prediction, combine generation, and export enrichment adapted from cfb2madden; see NOTICE.md"
   ],
   "license": "MIT",
+  "engines": {
+    "node": ">=20"
+  },
   "repository": {
     "type": "git",
     "url": "https://github.com/ChanceDaWrapper/cfbtransfertool.git"
