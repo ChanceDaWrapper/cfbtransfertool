@@ -2,27 +2,33 @@
 
 // Converts an exported draft-class file between Madden 26 and Madden 27.
 //
-// Run with no arguments for an interactive picker -- it scans both games'
-// Saves folders for CAREERDRAFT-* files, lists them, and walks you through
-// the rest:
+// Run with no arguments and it asks you to DRAG THE FILE into the window:
 //
 //   node tools/convertDraftClass.js
 //
-// Or skip the picker and give it a path directly (for scripting):
+// Or give it a path directly (for scripting):
 //
 //   node tools/convertDraftClass.js <input> [output] [--to m26|m27]
 //
-// The target is inferred from the input (a Madden 26 file converts to 27 and
-// vice versa) unless --to says otherwise. With no output path, the converted
-// file defaults into the TARGET game's own Saves folder -- so it's already
-// somewhere Madden's Import Draft Class browser will find it -- falling back
-// to alongside the input if that folder isn't there.
+// The target is inferred from the input's own schema tag (a Madden 26 file
+// converts to 27 and vice versa) unless --to says otherwise.
 //
-// The output name can be ANYTHING -- a plain name with no path keeps the
-// default directory above and just renames the file; a full path saves it
-// wherever you point it. Either way it always ends up starting with
-// "CAREERDRAFT-" (Madden's importer only lists files named that), adding the
-// prefix automatically if you didn't type it.
+// NOTHING IS AUTO-LOCATED. An earlier version scanned both games' Saves
+// folders to list files to pick from, and defaulted the output INTO the
+// target game's Saves folder. Both were reported as unreliable in practice
+// -- that discovery has to guess through OneDrive-redirected Documents
+// folders, a "Saves" vs "saves" casing difference between the two games, and
+// multiple installs, and when it guesses wrong the file silently lands
+// somewhere the user never looks. Dragging the file in states exactly which
+// file is meant, and the output is written next to that same file, so the
+// result is always somewhere already open on screen. Moving it into Madden's
+// Saves folder is one obvious drag the user can do themselves and see
+// succeed.
+//
+// The output name can be ANYTHING -- a plain name with no path lands beside
+// the input; a full path saves it wherever you point it. Either way it always
+// ends up starting with "CAREERDRAFT-" (Madden's importer only lists files
+// named that), adding the prefix automatically if you didn't type it.
 //
 // See lib/draftClassConvert.js for what actually differs between the two
 // formats and how each gap is filled.
@@ -33,19 +39,15 @@ const readline = require('readline/promises');
 
 const { convertDraftClassFile } = require('../lib/draftClassConvert');
 const { parseDraftClassFile } = require('../lib/draftClassFile');
-const { maddenSavesDirForYear } = require('../lib/saveIO');
-
-const YEARS = [26, 27];
 
 function usage(msg) {
   if (msg) console.error(`\n${msg}`);
   console.error(`
 Usage: node tools/convertDraftClass.js [<input> [output] [--to m26|m27]]
 
-  (no arguments)  interactive -- pick a file from your Saves folders
+  (no arguments)  interactive -- drag your draft-class file into the window
   <input>         an exported draft-class file (CAREERDRAFT-*)
-  [output]        where to write it; defaults into the target game's own
-                  Saves folder
+  [output]        where to write it; defaults to beside the input file
   --to            force the target game instead of inferring the opposite
 
 Examples:
@@ -54,6 +56,22 @@ Examples:
   node tools/convertDraftClass.js "CAREERDRAFT-MYCLASS" "CAREERDRAFT-M27" --to m27
 `);
   process.exit(msg ? 1 : 0);
+}
+
+// Cleans up a path as a terminal hands it over after a drag-and-drop.
+// Windows wraps a dragged path in double quotes when it contains spaces;
+// PowerShell uses single quotes in some cases; either way a trailing space is
+// left behind after the drop, and users often paste quoted paths by hand too.
+// Quotes are only stripped when they WRAP the whole string, so a path that
+// legitimately contains a quote character is left alone.
+function cleanDroppedPath(raw) {
+  if (raw == null) return '';
+  let s = String(raw).trim();
+  if ((s.startsWith('"') && s.endsWith('"') && s.length > 1)
+    || (s.startsWith("'") && s.endsWith("'") && s.length > 1)) {
+    s = s.slice(1, -1);
+  }
+  return s.trim();
 }
 
 // A typed answer with no directory in it (just a name) keeps the SAME
@@ -72,17 +90,19 @@ function resolveOutputPath(typed, fallbackFullPath) {
     : typed;
 }
 
-// Where the default OUTPUT path lands when the caller doesn't name one: the
-// target game's own Saves folder when it can be found (so the file is
-// immediately visible to Madden's importer with no moving it around),
-// falling back to right beside the input otherwise.
+// Where the default OUTPUT lands: right next to the INPUT file, always.
+//
+// Deliberately not the target game's Saves folder, even though that would
+// save a manual move -- see the header. Locating that folder means guessing
+// through OneDrive redirection, a casing difference between the two games,
+// and multiple installs, and a wrong guess writes the file somewhere the
+// user will never find it. Beside the input is somewhere they definitionally
+// just had open, so the result is never lost even when the guess would have
+// been wrong.
 function defaultOutputPath(input, target) {
   const base = path.basename(input).replace(/^CAREERDRAFT-/i, '');
   const suffix = target ? target.toUpperCase() : 'CONVERTED';
-  const name = `CAREERDRAFT-${base}-${suffix}`;
-  const targetYear = target === 'm27' ? 27 : target === 'm26' ? 26 : null;
-  const dir = (targetYear && maddenSavesDirForYear(targetYear)) || path.dirname(input);
-  return path.join(dir, name);
+  return path.join(path.dirname(input), `CAREERDRAFT-${base}-${suffix}`);
 }
 
 // Runs one conversion and prints the same report shape either code path uses.
@@ -99,32 +119,6 @@ function runOne(input, output, target) {
   console.log('');
   return r;
 }
-
-// Scans both games' Saves folders for CAREERDRAFT-* files, newest first.
-// Read-only -- this never touches anything, only lists what's there.
-function findCandidates() {
-  const groups = [];
-  for (const year of YEARS) {
-    const dir = maddenSavesDirForYear(year);
-    if (!dir || !fs.existsSync(dir)) continue;
-    let entries;
-    try { entries = fs.readdirSync(dir); } catch (e) { continue; }
-    const files = entries
-      .filter((n) => /^CAREERDRAFT-/i.test(n))
-      .map((n) => {
-        const full = path.join(dir, n);
-        let stat; try { stat = fs.statSync(full); } catch (e) { return null; }
-        return stat && stat.isFile() ? { name: n, path: full, size: stat.size, mtime: stat.mtimeMs } : null;
-      })
-      .filter(Boolean)
-      .sort((a, b) => b.mtime - a.mtime);
-    if (files.length) groups.push({ year, dir, files });
-  }
-  return groups;
-}
-
-function fmtSize(n) { return `${(n / 1024).toFixed(0)} KB`; }
-function fmtDate(ms) { return new Date(ms).toLocaleString(); }
 
 // A quick, best-effort identification for the picker's "Selected:" line --
 // swallows a parse failure rather than blocking the picker on a file that
@@ -161,63 +155,42 @@ async function interactive() {
   try {
     for (;;) {
       console.log('\nPipeline Draft-Class Converter\n');
-      const groups = findCandidates();
+      console.log('Drag your draft-class file into this window and press Enter.');
+      console.log('(the CAREERDRAFT-... file you exported from Madden)\n');
 
-      if (!groups.length) {
-        console.log('No CAREERDRAFT-* files found in your Madden Saves folders.');
-        console.log('(Checked Madden NFL 26 and 27 -- export one from Madden first, or pass a path directly:');
-        console.log('  node tools/convertDraftClass.js "<path to your exported file>")\n');
-        return;
-      }
-
-      const flat = [];
-      for (const g of groups) {
-        console.log(`Madden ${g.year}  (${g.dir})`);
-        for (const f of g.files) {
-          flat.push(f);
-          console.log(`  ${String(flat.length).padStart(2)}) ${f.name.padEnd(32)} ${fmtSize(f.size).padStart(9)}   ${fmtDate(f.mtime)}`);
-        }
-        console.log('');
-      }
-      console.log('   0) Enter a file path manually\n');
-
+      // Loops rather than exiting on a bad answer: a mistyped or mis-dropped
+      // path is the single most likely thing to go wrong here, and making the
+      // user relaunch the whole tool over it would be needless.
       let input = null;
       while (!input) {
-        const raw = await ask('Pick a file to convert: ');
-        if (raw === null) return; // stdin closed
-        const pick = raw.trim();
-        if (pick === '0') {
-          const rawPath = await ask('File path: ');
-          if (rawPath === null) return;
-          const p = rawPath.trim().replace(/^"(.*)"$/, '$1');
-          if (!p) continue;
-          if (!fs.existsSync(p)) { console.log(`  Not found: ${p}\n`); continue; }
-          input = p;
-        } else {
-          const n = Number(pick);
-          if (Number.isInteger(n) && n >= 1 && n <= flat.length) input = flat[n - 1].path;
-          else console.log('  Not a valid choice.\n');
-        }
+        const raw = await ask('File: ');
+        if (raw === null) return; // stdin closed (Ctrl+D / piped input ended)
+        const p = cleanDroppedPath(raw);
+        if (!p) continue; // bare Enter -- just ask again
+        if (!fs.existsSync(p)) { console.log(`  Not found: ${p}\n`); continue; }
+        if (!fs.statSync(p).isFile()) { console.log('  That is a folder, not a file.\n'); continue; }
+        input = p;
       }
 
       const info = peek(input);
       if (info) {
-        console.log(`\nSelected: ${path.basename(input)}`);
-        console.log(`  ${info.from.toUpperCase()}, ${info.players} players, ${info.schemaTag}`);
         const to = info.from === 'm26' ? 'm27' : 'm26';
-        console.log(`  Will convert to: ${to.toUpperCase()}\n`);
+        console.log(`\n  ${path.basename(input)}`);
+        console.log(`  ${info.from.toUpperCase()}, ${info.players} players`);
+        console.log(`  Converting to ${to.toUpperCase()}\n`);
 
         const out = defaultOutputPath(input, to);
-        const rawOut = await ask(`Output file name -- type anything, or a full path to save elsewhere [${out}]: `);
+        console.log(`Output name (Enter to accept, or type a name / full path)`);
+        const rawOut = await ask(`  [${path.basename(out)}]: `);
         if (rawOut === null) return;
-        const chosen = rawOut.trim().replace(/^"(.*)"$/, '$1');
-        const outputPath = resolveOutputPath(chosen, out);
+        const outputPath = resolveOutputPath(cleanDroppedPath(rawOut), out);
 
         console.log('');
         try { runOne(input, outputPath, to); }
         catch (e) { console.error(`\nConversion failed: ${e.message}\n`); }
       } else {
-        console.log(`\nCould not read "${path.basename(input)}" as a draft-class file -- it may not be one.\n`);
+        console.log(`\n  Could not read "${path.basename(input)}" as a draft-class file.`);
+        console.log('  Make sure it is a CAREERDRAFT-... file exported from Madden.\n');
       }
 
       const rawAgain = await ask('Convert another file? (y/N): ');
@@ -230,7 +203,7 @@ async function interactive() {
   }
 }
 
-module.exports = { resolveOutputPath, defaultOutputPath };
+module.exports = { resolveOutputPath, defaultOutputPath, cleanDroppedPath };
 
 // ---------------------------------------------------------------------
 // Entry point: interactive with no arguments, direct with any. Guarded so
