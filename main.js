@@ -8,6 +8,7 @@ const {
 } = require('./lib/pipeline');
 // Per-year Saves lookup lives in saveIO (pipeline doesn't re-export it).
 const { maddenSavesDirForYear } = require('./lib/saveIO');
+const { describeWriteFailure } = require('./lib/writeErrors');
 const { buildDraftClassFile, TEMPLATE_SLOT_COUNT } = require('./lib/draftClassExporter');
 const { availableTargets, DEFAULT_TARGET, loadTemplateModel } = require('./lib/draftClassTemplate');
 const coachRun = require('./lib/carousel/run');
@@ -485,23 +486,41 @@ ipcMain.handle('export-draft-class-file', async (_e, args = {}) => {
   }
   // Default to the Saves folder of the game this file was built FOR, not just
   // whichever Madden install is newest.
-  const defaultDir = maddenSavesDirForYear(target === 'm27' ? 27 : 26);
+  //
+  // This MUST end up absolute. maddenSavesDirForYear returns null when it finds
+  // no Madden folder at all (someone exporting an M27 file without Madden 27
+  // installed, or with Documents redirected somewhere it doesn't look), and the
+  // old code then did path.join('', 'CAREERDRAFT-CFBCLASS') -- a bare RELATIVE
+  // filename. Windows resolves that against the process's working directory,
+  // which for an installed build is the install folder under Program Files. The
+  // save dialog then reports "File not found. Check the file name and try
+  // again.", and anything that gets past it tries to write somewhere
+  // unwritable. Falling back to Documents, then home, keeps it absolute and
+  // somewhere the user can actually write.
+  const saveDir = maddenSavesDirForYear(target === 'm27' ? 27 : 26);
+  const usableDir = [saveDir, app.getPath('documents'), app.getPath('home')]
+    .find((d) => { try { return d && fs.statSync(d).isDirectory(); } catch (e) { return false; } })
+    || app.getPath('home');
   const result = await dialog.showSaveDialog(mainWindow, {
     title: 'Export Madden draft-class file',
-    defaultPath: path.join(defaultDir && fs.existsSync(defaultDir) ? defaultDir : '', 'CAREERDRAFT-CFBCLASS'),
+    defaultPath: path.join(usableDir, 'CAREERDRAFT-CFBCLASS'),
   });
   if (result.canceled || !result.filePath) return { ok: false, cancelled: true };
   // Madden's "Import Draft Class" browser only lists files whose name starts with
   // CAREERDRAFT- -- enforce it so the exported file actually shows up in-game, no
   // matter what the user typed in the save dialog (case-insensitive, so a
   // lowercase "careerdraft-" the user typed isn't double-prefixed).
-  let outPath = result.filePath;
+  let outPath = path.resolve(result.filePath);
   const base = path.basename(outPath);
   if (!/^careerdraft-/i.test(base)) outPath = path.join(path.dirname(outPath), `CAREERDRAFT-${base}`);
   try {
+    // The chosen folder normally exists (the dialog just browsed it), but it
+    // can be gone by the time we write -- an unplugged drive, a OneDrive folder
+    // that unmounted. Cheaper to ensure it than to explain the failure.
+    fs.mkdirSync(path.dirname(outPath), { recursive: true });
     fs.writeFileSync(outPath, buffer);
   } catch (e) {
-    return { ok: false, error: `Could not write file: ${e.message}` };
+    return { ok: false, error: describeWriteFailure(e, outPath) };
   }
   sendLog(`Exported draft-class file: ${outPath}`);
   return { ok: true, path: outPath, target, count: Math.min(lastGenerated.length, slotCount) };
