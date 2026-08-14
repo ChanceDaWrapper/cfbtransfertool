@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.3.2] - 2026-08-14
+
 ### Added
 - **The NFL/UFL and Madden 26/27 pickers are now switches, not radio dots.**
   Reported as hard to tell apart, and fairly: they were a small dot next to dim
