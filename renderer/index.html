@@ -336,8 +336,16 @@
         </div>
         <div class="btn-row">
           <button id="exportDraftFileBtn" class="primary" disabled>Export Draft Class File…</button>
+          <button id="exportDraftDirectBtn" disabled
+                  title="Writes straight into your Madden saves folder, without opening a Save dialog.">Save to saves folder</button>
           <span id="exportDraftFileStatus" class="inline-status"></span>
         </div>
+        <p class="hint compact">
+          If the Save dialog refuses with <em>“File not found. Check the file name and try again.”</em>
+          — which happens when your Documents folder lives in OneDrive and its contents are set to
+          online-only — use <strong>Save to saves folder</strong>. It skips the Windows dialog entirely,
+          names the file for you, and never overwrites an existing one.
+        </p>
       </div>
 
       <div class="card locked-card">

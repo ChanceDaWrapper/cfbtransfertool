@@ -22,6 +22,7 @@ contextBridge.exposeInMainWorld('api', {
   customPlayerCheck: (spec) => ipcRenderer.invoke('custom-player-check', spec),
   writeCareer: (opts) => ipcRenderer.invoke('write-career', opts),
   exportDraftClassFile: (target) => ipcRenderer.invoke('export-draft-class-file', { target }),
+  exportDraftClassDirect: (target) => ipcRenderer.invoke('export-draft-class-direct', { target }),
   exportTargets: () => ipcRenderer.invoke('export-targets'),
   exportResults: (opts) => ipcRenderer.invoke('export-results', opts),
   // coach carousel

@@ -7,3 +7,9 @@
 4. In Madden: Franchise → Manage Roster → Import Draft Class
 
 Done — your CFB draft class is now your Madden rookie class.
+
+**If the Save dialog says "File not found. Check the file name and try again."**
+press **Save to saves folder** instead. That skips the Windows dialog and names
+the file for you. It happens when your Documents folder lives in OneDrive and
+its contents are set to online-only — the folder lists fine, but Windows won't
+let the dialog write into it.

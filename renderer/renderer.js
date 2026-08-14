@@ -1643,11 +1643,13 @@ function updateExportDraftEnabled() {
   const st = $('exportDraftFileStatus');
   if (!players.length) {
     btn.disabled = true;
+    $('exportDraftDirectBtn').disabled = true;
     st.textContent = '';
     st.className = 'inline-status';
     return;
   }
   btn.disabled = false;
+  $('exportDraftDirectBtn').disabled = false;
   const filled = Math.min(players.length, DRAFT_FILE_SLOTS);
   if (filled >= DRAFT_FILE_SLOTS) {
     st.textContent = `${players.length} players ready — top ${DRAFT_FILE_SLOTS} will be exported.`;
@@ -1662,6 +1664,27 @@ function updateExportDraftEnabled() {
     st.className = 'inline-status warn';
   }
 }
+
+// Same export, minus the Windows save dialog -- for the OneDrive case where
+// that dialog refuses with "File not found" on a folder it just listed.
+// See the export-draft-class-direct handler in main.js.
+$('exportDraftDirectBtn').addEventListener('click', async () => {
+  const st = $('exportDraftFileStatus');
+  st.textContent = 'Building…'; st.className = 'inline-status';
+  $('exportDraftDirectBtn').disabled = true;
+  $('exportDraftFileBtn').disabled = true;
+  const res = await window.api.exportDraftClassDirect(exportTarget);
+  if (res.ok) {
+    st.textContent = `Done — ${res.count} players → ${res.path}`;
+    st.className = 'inline-status ok';
+    toast('Draft class saved to your Madden saves folder');
+  } else if (!res.cancelled) {
+    st.textContent = res.error;
+    st.className = 'inline-status err';
+    toast(res.error, true);
+  }
+  updateExportDraftEnabled();
+});
 
 $('exportDraftFileBtn').addEventListener('click', async () => {
   const st = $('exportDraftFileStatus');

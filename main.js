@@ -526,6 +526,69 @@ ipcMain.handle('export-draft-class-file', async (_e, args = {}) => {
   return { ok: true, path: outPath, target, count: Math.min(lastGenerated.length, slotCount) };
 });
 
+// Same export, WITHOUT the Windows save dialog.
+//
+// Reported from the field on a PC where Documents is redirected into OneDrive:
+// pressing Save in the dialog produced Windows' own
+//
+//     C:\Users\...\OneDrive\Documents\Madden NFL 27\saves\CAREERDRAFT-CFBCLASS
+//     File not found.
+//     Check the file name and try again.
+//
+// on a folder the same dialog had just listed, with files and sizes visible.
+// That error comes from the common dialog itself, before any of our code runs,
+// so nothing in the export path can catch or work around it -- the user simply
+// cannot get past the dialog. It is the classic OneDrive Files On-Demand
+// signature: the folder's metadata is local (so it browses) while the contents
+// are not materialized (so path validation fails).
+//
+// Node's fs does not go through that validation layer, so writing the file
+// directly works where the dialog will not. This picks the filename itself,
+// into the saves folder the app already detected -- no dialog, no typing, and
+// nothing for Windows to validate.
+ipcMain.handle('export-draft-class-direct', async (_e, args = {}) => {
+  if (!lastGenerated) return { ok: false, error: 'Generate a draft class first.' };
+  const target = args.target || DEFAULT_TARGET;
+  const year = target === 'm27' ? 27 : 26;
+
+  let buffer;
+  let slotCount = TEMPLATE_SLOT_COUNT;
+  try {
+    buffer = buildDraftClassFile(lastGenerated, { log: sendLog, target });
+    slotCount = loadTemplateModel(target).players.length;
+  } catch (e) {
+    return { ok: false, error: e.message || String(e) };
+  }
+
+  const saveDir = maddenSavesDirForYear(year);
+  if (!saveDir || !fs.existsSync(saveDir)) {
+    return {
+      ok: false,
+      error: `Could not find your Madden ${year} saves folder, so there is nowhere to put the file `
+        + 'automatically.\n\nUse "Export Draft Class File…" instead and choose a location yourself.',
+    };
+  }
+
+  // Letters, numbers and dashes only -- the naming rule Madden's importer
+  // needs (spaces or punctuation can bounce you to the main menu on import).
+  // Never overwrites: if the name is taken, it counts up rather than replacing
+  // a class the user may still want. Silently destroying an existing export is
+  // a worse failure than an ugly filename.
+  const stamp = new Date().toISOString().slice(0, 10).replace(/-/g, '');
+  let outPath = path.join(saveDir, `CAREERDRAFT-CFBCLASS-${stamp}`);
+  for (let n = 2; fs.existsSync(outPath) && n < 1000; n++) {
+    outPath = path.join(saveDir, `CAREERDRAFT-CFBCLASS-${stamp}-${n}`);
+  }
+
+  try {
+    fs.writeFileSync(outPath, buffer);
+  } catch (e) {
+    return { ok: false, error: describeWriteFailure(e, outPath) };
+  }
+  sendLog(`Exported draft-class file (direct): ${outPath}`);
+  return { ok: true, path: outPath, target, count: Math.min(lastGenerated.length, slotCount) };
+});
+
 ipcMain.handle('export-results', async (_e, { format }) => {
   if (!lastGenerated) return { ok: false, error: 'Nothing to export yet.' };
   const ext = format === 'json' ? 'json' : 'csv';
