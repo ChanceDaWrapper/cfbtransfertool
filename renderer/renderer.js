@@ -1575,7 +1575,11 @@ function buildGameRadios(row, groupName, targets) {
     input.checked = t.key === exportTarget;
     input.addEventListener('change', () => { if (input.checked) setExportTarget(t.key); });
     label.appendChild(input);
-    label.appendChild(document.createTextNode(' ' + t.label));
+    // The visible pill is this span, not the label -- the segmented-switch
+    // styling keys off `input:checked ~ .seg` (see style.css for why it does
+    // not use :has()). A bare text node here would leave nothing to fill.
+    const seg = el('span', 'seg', t.label);
+    label.appendChild(seg);
     row.appendChild(label);
   }
 }

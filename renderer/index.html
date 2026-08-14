@@ -174,7 +174,7 @@
         <div class="save-row" id="hubGameRow">
           <div class="field">
             <label>Which Madden are you playing?</label>
-            <div class="radio-row" id="hubGameSelect"></div>
+            <div class="radio-row segmented" id="hubGameSelect"></div>
           </div>
           <div id="hubGameStatus" class="status-chip empty">—</div>
         </div>
@@ -257,9 +257,9 @@
           <p class="hint">Turns your loaded prospects into a full rookie draft class, applying everything you've set on Position Weights, Rating Translation, Rating Categories, and Advanced.</p>
           <div class="field">
             <label>Draft</label>
-            <div class="radio-row" id="leagueModeRow">
-              <label class="radio"><input type="radio" name="leagueMode" value="nfl" checked> NFL</label>
-              <label class="radio"><input type="radio" name="leagueMode" value="ufl"> UFL <span id="uflStartBadge" class="badge-count"></span></label>
+            <div class="radio-row segmented" id="leagueModeRow">
+              <label class="radio"><input type="radio" name="leagueMode" value="nfl" checked><span class="seg">NFL</span></label>
+              <label class="radio"><input type="radio" name="leagueMode" value="ufl"><span class="seg">UFL <span id="uflStartBadge" class="badge-count"></span></span></label>
             </div>
             <p class="hint compact" id="leagueModeHint"></p>
           </div>
@@ -318,7 +318,7 @@
           prefix is added for you automatically.</p>
         <div class="field">
           <label>Game</label>
-          <div class="radio-row" id="exportTargetRow">
+          <div class="radio-row segmented" id="exportTargetRow">
             <!-- Filled from the main process at startup: only games whose
                  draft-class template is actually bundled are offered, so the
                  picker can never promise a file the exporter can't build. -->

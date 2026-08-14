@@ -361,6 +361,105 @@ input[type="number"] { width: 90px; text-align: right; font-family: var(--mono);
 .radio { display: flex; align-items: center; gap: 6px; font-size: 13px; color: var(--text-dim); cursor: pointer; }
 .radio input { accent-color: var(--accent); }
 
+/* ---------- segmented switch ----------
+   For the either/or choices that change what the app BUILDS -- NFL vs UFL,
+   Madden 26 vs 27. As plain radios these were reported as hard to read: a
+   small dot against dim grey text, with the selected and unselected options
+   near-identical at a glance. Getting one of these wrong is expensive (a class
+   built for the wrong game, or the wrong league's tier), so the current choice
+   should be unmissable rather than merely indicated.
+
+   The native <input> is kept -- still focusable, still keyboard-operable, still
+   what the JS reads -- but visually replaced by the segment itself. It is
+   moved off-screen rather than display:none, because a display:none input is
+   removed from the tab order and stops being announced. */
+.radio-row.segmented {
+  display: inline-flex;
+  align-items: stretch;
+  gap: 4px;
+  min-height: 0;
+  padding: 4px;
+  background: var(--bg-input);
+  border: 1px solid var(--border-strong);
+  border-radius: 999px;
+
+  /* The track has to HUG its segments. inline-flex alone does not achieve that
+     here: every one of these rows lives inside `.field`, which is a flex
+     column, so the row is a flex item -- and flex items are blockified, which
+     turns inline-flex into plain flex and then stretches it to the full column
+     width. The result was a 932px pill with two 116px segments huddled at the
+     left end. These two lines are what actually make it a switch rather than a
+     bar, in a flex parent, a grid parent or plain block flow alike. */
+  width: fit-content;
+  align-self: flex-start;
+}
+/* The label is just a wrapper; `.seg` is the pill you actually see, filled by
+   `input:checked + .seg`. That is the same pattern the sidebar's own toggle
+   switches already use (`.toggle-switch input:checked + .toggle-track`), so it
+   is proven in this app rather than newly introduced here. */
+.segmented .radio {
+  position: relative;
+  gap: 0;
+  padding: 0;
+}
+.segmented .radio input {
+  position: absolute;
+  opacity: 0;
+  width: 1px;
+  height: 1px;
+  margin: 0;
+  pointer-events: none;
+}
+.segmented .seg {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 8px 20px;
+  border-radius: 999px;
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: .02em;
+  color: var(--text-dim);
+  white-space: nowrap;
+  transition: background .13s ease, color .13s ease, box-shadow .13s ease;
+}
+/* Unselected, hovered: lift the text so the row feels clickable without
+   implying it is already the active choice. */
+.segmented .radio:hover .seg { color: var(--text); background: #1a1f2b; }
+
+/* Selected. A solid filled pill is the whole point -- it reads from across the
+   room, which the dot did not.
+
+   Deliberately NOT var(--accent) (#4f7cff): white on that measures 3.71:1,
+   under the 4.5:1 WCAG AA needs for text this size (13px/600 does not qualify
+   for the large-text exemption, which starts at 18.66px bold). Since the entire
+   reason for this control is that people could not read it, shipping a fill
+   that fails the contrast bar would be missing the point. #3c62dc measures
+   5.29:1 against white and still reads as a bright blue pill, because what
+   makes it pop is the jump from the near-black track, not the fill's own
+   lightness. --accent stays as the focus ring and hover, where it is decoration
+   rather than something text sits on. */
+.segmented input:checked + .seg {
+  background: #3c62dc;
+  color: #fff;
+  box-shadow: 0 1px 0 rgba(255, 255, 255, .15) inset, 0 2px 10px rgba(60, 98, 220, .45);
+}
+.segmented .radio:hover input:checked + .seg { background: #4571f0; }
+
+/* Keyboard focus has to stay visible even though the input itself is hidden,
+   so it is drawn on the segment instead. */
+.segmented input:focus-visible + .seg {
+  outline: 2px solid var(--accent-hover);
+  outline-offset: 2px;
+}
+
+/* The UFL prospect-count badge sits inside its segment, so it has to stay
+   readable once that segment turns solid blue. */
+.segmented input:checked + .seg .badge-count {
+  background: rgba(0, 0, 0, .28);
+  color: #fff;
+}
+
 .write-grid { display: grid; grid-template-columns: 1.4fr 1fr; gap: 18px; margin-bottom: 14px; }
 @media (max-width: 900px) { .write-grid { grid-template-columns: 1fr; } }
 

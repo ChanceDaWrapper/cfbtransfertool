@@ -8,6 +8,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- **The NFL/UFL and Madden 26/27 pickers are now switches, not radio dots.**
+  Reported as hard to tell apart, and fairly: they were a small dot next to dim
+  grey text, with the chosen and unchosen options near-identical at a glance.
+  Picking the wrong one is expensive — a class built for the wrong game, or the
+  wrong league's tier — so the current choice is now a filled blue pill inside a
+  dark track, readable across the room.
+  - The colour is a slightly deeper blue than the app's standard accent on
+    purpose: white text on the standard accent measures 3.71:1, below the 4.5:1
+    minimum for text this size. The shipped fill measures 5.29:1. Since the whole
+    point was legibility, a fill that failed that bar would have missed it.
+  - Keyboard and screen-reader behaviour is unchanged — these are still real
+    radio buttons, still tabbable, with the focus ring drawn on the pill.
 - **"Save to saves folder" — a one-click export that skips the Windows Save
   dialog.** Reported from the field: on a PC where Documents lives in OneDrive,
   pressing Save produced Windows' own *"File not found. Check the file name and
