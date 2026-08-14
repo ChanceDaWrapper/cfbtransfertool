@@ -115,83 +115,10 @@ function markResultsStale() {
 // the same three sections the settings pages (and their Reset buttons) use.
 // Purely a diff -- nothing here is hardcoded to specific setting names
 // beyond the section boundaries the app already treats as one unit.
+// Delegates to Decisions.countSectionDiffs (renderer/decisions.js), which
+// takes cfg/defaults/positions explicitly so it can be tested without a DOM.
 function countSectionDiffs() {
-  const d = META.defaults;
-  let weights = 0, physical = 0, advanced = 0, translation = 0;
-
-  // Rating Translation (power-curve engine): engine choice, per-position
-  // strength dials, category anchors, and global clamp/jitter.
-  if ((cfg.translation?.strategy || 'powercurve') !== (d.translation?.strategy || 'powercurve')) translation++;
-  if (cfg.positionStrength && d.positionStrength) {
-    for (const pos of META.positions) {
-      const s = cfg.positionStrength[pos] || {}, ds = d.positionStrength[pos] || {};
-      for (const k of ['tech', 'mental', 'physical']) if (s[k] !== ds[k]) translation++;
-    }
-  }
-  // Extra Drop lives in its own config section (positionExtraDrop, not
-  // positionStrength) but its control sits on this same Rating Translation
-  // page now (Phase 3), so it counts toward this page's modified total too.
-  for (const pos of META.positions) {
-    if (cfg.positionExtraDrop[pos] !== d.positionExtraDrop[pos]) translation++;
-  }
-  if (cfg.powerCurve && d.powerCurve) {
-    for (const cat of Object.keys(d.powerCurve.anchors)) {
-      const a = cfg.powerCurve.anchors[cat] || {}, da = d.powerCurve.anchors[cat] || {};
-      for (const k of ['x1', 'y1', 'x2', 'y2']) if (a[k] !== da[k]) translation++;
-    }
-    for (const k of ['globalStrength', 'jitter', 'clampFloor', 'clampCeiling']) {
-      if (cfg.powerCurve[k] !== d.powerCurve[k]) translation++;
-    }
-  }
-  // CONFIG_HARDENING_ROADMAP.md Phase 6: Dice Roll's own knobs and the UFL
-  // boost card both live on this same Rating Translation page (Phase 2) but
-  // were invisible to this count until now -- edit either and the "modified"
-  // badge never moved.
-  // Only `spread` counts -- classStrength and debuff are inert as of the
-  // 2026-08-11g rewrite and have no UI, so counting them would let the
-  // "modified" badge light up over a value the user cannot see or change.
-  if (cfg.diceRoll && d.diceRoll) {
-    if ((cfg.diceRoll.spread ?? null) !== (d.diceRoll.spread ?? null)) translation++;
-  }
-  if (cfg.overallBoost && d.overallBoost) {
-    for (const k of ['enabled', 'points']) {
-      if (cfg.overallBoost[k] !== d.overallBoost[k]) translation++;
-    }
-  }
-
-  for (const pos of META.positions) {
-    if (cfg.positionValue[pos] !== d.positionValue[pos]) weights++;
-  }
-  const capKeys = new Set([...Object.keys(cfg.positionCaps || {}), ...Object.keys(d.positionCaps || {})]);
-  for (const pos of capKeys) {
-    if ((cfg.positionCaps[pos] ?? null) !== (d.positionCaps[pos] ?? null)) weights++;
-  }
-
-  // Rating Categories page (the 'physical' section key is retained; the page
-  // was repurposed in Phase 4a/4b/4c): every global rating reclassification,
-  // every per-rating Extra/Max Drop tweak, and every per-position exception
-  // counts.
-  const rc = (cfg.powerCurve && cfg.powerCurve.ratingCategory) || {};
-  physical += Object.keys(rc).length;
-  const rt = (cfg.powerCurve && cfg.powerCurve.ratingTweaks) || {};
-  physical += Object.keys(rt).length;
-  const co = (cfg.powerCurve && cfg.powerCurve.categoryOverrides) || {};
-  for (const pos of Object.keys(co)) physical += Object.keys(co[pos] || {}).length;
-
-  if (cfg.general.classSize !== d.general.classSize) advanced++;
-  if ((cfg.general.seed || '') !== (d.general.seed || '')) advanced++;
-  for (const key of ['xfactorPercentTarget', 'superstarPercentTarget', 'starPercentTarget']) {
-    if (cfg.devTraits[key] !== d.devTraits[key]) advanced++;
-  }
-  for (const key of ['positionValueWeight', 'awardsWeight', 'athleticismWeight', 'productionWeight', 'roundWeight', 'boardVariance', 'generationalEnabled']) {
-    if (cfg.draftValue[key] !== d.draftValue[key]) advanced++;
-  }
-  // CONFIG_HARDENING_ROADMAP.md Phase 6: realism.agilityCodSizePenalty has
-  // no dedicated card of its own -- wherever its control eventually lives,
-  // it belongs in this count too.
-  if (cfg.realism && d.realism && cfg.realism.agilityCodSizePenalty !== d.realism.agilityCodSizePenalty) advanced++;
-
-  return { weights, physical, advanced, translation };
+  return Decisions.countSectionDiffs(cfg, META.defaults, META.positions);
 }
 
 // Coach Settings live in localStorage (see loadCoachSettings, defined in the
@@ -451,7 +378,7 @@ function buildTranslationPage() {
   if (!ENGINE_OPTIONS.some(([v]) => v === cfg.translation.strategy)) {
     cfg.translation.strategy = 'powercurve'; scheduleSave();
   }
-  const isDiceRoll = cfg.translation.strategy === 'diceroll';
+  const isDiceRoll = Decisions.normalizeEngine(cfg.translation.strategy) === 'diceroll';
   const eng = $('translationEngine');
   eng.innerHTML = '';
   eng.appendChild(knob('Conversion Engine', D['translation.strategy'],
@@ -473,9 +400,9 @@ function buildTranslationPage() {
   //
   // The Dice Roll card is still engine-specific: its one live setting (how much
   // luck) genuinely does nothing under Power Curve.
-  $('diceRollControls').style.display = isDiceRoll ? '' : 'none';
-  for (const id of ['powerCurveGlobalStrengthCard', 'powerCurveControls', 'strengthControls', 'globalTranslationControls']) {
-    $(id).style.display = '';
+  const visible = Decisions.translationCardVisibility(cfg.translation.strategy);
+  for (const [id, show] of Object.entries(visible)) {
+    $(id).style.display = show ? '' : 'none';
   }
 
   // CONFIG_HARDENING_ROADMAP.md Phase 2: the boost is UFL-only but
@@ -691,7 +618,7 @@ function categoryBucketOptions() {
 // position numeric tweaks aren't in scope (categoryOverrides is category-only).
 // Only non-default entries are ever stored, at whichever scope is active.
 function buildPhysicalPage() {
-  $('physicalEngineNotice').style.display = cfg.translation?.strategy === 'diceroll' ? '' : 'none';
+  $('physicalEngineNotice').style.display = Decisions.showsPhysicalEngineNotice(cfg.translation?.strategy) ? '' : 'none';
 
   const catDefaults = META.ratingCategoryDefaults || {}; // { [Rating]: category } from CATEGORY_OF
   const bucketOptions = categoryBucketOptions();
@@ -1590,8 +1517,13 @@ $('pickOutput').addEventListener('click', async () => {
 });
 
 function updateWriteEnabled() {
-  $('writeBtn').disabled = !WRITE_TO_FRANCHISE_ENABLED
-    || !(players.length && maddenPath && (outMode === 'edit' ? true : !!outputPath));
+  $('writeBtn').disabled = !Decisions.writeButtonEnabled({
+    featureEnabled: WRITE_TO_FRANCHISE_ENABLED,
+    playerCount: players.length,
+    maddenPath,
+    outMode,
+    outputPath,
+  });
 }
 
 // The file's total slot count is fixed PER GAME (Madden 26 = 402, Madden 27 =

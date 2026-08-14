@@ -794,6 +794,9 @@
 </div>
 
 <div id="toast" class="toast" role="status"></div>
+<!-- Pure UI decisions (no DOM), loaded first so renderer.js can use them.
+     Split out so they can be tested -- see the header in decisions.js. -->
+<script src="decisions.js"></script>
 <script src="renderer.js"></script>
 </body>
 </html>
