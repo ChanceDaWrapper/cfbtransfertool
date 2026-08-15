@@ -43,11 +43,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   try again."* — on a folder the same dialog had just listed, with files and
   sizes showing. That error comes from Windows before Pipeline gets involved, so
   there was no way to work around it from inside the app; the export was simply
-  unreachable on that machine. The new button writes the file into the Madden
-  saves folder Pipeline already found, names it for you following Madden's own
-  naming rule, and never overwrites an existing class — it counts up instead.
-  - This skips the *dialog*; the OneDrive write problem above is a separate
-    thing, and the two together are what make exporting work on such a machine.
+  unreachable on that machine. The new button writes the file directly into the
+  Madden saves folder Pipeline already found, names it for you following Madden's
+  own naming rule, and never overwrites an existing class — it counts up instead.
+  - The cause is OneDrive's "Files On-Demand": the folder's details are stored
+    locally (so it browses normally) while the contents are not, so Windows' file
+    picker fails to validate a path in it. Setting the folder to "Always keep on
+    this device" also fixes it, if you would rather keep using the dialog.
 - **Clearer errors when a file can't be written.** "EBADF: bad file descriptor,
   write" now reads as an explanation with things to try — an online-only OneDrive
   folder, a disconnected drive, or Madden holding the file open — and always
