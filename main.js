@@ -9,7 +9,6 @@ const {
 // Per-year Saves lookup lives in saveIO (pipeline doesn't re-export it).
 const { maddenSavesDirForYear } = require('./lib/saveIO');
 const { describeWriteFailure } = require('./lib/writeErrors');
-const { writeFileSafely, StagedWriteError } = require('./lib/fileWrite');
 const { buildDraftClassFile, TEMPLATE_SLOT_COUNT } = require('./lib/draftClassExporter');
 const { availableTargets, DEFAULT_TARGET, loadTemplateModel } = require('./lib/draftClassTemplate');
 const coachRun = require('./lib/carousel/run');
@@ -519,8 +518,7 @@ ipcMain.handle('export-draft-class-file', async (_e, args = {}) => {
     // can be gone by the time we write -- an unplugged drive, a OneDrive folder
     // that unmounted. Cheaper to ensure it than to explain the failure.
     fs.mkdirSync(path.dirname(outPath), { recursive: true });
-    const res = writeFileSafely(outPath, buffer, { log: sendLog });
-    if (res.staged) sendLog('  (the destination refused a direct write; copied into place instead)');
+    fs.writeFileSync(outPath, buffer);
   } catch (e) {
     return { ok: false, error: describeWriteFailure(e, outPath) };
   }
@@ -583,8 +581,7 @@ ipcMain.handle('export-draft-class-direct', async (_e, args = {}) => {
   }
 
   try {
-    const res = writeFileSafely(outPath, buffer, { log: sendLog });
-    if (res.staged) sendLog('  (the destination refused a direct write; copied into place instead)');
+    fs.writeFileSync(outPath, buffer);
   } catch (e) {
     return { ok: false, error: describeWriteFailure(e, outPath) };
   }

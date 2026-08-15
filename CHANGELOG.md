@@ -10,21 +10,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [0.3.2] - 2026-08-14
 
 ### Added
-- **Exports now work in OneDrive folders.** If your Madden saves folder lives
-  in OneDrive, saving a draft class could fail with "EBADF: bad file
-  descriptor" — for a brand-new file as much as an overwrite — while saving the
-  same class to the Desktop worked, and dragging that file into the same folder
-  in Explorer also worked. OneDrive permits Explorer to write there and takes
-  the file handle away from an app doing it directly.
-  - Pipeline now does what you would do by hand: it builds the file on your
-    local disk first, then asks Windows to copy it into place using the same
-    call Explorer uses. Nothing holds a handle inside the synced folder, so
-    there is nothing for OneDrive to interrupt.
-  - Normal folders are unaffected — they still get a single direct write, and
-    the fallback only engages when one of those failures actually happens.
-  - If the copy fails too, the error now tells you exactly where the finished
-    file is waiting so you can move it yourself. A completed export is never
-    thrown away to tidy up.
 - **The NFL/UFL and Madden 26/27 pickers are now switches, not radio dots.**
   Reported as hard to tell apart, and fairly: they were a small dot next to dim
   grey text, with the chosen and unchosen options near-identical at a glance.
