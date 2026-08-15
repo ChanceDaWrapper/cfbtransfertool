@@ -34,7 +34,9 @@ for (const code of ['EBADF', 'EIO', 'EPERM', 'EACCES', 'EBUSY', 'ENOENT', 'ENOSP
   ok('EBADF mentions online-only', /online-only/i.test(msg));
   ok('EBADF mentions network or external drives', /network|external/i.test(msg));
   ok('EBADF suggests closing Madden', /close Madden/i.test(msg));
-  ok('EBADF gives a concrete way to narrow it down', /Desktop/i.test(msg));
+  ok('EBADF leads with a concrete quick fix', /Quick fix/i.test(msg));
+  ok('...naming Desktop as the workaround target', /Desktop/i.test(msg));
+  ok('...and moving the file back in manually', /move that file|drag it/i.test(msg));
 }
 
 // EIO shares the branch, since it fails the same way for the same reasons.
