@@ -36,11 +36,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
     picker fails to validate a path in it. Setting the folder to "Always keep on
     this device" also fixes it, if you would rather keep using the dialog.
 - **Clearer errors when a file can't be written.** "EBADF: bad file descriptor,
-  write" now reads as an explanation, leading with a quick fix — export to your
-  Desktop instead, then drag that file into your Madden saves folder yourself —
-  followed by the likely causes (an online-only OneDrive folder, a disconnected
-  drive, Madden holding the file open) and always the path it tried, so a
-  screenshot is enough to diagnose it.
+  write" now reads as an explanation with things to try — an online-only OneDrive
+  folder, a disconnected drive, or Madden holding the file open — and always
+  names the path it tried, so a screenshot is enough to diagnose it.
 
 ### Changed
 - **Impact Blocking now compresses as a light technical rating instead of a
