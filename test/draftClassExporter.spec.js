@@ -23,6 +23,7 @@ const {
 const { loadTemplateBuffer, loadTemplateModel } = require('../lib/draftClassTemplate');
 const { collegeIndexForRef } = require('../lib/collegeIndex');
 const { buildCollegeMatcher } = require('../lib/pipeline');
+const { catalogFromTemplate } = require('../lib/appearanceCatalog');
 
 let passed = 0;
 function check(label, got, want) {
@@ -252,6 +253,77 @@ function makeSyntheticClass(n) {
   }
   check('every resolvable school gets its baked college index', matched, checked);
   check('at least some players were actually checked', checked > 0, true);
+}
+
+// 8. Face-matching tiers, end to end against the REAL bundled M27 template
+// (not a synthetic catalog -- this is exactly what buildDraftClassFile
+// actually uses for a non-M26 target).
+//
+// Introspects the real catalog to find a tone with both a "B"-family head and
+// an "H"-family head, then builds synthetic players whose PLYR_GENERICHEAD
+// deliberately does NOT match anything the game ships (tier 1 must fail) but
+// whose GenericHeadAssetName DOES encode a real (tone, family) pair (tier 2
+// must catch it). This is the exact scenario a real 2032-dynasty save
+// produces at scale: assignExact fails, and only the asset-name signal is
+// left to recover a real match from.
+{
+  const cat = catalogFromTemplate(loadTemplateModel('m27'), { faceIdOf: () => 0 });
+  let picked = null;
+  for (const [tone, bucket] of Object.entries(cat.bySkin)) {
+    const bHead = bucket.pairs.find((p) => /^gen_\d+_B/.test(p.head));
+    const hHead = bucket.pairs.find((p) => /^gen_\d+_H_/.test(p.head));
+    if (bHead && hHead) { picked = { tone: Number(tone), bHead: bHead.head, hHead: hHead.head }; break; }
+  }
+  ok('the real M27 catalog has a tone with both a B-family and H-family head '
+    + '(fixture assumption -- if this ever fails, the template changed and the '
+    + 'fixture below needs a different tone)', !!picked);
+
+  const cls = makeSyntheticClass(402);
+  // Player 0: PLYR_GENERICHEAD garbage (tier 1 fails), GenericHeadAssetName
+  // encodes the picked tone via CFB's "D" combo code, which always resolves
+  // to Madden's "B" family (see appearanceCatalog.js's CFB_ASSET_FAMILY).
+  cls[0].PLYR_GENERICHEAD = 'not_a_real_head_9_9_9';
+  cls[0].GenericHeadAssetName = `Generic_0001_P_T0001_D_${picked.tone}_1`;
+  // Player 1: same idea, CFB's "H" combo code (maps to itself).
+  cls[1].PLYR_GENERICHEAD = 'also_not_real_8_8_8';
+  cls[1].GenericHeadAssetName = `Generic_0002_P_T0002_H_${picked.tone}_1`;
+  // Player 2: a scanned/real-player asset name (no combo or tone signal at
+  // all) -- must fall all the way through to tier 3, not throw.
+  cls[2].PLYR_GENERICHEAD = 'still_not_real_7_7_7';
+  cls[2].GenericHeadAssetName = 'Unique_SomeRealPlayer_12345';
+
+  const logs = [];
+  const buf = buildDraftClassFile(cls, { target: 'm27', log: (m) => logs.push(m) });
+  const model = parseDraftClassFile(buf);
+  const sorted = cls.slice().sort((a, b) => a.DraftRank - b.DraftRank);
+  const slotOf = (player) => model.players[sorted.indexOf(player)];
+
+  const headOf = (p) => {
+    const raw = p.json.raw.toString('utf8');
+    const m = /"genericHeadName"\s*:\s*"([^"]+)"/.exec(raw);
+    return m ? m[1] : null;
+  };
+
+  check('player 0 (D-code asset name) lands on the B-family head at that tone',
+    headOf(slotOf(cls[0])), picked.bHead);
+  check('player 1 (H-code asset name) lands on the H-family head at that tone',
+    headOf(slotOf(cls[1])), picked.hHead);
+  ok('player 2 (unparseable asset name) still exports something, no crash',
+    !!headOf(slotOf(cls[2])));
+
+  const fillCount = Math.min(cls.length, loadTemplateModel('m27').players.length);
+  const faceLine = logs.find((l) => l.startsWith('Faces:'));
+  ok('a Faces: summary line is logged', !!faceLine);
+  const nums = (faceLine.match(/(\d+) of (\d+)/) || [])[2];
+  check('the summary is scoped to the actual fill count (M27 = 389 slots, not 402)',
+    nums, String(fillCount));
+  const [, ownHead, familyMatch, toneOnly] = faceLine.match(
+    /^Faces: (\d+) of \d+ players kept their own face, (\d+) matched on skin tone and facial-hair family, (\d+) matched on skin tone only/,
+  ) || [];
+  ok('the three tiers in the log line sum to the fill count',
+    Number(ownHead) + Number(familyMatch) + Number(toneOnly) === fillCount);
+  ok('at least the two deliberately-constructed players counted as familyMatch',
+    Number(familyMatch) >= 2);
 }
 
 console.log(`\n  Draft-class exporter spec: ${passed} assertions passed.`);

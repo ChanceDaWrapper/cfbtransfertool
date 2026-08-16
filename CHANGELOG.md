@@ -7,6 +7,34 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+- **Faces and skin tones are far more accurate on dynasties deep enough that
+  most players have a scanned, real-player head.** Two separate problems,
+  found together while investigating a 2032-dynasty report: with a face
+  match that ignored facial hair, and a skin tone that silently defaulted to
+  the lightest tone whenever it couldn't be read, a real exported class from
+  that save came out roughly 72% skin tone 1 — regardless of who the players
+  actually were.
+  - **Better face matching.** When a player's own head isn't one Madden ships
+    (already common — ~39% of a normal class), the exporter used to fall
+    back to skin tone alone, ignoring facial hair and hairstyle entirely. It
+    now also tries matching on CFB's `GenericHeadAssetName`, which — even
+    though the player's *exact* head usually isn't in Madden's catalog — still
+    reliably encodes both skin tone and a facial-hair family (ground-truthed
+    against 429 real players with both head fields: 100% exact tone, and a
+    deterministic mapping onto Madden's own facial-hair categories). Skin
+    tone alone is still the last resort, not removed.
+  - **No more silent default to the palest tone.** Real, scanned player heads
+    (common in any long-running dynasty) carry no skin tone signal anywhere
+    in the save at all — previously they all silently became tone 1. Missing
+    tones are now filled from that dynasty's own observed distribution of
+    known tones instead, so a class reflects the roster it came from rather
+    than skewing toward one tone.
+  - **New in the export log:** a `Faces:` line reporting how many players
+    kept their own face, how many matched on tone + facial-hair family, and
+    how many matched on tone alone — so a run's face coverage is visible
+    without waiting on a field report to find out it was low.
+
 ## [0.3.2] - 2026-08-14
 
 ### Added

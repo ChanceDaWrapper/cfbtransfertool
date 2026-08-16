@@ -3,7 +3,9 @@
 // EA's auto-drafts. Run: node test/appearanceCatalog.spec.js (or npm test).
 
 const assert = require('assert');
-const { createAppearanceAssigner, poolForTone, loadCatalog } = require('../lib/appearanceCatalog');
+const {
+  createAppearanceAssigner, poolForTone, loadCatalog, parseAssetName, CFB_ASSET_FAMILY,
+} = require('../lib/appearanceCatalog');
 
 let passed = 0;
 function check(label, got, want) {
@@ -99,6 +101,86 @@ const catalog = {
   const a2 = createAppearanceAssigner(catalog);
   a2.assignExact('1_B_N_01');
   check('an own-head pick is recorded in the usage stats', a2.stats().distinctPairs, 1);
+}
+
+// parseAssetName() -- CFB's GenericHeadAssetName carries a SEPARATE signal
+// (skin tone + facial-hair-combo code) from PLYR_GENERICHEAD, ground-truthed
+// against 429 real players who carry both fields: H/T/M pass through as
+// themselves, D always lands in Madden's "B" family (100% of 264 samples).
+{
+  check('a real Generic_* name parses to its tone and family',
+    JSON.stringify(parseAssetName('Generic_0917_P_T0045_T_7_3')), JSON.stringify({ tone: 7, family: 'T' }));
+  check('the "D" combo code maps to Madden\'s "B" family',
+    JSON.stringify(parseAssetName('Generic_0146_P_T0007_D_2_1')), JSON.stringify({ tone: 2, family: 'B' }));
+  check('H maps to itself', parseAssetName('Generic_0001_P_T0001_H_5_2').family, 'H');
+  check('M maps to itself', parseAssetName('Generic_0001_P_T0001_M_3_4').family, 'M');
+  check('a scanned real-player name (no combo/tone suffix) does not parse',
+    parseAssetName('Unique_LehmanReston_203396'), null);
+  check('a blank name does not parse', parseAssetName(''), null);
+  check('a non-string does not parse', parseAssetName(undefined), null);
+  check('every CFB asset combo code CFB actually ships resolves to a family',
+    Object.keys(CFB_ASSET_FAMILY).sort().join(','), 'D,H,M,T');
+}
+
+// assignByAssetName() -- the second tier, tried when assignExact fails: match
+// skin tone AND facial-hair family instead of skin tone alone. A tone with
+// several different combo codes proves the filter actually discriminates
+// (not just "any pair at this tone" relabeled).
+const familyCatalog = {
+  bySkin: {
+    3: {
+      pairs: [
+        { faceId: 100, head: 'gen_3_B_N_01' },
+        { faceId: 101, head: 'gen_3_BMH_N_01' },
+        { faceId: 102, head: 'gen_3_H_N_01' },
+        { faceId: 103, head: 'gen_3_T_N_01' },
+        { faceId: 104, head: 'gen_3_M_N_01' },
+        { faceId: 105, head: 'gen_3_N_N_01' },
+      ],
+    },
+    // Tone 9 exists but has NOTHING in the H family -- proves the tier
+    // returns null (defers to assign()'s tone-widening) instead of quietly
+    // handing back a wrong-family pair from the same tone.
+    9: { pairs: [{ faceId: 900, head: 'gen_9_B_N_01' }] },
+  },
+};
+{
+  const a = createAppearanceAssigner(familyCatalog);
+
+  // D asset code -> Madden's B family. Both B and BMH qualify (both start
+  // with "B"); H/T/M/N at the same tone must never be picked.
+  const seenForD = new Set();
+  for (let i = 0; i < 2; i++) seenForD.add(a.assignByAssetName('Generic_0001_P_T0001_D_3_1').head);
+  check('D (2 picks) only ever returns B-family heads',
+    [...seenForD].every((h) => /^gen_3_B/.test(h)), true);
+  check('...and actually spreads across BOTH B-family heads (least-used-first)', seenForD.size, 2);
+
+  check('H asset code returns exactly the H head, not B/T/M/N',
+    a.assignByAssetName('Generic_0001_P_T0001_H_3_1').head, 'gen_3_H_N_01');
+  check('T asset code returns exactly the T head',
+    a.assignByAssetName('Generic_0001_P_T0001_T_3_1').head, 'gen_3_T_N_01');
+  check('M asset code returns exactly the M head',
+    a.assignByAssetName('Generic_0001_P_T0001_M_3_1').head, 'gen_3_M_N_01');
+
+  check('no matching family at that tone -> null (defers to assign(), does not widen tone itself)',
+    a.assignByAssetName('Generic_0001_P_T0001_H_9_1'), null);
+  check('a tone the catalog has no bucket for at all -> null',
+    a.assignByAssetName('Generic_0001_P_T0001_H_6_1'), null);
+  check('an unparseable (scanned/Unique_*) asset name -> null',
+    a.assignByAssetName('Unique_LehmanReston_203396'), null);
+  check('no asset name at all -> null', a.assignByAssetName(''), null);
+
+  const hit = a.assignByAssetName('Generic_0001_P_T0001_T_3_1');
+  check('a successful match is flagged familyMatch (not exact/ownHead)', hit.familyMatch, true);
+  check('...is not marked exact', !!hit.exact, false);
+  check('...and reports the tone it matched on', hit.tone, 3);
+
+  // Reuse counting is shared with assign()/assignExact() -- an assignByAssetName
+  // pick must count toward "least used" the same way, or the spreading logic
+  // those two already rely on would be silently defeated by this new tier.
+  const a2 = createAppearanceAssigner(familyCatalog);
+  a2.assignByAssetName('Generic_0001_P_T0001_H_3_1'); // uses gen_3_H_N_01 once
+  check('an assignByAssetName pick is recorded in the shared usage stats', a2.stats().distinctPairs, 1);
 }
 
 console.log(`\n  Appearance catalog spec: ${passed} assertions passed.`);
